@@ -1,0 +1,43 @@
+# Dependencies & build
+**/node_modules/
+**/dist/
+**/*.tsbuildinfo
+**/.vsix
+*.vsix
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+**/auth.json
+**/.openclaude-profile.json
+**/.openclaude/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Logs / temp
+*.log
+coverage/
+.tmp/
+.tmp-*/
+temp_reference/
+reports/
+plan/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Agent / local tooling
+.worktrees/
+.claude/
+agent.log
+
+# Fork-specific (also covered by nested ignore patterns)
+openclaude-fork/package-lock.json
+openclaude-fork/GEMINI.md
+openclaude-fork/CLAUDE.md
