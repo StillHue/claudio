@@ -3,12 +3,9 @@
 # Trigger: push to main that touches openclaude-fork/
 # Behavior: build → compare versions → publish only if local > published
 #
-# Auth: npm Trusted Publishing (OIDC) — no long-lived NPM_TOKEN.
-# One-time setup on https://www.npmjs.com/package/@gaburieuru/claudio :
-#   Settings → Trusted Publisher → GitHub Actions
-#   Organization/user: StillHue
-#   Repository: claudio
-#   Workflow filename: publish-claudio-npm.yml
+# Setup (one-time):
+# 1. Create an npm Automation token with publish rights to @gaburieuru
+# 2. Repo secret NPM_TOKEN = that token
 
 name: Publish Claudio npm
 
@@ -43,12 +40,8 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
           registry-url: https://registry.npmjs.org
-
-      - name: Ensure npm supports OIDC trusted publishing
-        run: npm install -g npm@latest
-        working-directory: .
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
@@ -88,8 +81,10 @@ jobs:
             echo "Bump openclaude-fork/package.json version to release a new npm package."
           fi
 
-      - name: Publish to npm (OIDC trusted publishing)
+      - name: Publish to npm
         if: steps.decide.outputs.should_publish == 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: npm publish --access public
 
       - name: Summary
