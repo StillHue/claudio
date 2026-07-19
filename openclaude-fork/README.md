@@ -53,7 +53,7 @@ Inside Claudio:
 - run `/provider` for guided provider setup and saved profiles
 - run `/onboard-github` for GitHub Models onboarding
 
-> **Note:** Claudio does not automatically load project `.env` files. We recommend using the `/provider` command for setup, which saves provider profiles and credentials in `.openclaude-profile.json`. If you prefer environment variables, export them explicitly or run `claudio --provider-env-file .env` for provider/setup variables. Export runtime/debug knobs from your shell or launcher.
+> **Note:** Claudio does not automatically load project `.env` files. We recommend using the `/provider` command for setup, which saves provider profiles and credentials for you. If you prefer environment variables, export them explicitly or run `claudio --provider-env-file .env` for provider/setup variables. Export runtime/debug knobs from your shell or launcher.
 
 ### Resume or fork a conversation
 
@@ -92,9 +92,9 @@ claudio kill auth-refactor
 Background sessions are local child processes. Claudio does not start a daemon
 or network service, and permission/provider/model/settings flags are passed to
 the child process the same way they are for a foreground `--print` run. Session
-metadata and logs are stored under the resolved Claudio config directory,
-usually `~/.openclaude/bg-sessions/`; `OPENCLAUDE_CONFIG_DIR` can point
-Claudio somewhere else. `CLAUDE_CONFIG_DIR` is ignored for Claudio
+metadata and logs are stored under the resolved Claudio config directory
+(bg-sessions under your Claudio home config). You can override the config
+root with an environment variable if needed. `CLAUDE_CONFIG_DIR` is ignored for Claudio
 background-session storage. Session names can be reused after older sessions
 reach a terminal state; use the session ID to inspect older logs with the same
 name.
@@ -105,14 +105,14 @@ for local background sessions yet.
 
 ### Claudio config cutover
 
-Claudio stores its own config under `~/.openclaude` and `~/.openclaude.json`
-by default. It does not read `~/.claude`, project `.claude/` directories, or
+Claudio stores its own config under a Claudio-specific home directory and
+settings JSON by default. It does not read `~/.claude`, project `.claude/` directories, or
 `CLAUDE_CONFIG_DIR`; new users can start with an empty Claudio config and do
 not need Claude Code installed.
 
 If you previously used Claudio with `.claude` paths, migrate intentionally:
 copy only the settings, commands, agents, skills, scheduled tasks, or other files
-you personally created for Claudio into the matching `.openclaude` location.
+you personally created for Claudio into the matching Claudio config location.
 Do not blanket-copy `.claude`, and do not copy Claude Code credentials or auth
 files. For provider authentication, prefer running Claudio's provider setup
 again or exporting provider-specific environment variables.
@@ -163,8 +163,8 @@ claudio
 
 For Ollama, Claudio uses Ollama's native chat API and requests a 32768-token
 context window on each chat request so same-session history is not silently
-truncated by Ollama's OpenAI-compatible shim. Set `OPENCLAUDE_OLLAMA_NUM_CTX`
-or `OLLAMA_CONTEXT_LENGTH` if you need a different request-level context size.
+truncated by Ollama's OpenAI-compatible shim. Set `OLLAMA_CONTEXT_LENGTH`
+if you need a different request-level context size.
 See [Advanced Setup](docs/advanced-setup.md#ollama-context-length) for
 verification with `ollama ps`.
 
@@ -239,7 +239,7 @@ Route different agents to different models (cost optimization, splitting work
 by model strength), cap sub-agent tool steps with `maxSteps`, and tune GitHub
 Copilot sub-agent behavior. All settings-driven:
 
-- per-agent provider/model overrides via `agentModels` + `agentRouting` in `~/.openclaude.json`
+- per-agent provider/model overrides via `agentModels` + `agentRouting` in Claudio settings
 - model-only routes that reuse your current provider's credentials
 - built-in agents (`Explore`, `Plan`, `verification`) routable by type name
 
@@ -274,7 +274,7 @@ Claudio can run as a headless gRPC service with bidirectional streaming —
 integrate its agentic capabilities into other applications, CI/CD pipelines,
 or custom UIs. Start it with `npm run dev:grpc`; a test CLI client ships with
 the repo. See [Headless gRPC Server](docs/grpc-server.md) for configuration
-and client generation from `src/proto/openclaude.proto`.
+and client generation from the gRPC proto under `src/proto/`.
 
 ## Development
 
@@ -309,13 +309,13 @@ Recommended validation before opening a PR:
 - `src/` - core CLI/runtime
 - `scripts/` - build, verification, and maintenance scripts
 - `docs/` - setup, contributor, and project documentation
-- `vscode-extension/openclaude-vscode/` - VS Code extension
+- `vscode-extension/` - VS Code extension
 - `.github/` - repo automation, templates, and CI configuration
 - `bin/` - CLI launcher entrypoints
 
 ## VS Code Extension
 
-The repo includes a VS Code extension in [`vscode-extension/openclaude-vscode`](vscode-extension/openclaude-vscode) for Claudio launch integration, provider-aware Control Center, in-editor chat, theme support, and optional **Microsoft Foundry / Azure OpenAI** configuration (endpoint, API version, deployment, API key via Secret Storage) injected into launched terminals. See that folder's [README](vscode-extension/openclaude-vscode/README.md).
+The repo includes a VS Code extension under `vscode-extension/` for Claudio launch integration, provider-aware Control Center, in-editor chat, theme support, and optional **Microsoft Foundry / Azure OpenAI** configuration (endpoint, API version, deployment, API key via Secret Storage) injected into launched terminals. See that folder's README.
 
 ## Security
 

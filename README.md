@@ -2,15 +2,15 @@
 
 **Claudio** is an open-source coding-agent CLI and Cursor/VS Code integration — Claude Code–style UX, any LLM provider.
 
-Claudio is **not** an official Anthropic product. The CLI contains code derived from Claude Code; read [LICENSE](./LICENSE) and `cli/LICENSE` (under `openclaude-fork/LICENSE`) before redistributing.
+Claudio is **not** an official Anthropic product. The CLI contains code derived from Claude Code; read [LICENSE](./LICENSE) before redistributing.
 
 ## What you get
 
-| Path | Role |
+| Piece | Role |
 | --- | --- |
-| `openclaude-fork/` | CLI binary **`claudio`** — multi-LLM coding agent |
-| `openclaude-cursor-ext/` | Cursor/VS Code extension — Activity Bar + editor-tab terminal |
-| `openclaude-wrapper/` | Optional wrapper so the official Claude Code extension UI can launch **Claudio** via `claudeCode.claudeProcessWrapper` |
+| **CLI** | Binary `claudio` — multi-LLM coding agent (sources in this repo’s CLI package) |
+| **Cursor extension** | Activity Bar + editor-tab terminal |
+| **Claude Code wrapper** | Optional process wrapper so the official Claude Code extension UI can launch Claudio via `claudeCode.claudeProcessWrapper` |
 
 ## Security
 
@@ -35,24 +35,24 @@ bun install -g @gaburieuru/claudio@latest
 claudio
 ```
 
-Publishing: pushes to `main` that bump `openclaude-fork/package.json` `version` above the npm registry version auto-publish `@gaburieuru/claudio` via `.github/workflows/publish-claudio-npm.yml` (requires repo secret `NPM_TOKEN`).
+Publishing: pushes to `main` that bump the CLI `package.json` version above the npm registry version auto-publish `@gaburieuru/claudio` (GitHub Action; requires repo secret `NPM_TOKEN`).
 
 ## Quick start (from source)
 
 ```bash
-cd openclaude-fork
+# from the CLI package directory
 bun install
 bun run build
 npm link
 claudio --version
 ```
 
-Configure providers with `/provider` or environment variables. Prefer a project-local `.env` (gitignored). Docs live under `openclaude-fork/docs/`.
+Configure providers with `/provider` or environment variables. Prefer a project-local `.env` (gitignored).
 
 ## Cursor / VS Code extension
 
 ```bash
-cd openclaude-cursor-ext
+# from the Cursor extension directory
 npm install
 npm run build
 npx @vscode/vsce package --no-dependencies --allow-missing-repository
@@ -67,20 +67,14 @@ Settings (optional):
 ## Official Claude Code UI → Claudio engine
 
 1. Install the marketplace extension `anthropic.claude-code`.
-2. Point the process wrapper at this repo’s script (adjust the absolute path):
+2. Point `claudeCode.claudeProcessWrapper` at the wrapper script in this repo’s wrapper directory (absolute path on your machine).
 
-```json
-{
-  "claudeCode.claudeProcessWrapper": "C:\\Users\\YOU\\claudio\\openclaude-wrapper\\openclaude-wrapper.cmd"
-}
-```
-
-On Unix, invoke the `.js` with `node` or add a small shell wrapper.
+On Unix, invoke the wrapper `.js` with `node` or add a small shell wrapper.
 
 ## License
 
 MIT for Claudio-authored parts (extension, wrapper, branding/docs), **2026**.  
-Claude Code–derived code: see [LICENSE](./LICENSE) and `openclaude-fork/LICENSE`.
+Claude Code–derived code: see [LICENSE](./LICENSE).
 
 ## Credits
 
@@ -92,4 +86,4 @@ Claude Code–derived code: see [LICENSE](./LICENSE) and `openclaude-fork/LICENS
 1. Do not commit secrets, personal `.env`, or `node_modules`.
 2. Keep user-facing brand strings as **Claudio**.
 3. Prefer small, reviewable PRs.
-4. Run `bun run build` in `openclaude-fork` before opening a PR.
+4. Build the CLI package before opening a PR.
