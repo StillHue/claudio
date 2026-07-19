@@ -1,5 +1,6 @@
 <div align="center">
-  <img src="docs/assets/openclaude-wordmark.svg" alt="Claudio — Open terminal for any LLM" width="830">
+  <h1>Claudio</h1>
+  <p>Coding-agent CLI for cloud and local model providers</p>
 </div>
 
 Claudio is an open-source coding-agent CLI for cloud and local model providers.
@@ -198,7 +199,6 @@ Advanced and source-build guides:
 | GitHub Models | `/onboard-github` | Interactive onboarding with saved credentials |
 | Codex OAuth | `/provider` | Opens ChatGPT sign-in in your browser and stores Codex credentials securely |
 | Codex | `/provider` | Uses existing Codex CLI auth, Claudio secure storage, or env credentials |
-| Gitlawb Opengateway | Startup default, `/provider`, or env vars | Smart gateway at `https://opengateway.gitlawb.com/v1`; requires an API key from https://gitlawb.com/opengateway/keys and routes Xiaomi MiMo and GMI Cloud partner models by `OPENAI_MODEL` |
 | OpenCode Zen | `/provider` or env vars | Pay-as-you-go AI gateway (48 models); uses `OPENCODE_API_KEY` via `https://opencode.ai/zen/v1`; shared key with OpenCode Go |
 | OpenCode Go | `/provider` or env vars | $10/mo subscription for open models (13 models); uses `OPENCODE_API_KEY` via `https://opencode.ai/zen/go/v1`; shared key with OpenCode Zen |
 | Xiaomi MiMo | `/provider` or env vars | OpenAI-compatible API at `https://mimo.mi.com`; uses `MIMO_API_KEY` and defaults to `mimo-v2.5-pro` |
@@ -227,7 +227,6 @@ Claudio supports multiple providers, but behavior is not identical across all of
 - Smaller local models can struggle with long multi-step tool flows
 - Some providers impose lower output caps than the CLI defaults, and Claudio adapts where possible
 - AI/ML API uses the OpenAI-compatible route, defaults to `gpt-4o`, and only surfaces chat-capable models from its public catalog
-- Gitlawb Opengateway is the fresh-install startup default and requires an API key from https://gitlawb.com/opengateway/keys. It uses one OpenAI-compatible base URL; switch between `mimo-*` and `google/gemini-3.1-flash-lite-preview` with `/model`, and do not pin the base URL to `/v1/xiaomi-mimo`.
 - Z.AI GLM Coding Plan uses `https://api.z.ai/api/coding/paas/v4` with `glm-5.2` by default. Use `glm-5.2?reasoning=high` for enhanced reasoning, `glm-5.2?reasoning=xhigh` to request Z.AI `reasoning_effort=max`, or `glm-5.2?thinking=disabled` for faster direct answers.
 - Xiaomi MiMo uses `api-key` header auth on the direct OpenAI-compatible route and currently does not support `/usage` reporting in Claudio
 - GitHub Copilot serializes sub-agent execution by default to reduce Premium Request consumption — see [Agent Routing and Step Limits](docs/agent-routing.md#github-copilot-sub-agent-optimization) for tuning
@@ -324,10 +323,8 @@ If you believe you found a security issue, see [SECURITY.md](SECURITY.md).
 
 ## Community
 
-- Use [GitHub Discussions](https://github.com/Gitlawb/openclaude/discussions) for Q&A, ideas, and community conversation
-- Use [GitHub Issues](https://github.com/Gitlawb/openclaude/issues) for confirmed bugs and actionable feature work
-- Join the [Discord](https://discord.gg/k68zFR6AcB) to chat with the community in real time
-- Follow [@gitlawb on X](https://x.com/gitlawb) for updates and announcements
+- [GitHub Issues](https://github.com/StillHue/claudio/issues) for bugs and feature work
+- [GitHub Discussions](https://github.com/StillHue/claudio/discussions) when enabled on this repo
 
 ## Contributing
 
@@ -337,9 +334,9 @@ build, test, and pre-PR validation commands.
 
 ## Disclaimer
 
-Claudio is an independent community project and is not affiliated with, endorsed by, or sponsored by Anthropic.
+Claudio is an independent project and is not affiliated with, endorsed by, or sponsored by Anthropic.
 
-Claudio originated from the Claude Code codebase and has since been substantially modified to support multiple providers and open use. "Claude" and "Claude Code" are trademarks of Anthropic PBC. See [LICENSE](LICENSE) for details.
+Claudio includes modifications of Claude Code–derived code to support multiple providers. "Claude" and "Claude Code" are trademarks of Anthropic PBC. See [LICENSE](LICENSE) for details.
 
 ## License
 
