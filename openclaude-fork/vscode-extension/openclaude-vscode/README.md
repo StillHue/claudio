@@ -29,7 +29,7 @@ A practical VS Code companion for Claudio with a project-aware **Control Center*
 ## Requirements
 
 - VS Code `1.95+`
-- `openclaude` available in your terminal PATH (`npm install -g @gitlawb/openclaude@latest`)
+- `claudio` available in your terminal PATH (`npm install -g @gaburieuru/claudio@latest`)
 
 ## Commands
 
