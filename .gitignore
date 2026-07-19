@@ -50,7 +50,8 @@ coverage/
 .tmp-*/
 temp_reference/
 reports/
-plan/
+# Local scratch at repo root only — do NOT ignore openclaude-fork/src/commands/plan/
+/plan/
 __pycache__/
 *.py[cod]
 .pytest_cache/

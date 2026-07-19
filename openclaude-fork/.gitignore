@@ -21,7 +21,8 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 agent.log
-plan/
+# Local agent/docs scratch at package root — do NOT ignore src/commands/plan/
+/plan/
 .tmp
 .tmp-*
 temp_reference/
