@@ -6,7 +6,7 @@
 
 **Architecture:** Delete promotional modules and their registrations end-to-end (commands, UI mounts, tip scheduler branches, config fields). Leave educational tips and analytics stubs. Do not change provider backends.
 
-**Tech Stack:** TypeScript, Bun (build/test), Node ≥22, Ink/React TUI under `openclaude-fork/`.
+**Tech Stack:** TypeScript, Bun (build/test), Node ≥22, Ink/React TUI under `cli/`.
 
 ## Global Constraints
 
@@ -16,7 +16,7 @@
 - Do **not** npm publish unless the user explicitly asks
 - Do **not** git commit unless the user explicitly asks
 - Tests may be deleted/updated locally; do not invent large new test suites beyond a thin regression guard
-- Working directory for CLI work: `C:\Users\gabdr\claudio\openclaude-fork`
+- Working directory for CLI work: `C:\Users\gabdr\claudio\cli`
 
 ---
 
@@ -27,7 +27,7 @@
 | Ads | `src/commands/ads.tsx`, `ads.test.ts`, `src/services/ads.ts`, `ads.test.ts`, `src/services/tips/gitlawbEarn.ts`, `gitlawbEarn.test.ts`, `sponsoredTips.ts`, `sponsoredTips.test.ts` | `commands.ts`, `tipRegistry.ts`, `tipScheduler.ts`, `tipHistory.ts`, `tipScheduler.test.ts`, `config.ts`, `settings/types.ts`, `REPL.tsx` (tip context if only for ads) |
 | Buddy | entire `src/buddy/**`, `src/commands/buddy/**` | `commands.ts`, `REPL.tsx`, `PromptInput.tsx`, `AppStateStore.ts`, `attachments.ts` / `messages.ts` if companion-only |
 | Upsells | `commands/{stickers,upgrade,passes,extra-usage,mobile,thinkback,thinkback-play,install-slack-app}/**`, `DesktopUpsell/**`, `LogoV2/GuestPassesUpsell.tsx`, `LogoV2/OverageCreditUpsell.tsx` (or gut to always-false no-op if deeply entangled), related `Passes/**` | `commands.ts`, `LogoV2.tsx`, `CondensedLogo.tsx`, `feedConfigs.tsx`, `Usage.tsx`, `tipRegistry.ts`, `main.tsx` (passes prefetch) |
-| Docs | — | `openclaude-fork/README.md`, root `README.md` if buddy/sponsors remain |
+| Docs | — | `cli/README.md`, root `README.md` if buddy/sponsors remain |
 
 ---
 
@@ -301,10 +301,10 @@ bun run build
 ### Task 5: README / docs cleanup
 
 **Files:**
-- Modify: `openclaude-fork/README.md`, optionally root `README.md`
-- Delete if unused: `openclaude-fork/docs/assets/atomic-chat-logo.png`, `atlas-cloud-banner.png` **only if** no longer referenced after Sponsors removal (providers table may still want logos — if used only in Sponsors, delete)
+- Modify: `cli/README.md`, optionally root `README.md`
+- Delete if unused: `cli/docs/assets/atomic-chat-logo.png`, `atlas-cloud-banner.png` **only if** no longer referenced after Sponsors removal (providers table may still want logos — if used only in Sponsors, delete)
 
-- [ ] **Step 1: Remove from `openclaude-fork/README.md`**
+- [ ] **Step 1: Remove from `cli/README.md`**
 
 - Sponsors section + logo table
 - Nav link `| [Sponsors](#sponsors)`
@@ -321,7 +321,7 @@ bun run build
 - [ ] **Step 3: Grep docs**
 
 ```bash
-rg -n "Sponsors|/buddy|ads\.gitlawb|/ads on|Stickermule|opengateway credits" openclaude-fork/README.md README.md docs
+rg -n "Sponsors|/buddy|ads\.gitlawb|/ads on|Stickermule|opengateway credits" cli/README.md README.md docs
 ```
 
 - [ ] **Step 4: Do not commit**
@@ -345,7 +345,7 @@ Expected: `0.24.0 (Claudio)` (or current version)
 
 ```bash
 rg -n "ads\.gitlawb|sponsoredTips|gitlawbEarn|isBuddyEnabled|CompanionSprite|/buddy|/ads" src
-rg -n "Sponsors|Meet your buddy" openclaude-fork/README.md
+rg -n "Sponsors|Meet your buddy" cli/README.md
 ```
 
 Expected: no hits in `src`; no Sponsors/buddy pitch in README.

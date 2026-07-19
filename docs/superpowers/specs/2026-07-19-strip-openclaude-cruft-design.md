@@ -1,7 +1,7 @@
 # Design: Strip OpenClaude promotional / gamified cruft (Approach A)
 
 **Date:** 2026-07-19  
-**Repo:** `C:\Users\gabdr\claudio` (CLI under `openclaude-fork/`)  
+**Repo:** `C:\Users\gabdr\claudio` (CLI under `cli/`)  
 **Status:** Approved in conversation; awaiting user review of this file before implementation plan
 
 ## Goal

@@ -21,6 +21,6 @@ If you find a security issue (credential leak, RCE, path traversal, unsafe defau
 
 ## Dependency audits
 
-`openclaude-fork` may report transitive advisories (`bun audit`) inherited from upstream OpenClaude.
+`cli/` may report transitive advisories (`bun audit`) inherited from upstream OpenClaude.
 Prefer targeted upgrades over `bun update --latest` without review. The Cursor extension package
 is audited separately with `npm audit` and should stay clean for releases.

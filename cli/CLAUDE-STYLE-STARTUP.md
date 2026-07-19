@@ -1,13 +1,13 @@
 # Claudio — Claude Code–style startup (local fork notes)
 
-This monorepo ships the Claudio CLI under `openclaude-fork/` with a Claude Code–inspired
+This monorepo ships the Claudio CLI under `cli/` with a Claude Code–inspired
 startup (Clawd scene, terracotta accent). Welcome text: **Welcome to Claude Code**.
 Product name elsewhere: **Claudio**.
 
 ## Rebuild / link
 
 ```bash
-cd openclaude-fork
+cd cli
 bun run build
 npm link
 claudio --version

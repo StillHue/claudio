@@ -2122,6 +2122,68 @@ test('preserves usage from final OpenAI stream chunk with empty choices', async 
   expect(usageEvent?.usage?.output_tokens).toBe(45)
 })
 
+test('message_delta always includes usage.output_tokens even when provider omits usage', async () => {
+  // Cursor/VS Code Claude Code webview crashes on undefined usage:
+  //   Cannot read properties of undefined (reading 'output_tokens')
+  globalThis.fetch = (async () => {
+    const chunks = makeStreamChunks([
+      {
+        id: 'chatcmpl-1',
+        object: 'chat.completion.chunk',
+        model: 'fake-model',
+        choices: [
+          {
+            index: 0,
+            delta: { role: 'assistant', content: 'oi' },
+            finish_reason: null,
+          },
+        ],
+      },
+      {
+        id: 'chatcmpl-1',
+        object: 'chat.completion.chunk',
+        model: 'fake-model',
+        choices: [
+          {
+            index: 0,
+            delta: {},
+            finish_reason: 'stop',
+          },
+        ],
+      },
+    ])
+
+    return makeSseResponse(chunks)
+  }) as unknown as FetchType
+
+  const client = createOpenAIShimClient({}) as OpenAIShimClient
+
+  const result = await client.beta.messages
+    .create({
+      model: 'fake-model',
+      messages: [{ role: 'user', content: 'oi' }],
+      max_tokens: 64,
+      stream: true,
+    })
+    .withResponse()
+
+  const events: Array<Record<string, unknown>> = []
+  for await (const event of result.data) {
+    events.push(event)
+  }
+
+  const deltas = events.filter(e => e.type === 'message_delta')
+  expect(deltas.length).toBeGreaterThan(0)
+  for (const delta of deltas) {
+    expect(delta.usage).toEqual(
+      expect.objectContaining({
+        output_tokens: expect.any(Number),
+        input_tokens: expect.any(Number),
+      }),
+    )
+  }
+})
+
 test('readWithIdleTimeout rejects quickly and cancels a stalled reader', async () => {
   const testApi = await getStreamIdleTestApi('stream-idle-helper')
   const cancelReasons: unknown[] = []

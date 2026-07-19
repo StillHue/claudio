@@ -22,9 +22,9 @@ SOFTWARE.
 
 ---
 
-## Upstream notice (CLI under openclaude-fork/)
+## Upstream notice (CLI under cli/)
 
-The `openclaude-fork/` directory contains code derived from Anthropic's Claude Code
+The `cli/` directory contains code derived from Anthropic's Claude Code
 CLI via the community [OpenClaude](https://github.com/Gitlawb/openclaude) project.
 
 Anthropic's original Claude Code source is proprietary:
@@ -35,7 +35,7 @@ Modifications and additions by OpenClaude / Claudio contributors are offered und
 the MIT License above where legally permissible. The underlying derived code remains
 subject to Anthropic's copyright. This project does not claim Anthropic's
 authorization to distribute their proprietary source. See also
-`openclaude-fork/LICENSE`.
+`cli/LICENSE`.
 
 The Cursor/VS Code extension (`openclaude-cursor-ext/`) and the Claude Code process
 wrapper (`openclaude-wrapper/`) are original Claudio work and are licensed under

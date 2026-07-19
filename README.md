@@ -55,7 +55,7 @@ claudio
 Or from source:
 
 ```bash
-cd openclaude-fork
+cd cli
 bun install && bun run build
 npm link
 claudio --version

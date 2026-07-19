@@ -1,6 +1,6 @@
 # Publish @gaburieuru/claudio to npm when package.json version is newer than registry.
 #
-# Trigger: push to main that touches openclaude-fork/
+# Trigger: push to main that touches cli/
 # Behavior: build → compare versions → publish only if local > published
 #
 # Setup (one-time):
@@ -14,7 +14,7 @@ on:
     branches:
       - main
     paths:
-      - 'openclaude-fork/**'
+      - 'cli/**'
       - '.github/workflows/publish-claudio-npm.yml'
   workflow_dispatch:
 
@@ -24,7 +24,7 @@ concurrency:
 
 defaults:
   run:
-    working-directory: openclaude-fork
+    working-directory: cli
 
 jobs:
   publish:
@@ -78,7 +78,7 @@ jobs:
           else
             echo "should_publish=false" >> "$GITHUB_OUTPUT"
             echo "Local ${LOCAL} is not newer than published ${PUBLISHED} — skip publish"
-            echo "Bump openclaude-fork/package.json version to release a new npm package."
+            echo "Bump cli/package.json version to release a new npm package."
           fi
 
       - name: Publish to npm

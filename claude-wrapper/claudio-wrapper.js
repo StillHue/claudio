@@ -21,7 +21,7 @@ const path = require('path')
 
 /**
  * Bun --compile embeds scripts under a virtual __dirname. Prefer the
- * directory of the running .exe so sibling ../openclaude-fork resolves.
+ * directory of the running .exe so sibling ../cli resolves.
  */
 function wrapperBaseDir() {
   const execDir = path.dirname(process.execPath)
@@ -40,7 +40,7 @@ function resolveClaudioEntry() {
   const candidates = []
 
   // Prefer sibling checkout so unreleased fixes apply without npm publish.
-  candidates.push(path.join(baseDir, '..', 'openclaude-fork', 'bin', 'claudio'))
+  candidates.push(path.join(baseDir, '..', 'cli', 'bin', 'claudio'))
 
   const globalBins = (prefix) => {
     if (!prefix || !path.isAbsolute(prefix)) return

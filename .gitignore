@@ -50,7 +50,7 @@ coverage/
 .tmp-*/
 temp_reference/
 reports/
-# Local scratch at repo root only — do NOT ignore openclaude-fork/src/commands/plan/
+# Local scratch at repo root only — do NOT ignore cli/src/commands/plan/
 /plan/
 __pycache__/
 *.py[cod]
@@ -59,9 +59,9 @@ __pycache__/
 agent.log
 
 # Package manager / local agent docs (fork)
-openclaude-fork/package-lock.json
-openclaude-fork/GEMINI.md
-openclaude-fork/CLAUDE.md
+cli/package-lock.json
+cli/GEMINI.md
+cli/CLAUDE.md
 
 # Local dumps
 *.local.json
