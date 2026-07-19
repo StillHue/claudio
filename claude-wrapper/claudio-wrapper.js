@@ -37,11 +37,12 @@ function wrapperBaseDir() {
 
 function resolveClaudioEntry() {
   const baseDir = wrapperBaseDir()
+
+  // Prefer sibling checkout — return immediately (no npm spawn / PATH scan).
+  const local = path.join(baseDir, '..', 'cli', 'bin', 'claudio')
+  if (path.isAbsolute(local) && fs.existsSync(local)) return local
+
   const candidates = []
-
-  // Prefer sibling checkout so unreleased fixes apply without npm publish.
-  candidates.push(path.join(baseDir, '..', 'cli', 'bin', 'claudio'))
-
   const globalBins = (prefix) => {
     if (!prefix || !path.isAbsolute(prefix)) return
     candidates.push(path.join(prefix, 'node_modules', '@gaburieuru', 'claudio', 'bin', 'claudio'))
@@ -52,15 +53,16 @@ function resolveClaudioEntry() {
     globalBins(path.join(process.env.APPDATA, 'npm'))
   }
 
+  // Only ask npm when local checkout + APPDATA miss (slow on Windows).
   try {
     const prefix = execFileSync('npm', ['prefix', '-g'], {
       encoding: 'utf8',
       windowsHide: true,
-      timeout: 5000,
+      timeout: 2000,
     }).trim()
     globalBins(prefix)
   } catch {
-    // ignore — npm may be unavailable in some IDE hosts
+    // ignore
   }
 
   for (const c of candidates) {
@@ -115,22 +117,7 @@ function resolveNodeBinary() {
     return fromEnv
   }
 
-  try {
-    const which = process.platform === 'win32' ? 'where' : 'which'
-    const out = execFileSync(which, ['node'], {
-      encoding: 'utf8',
-      windowsHide: true,
-      timeout: 5000,
-    })
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .find((l) => l && path.isAbsolute(l) && fs.existsSync(l))
-    if (out) return out
-  } catch {
-    // fall through
-  }
-
-  // Last resort: common Windows install paths
+  // Fast path: common Windows installs (skip `where` — often 1–3s cold).
   if (process.platform === 'win32') {
     const guesses = [
       path.join(process.env.ProgramFiles || 'C:\\Program Files', 'nodejs', 'node.exe'),
@@ -139,6 +126,21 @@ function resolveNodeBinary() {
     for (const g of guesses) {
       if (g && fs.existsSync(g)) return g
     }
+  }
+
+  try {
+    const which = process.platform === 'win32' ? 'where' : 'which'
+    const out = execFileSync(which, ['node'], {
+      encoding: 'utf8',
+      windowsHide: true,
+      timeout: 2000,
+    })
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .find((l) => l && path.isAbsolute(l) && fs.existsSync(l))
+    if (out) return out
+  } catch {
+    // fall through
   }
 
   return null

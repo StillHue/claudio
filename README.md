@@ -24,73 +24,23 @@
 <em>you already know me</em>
 </p>
 
-**Claudio** is an open-source coding-agent CLI — Claude Code–style UX, any LLM provider. Install once, use in the terminal or behind the official Claude Code Cursor/VS Code extension.
-
-> Not an official Anthropic product. CLI lineage includes Claude Code–derived code; see [LICENSE](./LICENSE).
-
-## Install
+Coding agent CLI — any LLM. Terminal or Cursor.
 
 ```bash
 npm install -g @gaburieuru/claudio@latest
-claudio
+claude
 ```
 
-Requires **Node.js ≥ 22**.
+Requires Node.js ≥ 22.
 
-## What you get
-
-| Piece | Role |
-| --- | --- |
-| **CLI** (`claudio`) | Multi-LLM coding agent |
-| **Cursor extension** | Activity Bar + editor-tab terminal |
-| **Claude Code wrapper** | Official Claude Code UI → Claudio engine (`claudeCode.claudeProcessWrapper`) |
-
-## Quick start
-
-```bash
-claudio
-# /provider  → pick OpenAI-compat, Groq, OpenCode Zen, local, …
-```
-
-Or from source:
+## From source
 
 ```bash
 cd cli
 bun install && bun run build
 npm link
-claudio --version
 ```
-
-## Claude Code extension (Cursor / VS Code)
-
-1. Install marketplace extension `anthropic.claude-code`
-2. Set `claudeCode.claudeProcessWrapper` to the absolute path of `claude-wrapper/claudio-wrapper.js` (or a compiled `.exe` on Windows)
-3. Optional: `claudeCode.disableLoginPrompt: true` when auth is via your provider profile
-
-On Windows, prefer a real executable wrapper (`.exe`) — spawning `.cmd` can fail with `spawn EINVAL`.
-
-## Vision (text-only models)
-
-Paste an image in Claude Code / Claudio: if `GROQ_API_KEY` (or `CLAUDE_CODE_VISION_API_KEY`) is set, a vision model describes the image and the main coding model only receives text.
-
-## Security
-
-- Never commit API keys or `.env` files
-- Keys live in env / OS keychain / `~/.openclaude` settings — not this repo
-- Report security issues privately
 
 ## License
 
-MIT for Claudio-authored parts (extension, wrapper, branding/docs), **2026**.  
-Claude Code–derived code: see [LICENSE](./LICENSE).
-
-## Credits
-
-- Anthropic — Claude Code (product / lineage)
-- Clawd mascot aesthetic inspired by Claude Code welcome art
-
-## Contributing
-
-1. Do not commit secrets or `node_modules`
-2. User-facing agent identity: **Claude** (package/binary name remains `claudio`)
-3. Small, reviewable PRs; build the CLI package before opening a PR
+MIT. See [LICENSE](./LICENSE).
