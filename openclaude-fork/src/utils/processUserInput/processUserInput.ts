@@ -7,6 +7,7 @@ import type {
 import { randomUUID } from 'crypto'
 import type { QuerySource } from 'src/constants/querySource.js'
 import { logEvent } from 'src/services/analytics/index.js'
+import type { AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS } from 'src/services/analytics/metadata.js'
 import { getContentText } from 'src/utils/messages.js'
 import {
   type Command,
@@ -50,7 +51,6 @@ import {
 import { storeImages } from '../imageStore.js'
 import {
   createCommandInputMessage,
-  createSystemMessage,
   createUserMessage,
 } from '../messages.js'
 import { queryCheckpoint } from '../queryProfiler.js'
@@ -59,6 +59,14 @@ import {
   hasUltraplanKeyword,
   replaceUltraplanKeyword,
 } from '../ultraplan/keyword.js'
+import {
+  buildVisionAugmentedMessage,
+  describeImages,
+  getVisionModelLabel,
+  shouldRouteImagesThroughVisionDescribe,
+  visionDescribeAvailable,
+  writeTempImageFromBase64,
+} from '../visionDescribe.js'
 import { processTextPrompt } from './processTextPrompt.js'
 export type ProcessUserInputContext = ToolUseContext & LocalJSXCommandContext
 
@@ -423,6 +431,100 @@ async function processUserInputBase(
     imageContentBlocks.push(resized.block)
   }
   queryCheckpoint('query_pasted_image_processing_end')
+
+  // ── Vision routing (Maniac-style) ─────────────────────────────────────
+  // Text-only main models (OpenCode Zen, Grok, etc.) cannot see images.
+  // Describe via Groq (or CLAUDE_CODE_VISION_*) and inject text; strip
+  // image blocks so the main model never receives image bytes.
+  const imagesInPreceding = precedingInputBlocks.filter(
+    (b): b is ImageBlockParam => b.type === 'image',
+  )
+  const needsVisionRoute =
+    (imageContentBlocks.length > 0 || imagesInPreceding.length > 0) &&
+    shouldRouteImagesThroughVisionDescribe()
+
+  if (needsVisionRoute) {
+    const paths: string[] = []
+    for (const pastedImage of imageContents) {
+      const stored = storedImagePaths.get(pastedImage.id)
+      if (stored) {
+        paths.push(stored)
+        continue
+      }
+      if (pastedImage.sourcePath) {
+        paths.push(pastedImage.sourcePath)
+        continue
+      }
+      paths.push(
+        writeTempImageFromBase64(
+          pastedImage.content,
+          pastedImage.mediaType || 'image/png',
+        ),
+      )
+    }
+    // IDE/SDK array inputs may carry image blocks without pastedContents
+    for (const block of imagesInPreceding) {
+      if (block.source.type === 'base64') {
+        paths.push(
+          writeTempImageFromBase64(
+            block.source.data,
+            block.source.media_type || 'image/png',
+          ),
+        )
+      }
+    }
+
+    if (paths.length > 0) {
+      logEvent('tengu_vision_route_start', {
+        image_count: paths.length,
+        vision_model: getVisionModelLabel() as AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS,
+      })
+      try {
+        const descriptions = await describeImages(
+          paths,
+          inputString ?? undefined,
+        )
+        const baseText = inputString ?? ''
+        inputString = buildVisionAugmentedMessage(baseText, descriptions)
+        normalizedInput = inputString
+        // Main model must not receive image bytes
+        imageContentBlocks.length = 0
+        precedingInputBlocks = precedingInputBlocks.filter(b => b.type !== 'image')
+        imageMetadataTexts.push(
+          `[Vision] Described ${descriptions.length} image(s) via ${getVisionModelLabel()} (Looking → Looked). Main model receives text only.`,
+        )
+        logEvent('tengu_vision_route_ok', {
+          image_count: descriptions.length,
+        })
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'unknown error'
+        const safe =
+          msg.startsWith('Vision model HTTP') ||
+          msg.startsWith('Image too large') ||
+          msg.startsWith('Unsupported image') ||
+          msg.includes('Vision routing requires') ||
+          msg.includes('empty description') ||
+          msg.includes('base64 exceeds')
+            ? msg
+            : 'vision request failed'
+        imageContentBlocks.length = 0
+        precedingInputBlocks = precedingInputBlocks.filter(b => b.type !== 'image')
+        inputString = `${inputString ?? ''}\n\n[NOTA: ${paths.length} imagem(ns) anexada(s), mas o modelo de visao falhou: ${safe}]`
+        normalizedInput = inputString
+        imageMetadataTexts.push(`[Vision] Failed: ${safe}`)
+        logEvent('tengu_vision_route_error', {})
+      }
+    }
+  } else if (
+    (imageContentBlocks.length > 0 || imagesInPreceding.length > 0) &&
+    !visionDescribeAvailable() &&
+    (process.env.CLAUDE_CODE_USE_OPENAI === '1' ||
+      process.env.CLAUDE_CODE_USE_OPENAI === 'true')
+  ) {
+    imageMetadataTexts.push(
+      '[Vision] Images attached but GROQ_API_KEY (or CLAUDE_CODE_VISION_API_KEY) is not set — vision routing is off. Main model may reject images.',
+    )
+  }
 
   // Bridge-safe slash command override: mobile/web clients set bridgeOrigin
   // with skipSlashCommands still true (defense-in-depth against exit words and

@@ -1943,6 +1943,29 @@ function convertChunkUsage(
   )
 }
 
+/**
+ * VS Code / Cursor Claude Code webview does `event.usage.output_tokens`
+ * without optional chaining. Many OpenAI-compatible providers (OpenCode Zen,
+ * etc.) finish streams without a usage chunk — omitting `usage` here crashes
+ * the IDE with: Cannot read properties of undefined (reading 'output_tokens').
+ */
+function ensureMessageDeltaUsage(
+  usage: Partial<AnthropicUsage> | undefined | null,
+): Pick<
+  AnthropicUsage,
+  | 'input_tokens'
+  | 'output_tokens'
+  | 'cache_creation_input_tokens'
+  | 'cache_read_input_tokens'
+> {
+  return {
+    input_tokens: usage?.input_tokens ?? 0,
+    output_tokens: usage?.output_tokens ?? 0,
+    cache_creation_input_tokens: usage?.cache_creation_input_tokens ?? 0,
+    cache_read_input_tokens: usage?.cache_read_input_tokens ?? 0,
+  }
+}
+
 const JSON_REPAIR_SUFFIXES = [
   '}', '"}', ']}', '"]}', '}}', '"}}', ']}}', '"]}}', '"]}]}', '}]}'
 ]
@@ -2577,7 +2600,7 @@ async function* geminiSseToAnthropic(
           yield {
             type: 'message_delta',
             delta: { stop_reason: mapFinishReason(finishReason, hasEmittedCurrentTool) },
-            usage: usage ?? {},
+            usage: ensureMessageDeltaUsage(usage),
           }
           throwIfStreamAborted(signal)
           yield { type: 'message_stop' }
@@ -2698,7 +2721,7 @@ async function* geminiSseToAnthropic(
     yield {
       type: 'message_delta',
       delta: { stop_reason: mapFinishReason(finishReason, hasEmittedCurrentTool) },
-      usage: usage ?? {},
+      usage: ensureMessageDeltaUsage(usage),
     }
     throwIfStreamAborted(signal)
     yield { type: 'message_stop' }
@@ -3043,7 +3066,7 @@ async function* openaiStreamToAnthropic(
         stop_reason: message.stop_reason,
         stop_sequence: null,
       },
-      usage: message.usage,
+      usage: ensureMessageDeltaUsage(message.usage),
     }
     yield { type: 'message_stop' }
     return
@@ -3754,11 +3777,9 @@ async function* openaiStreamToAnthropic(
           yield {
             type: 'message_delta',
             delta: { stop_reason: stopReason, stop_sequence: null },
-            ...(chunkUsage ? { usage: chunkUsage } : {}),
+            usage: ensureMessageDeltaUsage(chunkUsage),
           }
-          if (chunkUsage) {
-            hasEmittedFinalUsage = true
-          }
+          hasEmittedFinalUsage = true
         }
       }
 
@@ -3772,7 +3793,7 @@ async function* openaiStreamToAnthropic(
         yield {
           type: 'message_delta',
           delta: { stop_reason: lastStopReason, stop_sequence: null },
-          usage: chunkUsage,
+          usage: ensureMessageDeltaUsage(chunkUsage),
         }
         hasEmittedFinalUsage = true
       }

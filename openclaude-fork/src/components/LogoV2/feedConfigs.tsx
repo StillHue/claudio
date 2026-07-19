@@ -34,7 +34,7 @@ export function createWhatsNewFeed(releaseNotes: string[]): FeedConfig {
     };
   });
   return {
-    title: "Claudio Updates",
+    title: "Claude Updates",
     lines,
     footer: lines.length > 0 ? '/release-notes for more' : undefined,
     emptyMessage: 'Check /release-notes for recent updates'

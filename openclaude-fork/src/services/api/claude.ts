@@ -2537,9 +2537,34 @@ async function* queryModel(
             break
         }
 
+        // Cursor/VS Code Claude Code (webview + extension SDK) reads
+        // `event.usage.output_tokens` without null checks. Third-party
+        // providers often omit usage on message_delta — normalize here so
+        // every stream_event is safe regardless of shim path.
+        const streamEventPart =
+          part.type === 'message_delta'
+            ? {
+                ...part,
+                usage: {
+                  input_tokens:
+                    part.usage?.input_tokens ?? usage.input_tokens ?? 0,
+                  output_tokens:
+                    part.usage?.output_tokens ?? usage.output_tokens ?? 0,
+                  cache_creation_input_tokens:
+                    part.usage?.cache_creation_input_tokens ??
+                    usage.cache_creation_input_tokens ??
+                    0,
+                  cache_read_input_tokens:
+                    part.usage?.cache_read_input_tokens ??
+                    usage.cache_read_input_tokens ??
+                    0,
+                },
+              }
+            : part
+
         yield {
           type: 'stream_event',
-          event: part,
+          event: streamEventPart,
           ...(part.type === 'message_start' ? { ttftMs } : undefined),
         }
       }

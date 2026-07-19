@@ -67,5 +67,10 @@ openclaude-fork/CLAUDE.md
 *.local.json
 *.local.md
 
+# Compiled Windows wrappers (build locally with bun --compile)
+claude-wrapper/*.exe
+claude-wrapper/.*.bun-build
+claude-wrapper/_wire-*.mjs
+
 # Agent scratch (SDD / local tooling)
 .superpowers/

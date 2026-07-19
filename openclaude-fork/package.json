@@ -1,6 +1,6 @@
 {
   "name": "@gaburieuru/claudio",
-  "version": "0.25.1",
+  "version": "0.26.0",
   "description": "Claudio — Claude Code–style coding agent CLI with any LLM",
   "type": "module",
   "bin": {

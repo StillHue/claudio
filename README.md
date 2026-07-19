@@ -1,75 +1,83 @@
-﻿# Claudio
+# Claudio
 
-**Claudio** is an open-source coding-agent CLI and Cursor/VS Code integration — Claude Code–style UX, any LLM provider.
+<p align="center">
+<pre style="display:inline-block;text-align:left;line-height:1.15;font-size:11px;background:transparent;border:none;margin:0">
+<span style="color:#6b6b6b">                                                          </span>
+<span style="color:#6b6b6b">     *                                       █████▓░     </span>
+<span style="color:#6b6b6b">                                 *         ███▓░     ░░   </span>
+<span style="color:#6b6b6b">            ░░░░░░                        ███▓░           </span>
+<span style="color:#6b6b6b">    ░░░   ░░░░░░░░░░                      ███▓░           </span>
+<span style="color:#6b6b6b">   ░░░░░░░░░░░░░░░░░░    *                ██▓░░      ▓   </span>
+<span style="color:#6b6b6b">                                             ░▓▓███▓▓░    </span>
+<span style="color:#6b6b6b"> *                                 ░░░░                   </span>
+<span style="color:#6b6b6b">                                 ░░░░░░░░                 </span>
+<span style="color:#6b6b6b">                               ░░░░░░░░░░░░░░           </span>
+<span style="color:#6b6b6b">       </span><span style="color:#D97757">█████████</span><span style="color:#6b6b6b">                                        *</span>
+<span style="color:#6b6b6b">      </span><span style="color:#D97757">██▄█████▄██</span><span style="color:#6b6b6b">                        *                </span>
+<span style="color:#6b6b6b">       </span><span style="color:#D97757">█████████</span><span style="color:#6b6b6b">       *                                   </span>
+<span style="color:#6b6b6b">·······</span><span style="color:#D97757">█ █   █ █</span><span style="color:#6b6b6b">··········································</span>
+</pre>
+</p>
 
-Claudio is **not** an official Anthropic product. The CLI contains code derived from Claude Code; read [LICENSE](./LICENSE) before redistributing.
+<p align="center">
+<strong>Welcome to Claude Code</strong><br/>
+<em>you already know me</em>
+</p>
+
+**Claudio** is an open-source coding-agent CLI — Claude Code–style UX, any LLM provider. Install once, use in the terminal or behind the official Claude Code Cursor/VS Code extension.
+
+> Not an official Anthropic product. CLI lineage includes Claude Code–derived code; see [LICENSE](./LICENSE).
+
+## Install
+
+```bash
+npm install -g @gaburieuru/claudio@latest
+claudio
+```
+
+Requires **Node.js ≥ 22**.
 
 ## What you get
 
 | Piece | Role |
 | --- | --- |
-| **CLI** | Binary `claudio` — multi-LLM coding agent (sources in this repo’s CLI package) |
+| **CLI** (`claudio`) | Multi-LLM coding agent |
 | **Cursor extension** | Activity Bar + editor-tab terminal |
-| **Claude Code wrapper** | Optional process wrapper so the official Claude Code extension UI can launch Claudio via `claudeCode.claudeProcessWrapper` |
+| **Claude Code wrapper** | Official Claude Code UI → Claudio engine (`claudeCode.claudeProcessWrapper`) |
 
-## Security
-
-- **Never commit API keys, tokens, or `.env` files.**
-- Provider keys belong in your environment or OS keychain — not in this repo.
-- Treat the `claudio` binary like any privileged developer tool.
-- Report security issues privately; never open issues that include live credentials.
-
-## Requirements
-
-- Node.js **≥ 22**
-- [Bun](https://bun.sh) recommended for building the CLI
-- Windows, macOS, or Linux
-
-## Install (no clone needed)
+## Quick start
 
 ```bash
-npm install -g @gaburieuru/claudio@latest
-# or
-bun install -g @gaburieuru/claudio@latest
-
 claudio
+# /provider  → pick OpenAI-compat, Groq, OpenCode Zen, local, …
 ```
 
-Publishing: pushes to `main` that bump the CLI `package.json` version above the npm registry version auto-publish `@gaburieuru/claudio` (GitHub Action; requires repo secret `NPM_TOKEN`).
-
-## Quick start (from source)
+Or from source:
 
 ```bash
-# from the CLI package directory
-bun install
-bun run build
+cd openclaude-fork
+bun install && bun run build
 npm link
 claudio --version
 ```
 
-Configure providers with `/provider` or environment variables. Prefer a project-local `.env` (gitignored).
+## Claude Code extension (Cursor / VS Code)
 
-## Cursor / VS Code extension
+1. Install marketplace extension `anthropic.claude-code`
+2. Set `claudeCode.claudeProcessWrapper` to the absolute path of `claude-wrapper/claudio-wrapper.js` (or a compiled `.exe` on Windows)
+3. Optional: `claudeCode.disableLoginPrompt: true` when auth is via your provider profile
 
-```bash
-# from the Cursor extension directory
-npm install
-npm run build
-npx @vscode/vsce package --no-dependencies --allow-missing-repository
-# Install the generated .vsix into Cursor/VS Code
-```
+On Windows, prefer a real executable wrapper (`.exe`) — spawning `.cmd` can fail with `spawn EINVAL`.
 
-Settings (optional):
+## Vision (text-only models)
 
-- `claudio.command` — default `claudio`
-- `claudio.args` — extra CLI args
+Paste an image in Claude Code / Claudio: if `GROQ_API_KEY` (or `CLAUDE_CODE_VISION_API_KEY`) is set, a vision model describes the image and the main coding model only receives text.
 
-## Official Claude Code UI → Claudio engine
+## Security
 
-1. Install the marketplace extension `anthropic.claude-code`.
-2. Point `claudeCode.claudeProcessWrapper` at the wrapper script in this repo’s wrapper directory (absolute path on your machine).
-
-On Unix, invoke the wrapper `.js` with `node` or add a small shell wrapper.
+- Never commit API keys or `.env` files
+- Keys live in env / OS keychain / `~/.openclaude` settings — not this repo
+- Report security issues privately
 
 ## License
 
@@ -78,12 +86,11 @@ Claude Code–derived code: see [LICENSE](./LICENSE).
 
 ## Credits
 
-- Anthropic — Claude Code (proprietary product / original lineage)
-- Claude asterisk mark used for IDE chrome is brand-inspired; trademarks belong to their owners
+- Anthropic — Claude Code (product / lineage)
+- Clawd mascot aesthetic inspired by Claude Code welcome art
 
 ## Contributing
 
-1. Do not commit secrets, personal `.env`, or `node_modules`.
-2. Keep user-facing brand strings as **Claudio**.
-3. Prefer small, reviewable PRs.
-4. Build the CLI package before opening a PR.
+1. Do not commit secrets or `node_modules`
+2. User-facing agent identity: **Claude** (package/binary name remains `claudio`)
+3. Small, reviewable PRs; build the CLI package before opening a PR

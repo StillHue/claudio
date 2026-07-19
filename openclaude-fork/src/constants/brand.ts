@@ -1,6 +1,6 @@
 /**
- * Claudio brand identity — single source of truth for the product name,
- * welcome label, tagline, and accent color used across the TUI.
+ * Brand identity — display name matches Claude Code so the agent
+ * introduces itself as Claude. CLI package/binary may still be `claudio`.
  *
  * Accent matches Claude Code's terracotta so the startup / Clawd aesthetic
  * feels familiar. Theme entries MUST stay in `rgb(r,g,b)` form (never hex):
@@ -9,7 +9,7 @@
  */
 
 /** Product name shown in prompts, help, and chrome. */
-export const BRAND_NAME = 'Claudio'
+export const BRAND_NAME = 'Claude'
 
 /** Splash / welcome line only — matches Claude Code wording. */
 export const WELCOME_NAME = 'Claude Code'
