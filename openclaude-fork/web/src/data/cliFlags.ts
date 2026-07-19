@@ -131,6 +131,6 @@ export const subcommands: Subcommand[] = [
   {
     name: 'ssh',
     usage: 'openclaude ssh <host> [dir]',
-    description: 'Run OpenClaude on a remote host over SSH. Deploys the binary and tunnels API auth back through your local machine — no remote setup needed.',
+    description: 'Run Claudio on a remote host over SSH. Deploys the binary and tunnels API auth back through your local machine — no remote setup needed.',
   },
 ]

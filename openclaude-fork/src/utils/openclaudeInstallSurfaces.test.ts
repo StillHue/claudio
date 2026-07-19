@@ -177,7 +177,7 @@ test('install command displays openclaude.exe path on Windows', async () => {
   )
 })
 
-test('native installer uses openclaude launcher for OpenClaude package', async () => {
+test('native installer uses openclaude launcher for Claudio package', async () => {
   ;(globalThis as Record<string, unknown>).MACRO = {
     PACKAGE_URL: '@gitlawb/openclaude',
   }
@@ -200,7 +200,7 @@ test('native installer preserves claude launcher for Anthropic package', async (
   expect(getExecutableName('win32-x64')).toBe('claude.exe')
 })
 
-test('deep-link protocol resolver uses openclaude launcher for OpenClaude package', async () => {
+test('deep-link protocol resolver uses openclaude launcher for Claudio package', async () => {
   ;(globalThis as Record<string, unknown>).MACRO = {
     PACKAGE_URL: '@gitlawb/openclaude',
   }
@@ -269,7 +269,7 @@ test('install command repairs launcher after npm cleanup before final check', as
         target: '1.2.3',
         onDone: (result: string) => {
           try {
-            expect(result).toBe('OpenClaude installation completed successfully')
+            expect(result).toBe('Claudio installation completed successfully')
             resolve()
           } catch (error) {
             reject(error)
@@ -527,7 +527,7 @@ test('install command skips the native installer without a native distribution',
       createElement(Install, {
         onDone: (result: string) => {
           try {
-            expect(result).toBe('OpenClaude installation completed successfully')
+            expect(result).toBe('Claudio installation completed successfully')
             resolve()
           } catch (error) {
             reject(error)

@@ -1,5 +1,5 @@
 /**
- * ProcessManager — spawns OpenClaude in print/SDK mode and manages the
+ * ProcessManager — spawns Claudio in print/SDK mode and manages the
  * NDJSON stdin/stdout lifecycle.
  *
  * Usage:

@@ -49,7 +49,7 @@ describe('background session registry', () => {
     await rm(configDir, { force: true, recursive: true })
   })
 
-  it('creates session metadata and log files under the OpenClaude config dir', async () => {
+  it('creates session metadata and log files under the Claudio config dir', async () => {
     const session = await createBackgroundSession({
       id: 'bg-test-1',
       name: 'auth-refactor',

@@ -33,7 +33,7 @@ describe('resolveCodexApiCredentials with secure storage', () => {
     }
   })
 
-  test('loads Codex credentials from OpenClaude secure storage', async () => {
+  test('loads Codex credentials from Claudio secure storage', async () => {
     await acquireEnvMutex()
     mock.module('../../utils/codexCredentials.js', () => ({
       ...realCodexCredentials,

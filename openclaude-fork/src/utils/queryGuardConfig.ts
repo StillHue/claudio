@@ -26,7 +26,7 @@ function warnInvalidQueryHardMax(
 }
 
 function defaultWarnLogger(message: string): void {
-  console.warn(`[OpenClaude] ${message}`)
+  console.warn(`[Claudio] ${message}`)
 }
 
 export function getQueryGuardOptionsFromEnv(

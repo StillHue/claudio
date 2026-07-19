@@ -1,5 +1,5 @@
 /**
- * NDJSON protocol helpers and message type constants for the OpenClaude
+ * NDJSON protocol helpers and message type constants for the Claudio
  * stream-json SDK wire format.
  *
  * The extension spawns `openclaude --print --input-format=stream-json

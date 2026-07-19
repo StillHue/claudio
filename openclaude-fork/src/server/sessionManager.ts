@@ -1,5 +1,5 @@
 /**
- * Inert stub for the OpenClaude session-server session manager.
+ * Inert stub for the Claudio session-server session manager.
  *
  * The bundler noop-stubs this specifier in current builds; this module
  * mirrors that behavior for the typechecker. The manager tracks nothing and

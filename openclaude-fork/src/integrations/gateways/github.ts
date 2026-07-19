@@ -15,10 +15,10 @@ import { defineGateway } from '../define.js'
  * GitHub Copilot tracks "Premium Requests" per billing cycle, with the exact
  * quota set by the user's Copilot plan (not a property of this runtime).
  * Each HTTP request to api.githubcopilot.com counts toward this quota.
- * OpenClaude's sub-agent architecture can consume multiple Premium Requests
+ * Claudio's sub-agent architecture can consume multiple Premium Requests
  * per chat interaction (one per agent per turn), rapidly depleting the quota.
  *
- * By default, when CLAUDE_CODE_USE_GITHUB=1 is active, OpenClaude limits
+ * By default, when CLAUDE_CODE_USE_GITHUB=1 is active, Claudio limits
  * sub-agents to synchronous in-process execution (max 1 concurrent) to mitigate
  * Premium Request consumption (mitigates #678). Configure these env vars to tune behaviour:
  *

@@ -265,7 +265,7 @@ function assertSha256Matches(text: string, expectedSha256: string, spec: string)
   }
 }
 
-function assertCompatibleOpenClaudeVersion(entry: SkillRegistryEntry, spec: string): string | undefined {
+function assertCompatibleClaudioVersion(entry: SkillRegistryEntry, spec: string): string | undefined {
   if (
     typeof entry.min_openclaude_version !== 'string' ||
     entry.min_openclaude_version.trim() === ''
@@ -285,7 +285,7 @@ function assertCompatibleOpenClaudeVersion(entry: SkillRegistryEntry, spec: stri
 
   if (lt(current, required)) {
     throw new Error(
-      `Skill "${spec}" requires OpenClaude ${required.version} or newer. Current version is ${current.version}.`,
+      `Skill "${spec}" requires Claudio ${required.version} or newer. Current version is ${current.version}.`,
     )
   }
 
@@ -297,10 +297,10 @@ function trustInstallWarning(trust: string): string | null {
     return null
   }
   if (trust === 'verified') {
-    return 'Warning: this verified community skill was reviewed, but is not maintained as an official OpenClaude skill.'
+    return 'Warning: this verified community skill was reviewed, but is not maintained as an official Claudio skill.'
   }
   if (trust === 'community') {
-    return 'Warning: this community skill passed registry validation, but may not be deeply reviewed or maintained by OpenClaude maintainers.'
+    return 'Warning: this community skill passed registry validation, but may not be deeply reviewed or maintained by Claudio maintainers.'
   }
   if (trust === 'deprecated') {
     return 'Warning: this skill is marked deprecated. Install only if you intentionally need this older workflow.'
@@ -429,7 +429,7 @@ async function prepareInstallCandidate(
   sourceDescription: string
   trust: string
   toolsRequired: string[]
-  minOpenClaudeVersion?: string
+  minClaudioVersion?: string
   registryBacked: boolean
 }> {
   if (!isUrl(spec) && (await pathExists(resolve(spec)))) {
@@ -512,7 +512,7 @@ async function prepareInstallCandidate(
   }
 
   const expectedSha256 = requireRegistrySha256(entry, spec)
-  const minOpenClaudeVersion = assertCompatibleOpenClaudeVersion(entry, spec)
+  const minClaudioVersion = assertCompatibleClaudioVersion(entry, spec)
   const entrySource = resolveRegistryEntrySource(
     entry.source,
     registryMatch.registrySource,
@@ -532,7 +532,7 @@ async function prepareInstallCandidate(
     sourceDescription: entrySource,
     trust: typeof entry.trust === 'string' ? entry.trust : 'registry',
     toolsRequired: stringArray(entry.tools_required),
-    minOpenClaudeVersion,
+    minClaudioVersion,
     registryBacked: true,
   }
 }
@@ -579,8 +579,8 @@ export async function skillsInstallHandler(
     if (candidate.toolsRequired.length > 0) {
       console.log(`Tools required: ${candidate.toolsRequired.join(', ')}`)
     }
-    if (candidate.minOpenClaudeVersion) {
-      console.log(`Requires OpenClaude: >= ${candidate.minOpenClaudeVersion}`)
+    if (candidate.minClaudioVersion) {
+      console.log(`Requires Claudio: >= ${candidate.minClaudioVersion}`)
     }
     console.log(`Target: ${getDisplayPath(targetDir)}`)
 

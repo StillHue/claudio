@@ -196,7 +196,7 @@ describe('generateSessionTitle', () => {
       new AbortController().signal,
     )
 
-    expect(title).toBe('OpenClaude')
+    expect(title).toBe('Claudio')
     expect(combinedAbortTimeouts).toEqual([12_000])
     expect(queryHaikuCalls).toHaveLength(1)
     expect(queryHaikuCalls[0]!.signal.aborted).toBe(true)
@@ -227,7 +227,7 @@ describe('generateSessionTitle', () => {
       new AbortController().signal,
     )
 
-    expect(title).toBe('OpenClaude')
+    expect(title).toBe('Claudio')
     expect(debugMessages.at(-1)?.message).toContain(
       'parse_failure=query_error',
     )
@@ -253,7 +253,7 @@ describe('generateSessionTitle', () => {
     const reason = new Error('caller cancelled')
     callerAbort.abort(reason)
 
-    await expect(titlePromise).resolves.toBe('OpenClaude')
+    await expect(titlePromise).resolves.toBe('Claudio')
     expect(queryHaikuCalls[0]!.signal.aborted).toBe(true)
     expect(queryHaikuCalls[0]!.signal.reason).toBe(reason)
     expect(debugMessages.at(-1)?.message).toContain(
@@ -278,7 +278,7 @@ describe('generateSessionTitle', () => {
       new AbortController().signal,
     )
 
-    expect(title).toBe('OpenClaude')
+    expect(title).toBe('Claudio')
     expect(queryHaikuCalls).toHaveLength(1)
     expect(queryHaikuCalls[0]!.outputFormat).toBeUndefined()
     expect(debugMessages).toContainEqual({
@@ -396,7 +396,7 @@ describe('generateSessionTitle', () => {
     expect(titleOrNullForPromptFallback('Refactor API client errors')).toBe(
       'Refactor API client errors',
     )
-    expect(titleOrNullForPromptFallback('OpenClaude')).toBeNull()
+    expect(titleOrNullForPromptFallback('Claudio')).toBeNull()
     expect(titleOrNullForPromptFallback(null)).toBeNull()
   })
 
@@ -411,7 +411,7 @@ describe('generateSessionTitle', () => {
       new AbortController().signal,
     )
 
-    expect(title).toBe('OpenClaude')
+    expect(title).toBe('Claudio')
     expect(titleOrNullForPromptFallback(title)).toBeNull()
   })
 
@@ -427,7 +427,7 @@ describe('generateSessionTitle', () => {
     )
 
     const persistedTitle = titleOrNullForPromptFallback(title)
-    expect(title).toBe('OpenClaude')
+    expect(title).toBe('Claudio')
     expect(persistedTitle).toBeNull()
   })
 
@@ -442,7 +442,7 @@ describe('generateSessionTitle', () => {
       new AbortController().signal,
     )
 
-    expect(title).toBe('OpenClaude')
+    expect(title).toBe('Claudio')
   })
 
   test('rejects huge unusable responses safely', async () => {
@@ -455,7 +455,7 @@ describe('generateSessionTitle', () => {
       new AbortController().signal,
     )
 
-    expect(title).toBe('OpenClaude')
+    expect(title).toBe('Claudio')
     expect(debugMessages.at(-1)?.message).toContain(
       'parse_failure=unusable_response',
     )
@@ -472,7 +472,7 @@ describe('generateSessionTitle', () => {
       new AbortController().signal,
     )
 
-    expect(title).toBe('OpenClaude')
+    expect(title).toBe('Claudio')
   })
 
   test('logs actual provider and model metadata when the title query throws', async () => {
@@ -488,7 +488,7 @@ describe('generateSessionTitle', () => {
       new AbortController().signal,
     )
 
-    expect(title).toBe('OpenClaude')
+    expect(title).toBe('Claudio')
     expect(debugMessages).toContainEqual({
       message:
         'generateSessionTitle task=generate_session_title provider=openai model=glm-5.1 response_length=0 parse_failure=query_error fallback=default error_name=Error',

@@ -37,7 +37,7 @@ export function createWhatsNewFeed(releaseNotes: string[]): FeedConfig {
     };
   });
   return {
-    title: "OpenClaude Updates",
+    title: "Claudio Updates",
     lines,
     footer: lines.length > 0 ? '/release-notes for more' : undefined,
     emptyMessage: 'Check /release-notes for recent updates'
@@ -69,7 +69,7 @@ export function createProjectOnboardingFeed(steps: Step[]): FeedConfig {
 }
 export function createGuestPassesFeed(): FeedConfig {
   const reward = getCachedReferrerReward();
-  const subtitle = reward ? `Share OpenClaude and earn ${formatCreditAmount(reward)} of extra usage` : 'Share OpenClaude with friends';
+  const subtitle = reward ? `Share Claudio and earn ${formatCreditAmount(reward)} of extra usage` : 'Share Claudio with friends';
   return {
     title: '3 guest passes',
     lines: [],

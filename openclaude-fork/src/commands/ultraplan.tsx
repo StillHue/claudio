@@ -107,7 +107,7 @@ function startDetachedPoll(taskId: string, sessionId: string, url: string, getAp
           ultraplanSessionUrl: undefined
         } : prev);
         enqueuePendingNotification({
-          value: [`Ultraplan approved — executing in OpenClaude on the web. Follow along at: ${url}`, '', 'Results will land as a pull request when the remote session finishes. There is nothing to do here.'].join('\n'),
+          value: [`Ultraplan approved — executing in Claudio on the web. Follow along at: ${url}`, '', 'Results will land as a pull request when the remote session finishes. There is nothing to do here.'].join('\n'),
           mode: 'task-notification'
         });
       } else {
@@ -176,10 +176,10 @@ function startDetachedPoll(taskId: string, sessionId: string, url: string, getAp
 // multi-second teleportToRemote round-trip.
 function buildLaunchMessage(disconnectedBridge?: boolean): string {
   const prefix = disconnectedBridge ? `${REMOTE_CONTROL_DISCONNECTED_MSG} ` : '';
-  return `${DIAMOND_OPEN} ultraplan\n${prefix}Starting OpenClaude on the web…`;
+  return `${DIAMOND_OPEN} ultraplan\n${prefix}Starting Claudio on the web…`;
 }
 function buildSessionReadyMessage(url: string): string {
-  return `${DIAMOND_OPEN} ultraplan · Monitor progress in OpenClaude on the web ${url}\nYou can continue working — when the ${DIAMOND_OPEN} fills, press ↓ to view results`;
+  return `${DIAMOND_OPEN} ultraplan · Monitor progress in Claudio on the web ${url}\nYou can continue working — when the ${DIAMOND_OPEN} fills, press ↓ to view results`;
 }
 function buildAlreadyActiveMessage(url: string | undefined): string {
   return url ? `ultraplan: already polling. Open ${url} to check status, or wait for the plan to land here.` : 'ultraplan: already launching. Please wait for the session to start.';
@@ -264,7 +264,7 @@ export async function launchUltraplan(opts: {
     return [
     // Rendered via <Markdown>; raw <message> is tokenized as HTML
     // and dropped. Backslash-escape the brackets.
-    'Usage: /ultraplan \\<prompt\\>, or include "ultraplan" anywhere', 'in your prompt', '', 'Advanced multi-agent plan mode with our most powerful model', '(Opus). Runs in OpenClaude on the web. When the plan is ready,', 'you can execute it in the web session or send it back here.', 'Terminal stays free while the remote plans.', 'Requires /login.', '', `Terms: ${CCR_TERMS_URL}`].join('\n');
+    'Usage: /ultraplan \\<prompt\\>, or include "ultraplan" anywhere', 'in your prompt', '', 'Advanced multi-agent plan mode with our most powerful model', '(Opus). Runs in Claudio on the web. When the plan is ready,', 'you can execute it in the web session or send it back here.', 'Terminal stays free while the remote plans.', 'Requires /login.', '', `Terms: ${CCR_TERMS_URL}`].join('\n');
   }
 
   // Set synchronously before the detached flow to prevent duplicate launches
@@ -453,7 +453,7 @@ const call: LocalJSXCommandCall = async (onDone, context, args) => {
 export default {
   type: 'local-jsx',
   name: 'ultraplan',
-  description: `~10–30 min · OpenClaude on the web drafts an advanced plan you can edit and approve. See ${CCR_TERMS_URL}`,
+  description: `~10–30 min · Claudio on the web drafts an advanced plan you can edit and approve. See ${CCR_TERMS_URL}`,
   argumentHint: '<prompt>',
   isEnabled: () => false,
   load: () => Promise.resolve({

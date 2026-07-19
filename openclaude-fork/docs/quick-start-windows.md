@@ -1,4 +1,4 @@
-# OpenClaude Quick Start for Windows
+# Claudio Quick Start for Windows
 
 This guide uses Windows PowerShell.
 
@@ -15,7 +15,7 @@ node --version
 npm --version
 ```
 
-## 2. Install OpenClaude
+## 2. Install Claudio
 
 ```powershell
 npm install -g @gitlawb/openclaude@latest
@@ -68,9 +68,9 @@ openclaude
 
 No API key is needed for Ollama local models.
 
-OpenClaude asks Ollama for a 32768-token context window on each chat request.
+Claudio asks Ollama for a 32768-token context window on each chat request.
 If you need a different size, set `OPENCLAUDE_OLLAMA_NUM_CTX` before launching
-OpenClaude, or start Ollama with a global context setting:
+Claudio, or start Ollama with a global context setting:
 
 ```powershell
 # Quit any existing Ollama app/server first, then run:
@@ -111,7 +111,7 @@ No API key is needed for LM Studio local models (but uncomment the `OPENAI_API_K
 
 ### Option E: Using a .env file (Optional)
 
-If you prefer to keep your keys in a `.env` file instead of exporting them individually, note that OpenClaude does not load `.env` files automatically. You must explicitly pass it:
+If you prefer to keep your keys in a `.env` file instead of exporting them individually, note that Claudio does not load `.env` files automatically. You must explicitly pass it:
 
 ```powershell
 openclaude --provider-env-file .env
@@ -160,7 +160,7 @@ Check the basics:
 - make sure Ollama is running
 - make sure the model was pulled successfully
 - if same-session chat history appears missing, verify the active `CONTEXT`
-  value with `ollama ps`; OpenClaude requests 32K by default
+  value with `ollama ps`; Claudio requests 32K by default
 
 ### For LM Studio
 
@@ -170,13 +170,13 @@ Check the basics:
 - make sure a model is loaded in LM Studio
 - make sure the model name matches what you set in `OPENAI_MODEL`
 
-## 6. Updating OpenClaude
+## 6. Updating Claudio
 
 ```powershell
 npm install -g @gitlawb/openclaude@latest
 ```
 
-## 7. Uninstalling OpenClaude
+## 7. Uninstalling Claudio
 
 ```powershell
 npm uninstall -g @gitlawb/openclaude

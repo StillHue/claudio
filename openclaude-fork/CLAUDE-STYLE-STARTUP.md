@@ -1,40 +1,18 @@
-# OpenClaude — Claude-style startup (local fork)
+# Claudio — Claude Code–style startup (local fork notes)
 
-Fork local em `C:\Users\gabdr\openclaude-fork` com estética de inicialização
-parecida com o Claude Code CLI, mantendo o nome **OpenClaude**.
+This monorepo ships the Claudio CLI under `openclaude-fork/` with a Claude Code–inspired
+startup (Clawd scene, terracotta accent). Welcome text: **Welcome to Claude Code**.
+Product name elsewhere: **Claudio**.
 
-## O que mudou
+## Rebuild / link
 
-- Splash pré-Ink: cena do Clawd (paisagem + rosto) em vez do logo gigante OPEN/CLAUDE
-- Cores terracotta do Claude (`#D97757` / palette `sunset`)
-- Peito do Clawd sem "OC"
-- Texto: `Welcome to OpenClaude`
-
-## Como usar
-
-Já está no PATH via `npm link`. Basta:
-
-```powershell
-openclaude
-```
-
-## Rebuild / update
-
-```powershell
-cd C:\Users\gabdr\openclaude-fork
-git pull   # se quiser atualizar do upstream (pode conflitar)
-bun install
+```bash
+cd openclaude-fork
 bun run build
 npm link
+claudio --version
 ```
 
-## Voltar ao oficial
+## Revert branding
 
-```powershell
-npm unlink -g @gitlawb/openclaude
-npm install -g @gitlawb/openclaude@latest
-```
-
-## Paleta
-
-Dentro do OpenClaude: `/logo` → escolha **Sunset** (padrão deste fork).
+Restore `src/constants/brand.ts` and related theme/startup files from git history, then rebuild.

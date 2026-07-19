@@ -1,7 +1,7 @@
 import { feature } from 'bun:bundle';
 
 // Defensive compatibility guard for environments where globalThis.File is
-// unexpectedly absent. OpenClaude's supported runtime is Node >=22; this is
+// unexpectedly absent. Claudio's supported runtime is Node >=22; this is
 // not a Node 18 support guarantee. The guard is harmless on supported Node
 // versions and prevents undici's module evaluation from throwing in unusual
 // embedded/runtime setups.
@@ -27,7 +27,7 @@ if (typeof globalThis.File === 'undefined') {
   }
 }
 
-// OpenClaude: disable experimental API betas by default.
+// Claudio: disable experimental API betas by default.
 // Tool search (defer_loading), global cache scope, and context management
 // require internal API support not available to external accounts → 500.
 // Users can opt-in with CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=false.
@@ -324,7 +324,7 @@ export async function main(
   if (args.length === 1 && (args[0] === '--version' || args[0] === '-v' || args[0] === '-V')) {
     // MACRO.VERSION is inlined at build time
     // biome-ignore lint/suspicious/noConsole:: intentional console output
-    console.log(`${MACRO.DISPLAY_VERSION ?? MACRO.VERSION} (OpenClaude)`);
+    console.log(`${MACRO.DISPLAY_VERSION ?? MACRO.VERSION} (Claudio)`);
     return;
   }
 

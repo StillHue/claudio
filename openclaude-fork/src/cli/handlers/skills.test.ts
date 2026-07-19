@@ -47,7 +47,7 @@ title: Sample Skill
 description: Sample skill used by install tests.
 version: 0.1.0
 category: test
-author: OpenClaude Tests
+author: Claudio Tests
 license: MIT
 trust: local
 ---
@@ -64,7 +64,7 @@ title: Git Commit
 description: Nested git commit skill used by install tests.
 version: 0.1.0
 category: test
-author: OpenClaude Tests
+author: Claudio Tests
 license: MIT
 trust: local
 ---
@@ -89,7 +89,7 @@ title: Unsafe Skill
 description: Invalid skill used by install tests.
 version: 0.1.0
 category: test
-author: OpenClaude Tests
+author: Claudio Tests
 license: MIT
 trust: local
 ---
@@ -145,7 +145,7 @@ function buildRegistryEntry(
     trust: 'official',
     version: '0.1.0',
     license: 'MIT',
-    author: 'OpenClaude Tests',
+    author: 'Claudio Tests',
     source: join(sourceDir, 'SKILL.md'),
     ...overrides,
   }
@@ -600,7 +600,7 @@ test.serial('rejects registry skills without a sha256 pin', async () => {
   })
 })
 
-test.serial('rejects registry skills that require a newer OpenClaude version', async () => {
+test.serial('rejects registry skills that require a newer Claudio version', async () => {
   await withTempDir(async tempDir => {
     const cwd = join(tempDir, 'project')
     const sourceDir = writeSkillDir(join(tempDir, 'registry-source'))

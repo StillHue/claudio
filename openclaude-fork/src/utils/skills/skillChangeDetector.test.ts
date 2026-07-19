@@ -139,7 +139,7 @@ describe('skillChangeDetector reload batching', () => {
     expect(chokidarWatch).not.toHaveBeenCalled()
   })
 
-  test('watches OpenClaude project/add-dir skill paths that the loader reads', async () => {
+  test('watches Claudio project/add-dir skill paths that the loader reads', async () => {
     const detector = await importFreshModule()
     const addDir = platformPath.join('/tmp', 'openclaude-add-dir')
     const userSkillsPath = platformPath.join('/tmp', 'user', 'skills')

@@ -115,7 +115,7 @@ describe("diagnostic issue report", () => {
 
     const markdown = formatIssueReportAsMarkdown(report);
 
-    expect(markdown).toContain("# OpenClaude diagnostic report");
+    expect(markdown).toContain("# Claudio diagnostic report");
     expect(markdown).toContain("## Summary");
     expect(markdown).toContain("| Check | Status | Detail |");
     expect(markdown).toContain(

@@ -230,7 +230,7 @@ async function getWatchablePaths(): Promise<string[]> {
   }
 
   // Project skills/commands directories. Keep this in sync with the loader's
-  // OpenClaude project config directories.
+  // Claudio project config directories.
   for (const configDirName of PROJECT_CONFIG_DIR_NAMES) {
     await pushIfExists(platformPath.resolve(configDirName, 'skills'))
     await pushIfExists(platformPath.resolve(configDirName, 'commands'))

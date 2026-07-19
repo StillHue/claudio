@@ -5,7 +5,7 @@ import { getAPIProvider } from './model/providers.js'
  * GitHub Copilot Premium Request Optimization
  *
  * GitHub Copilot tracks "Premium Requests" per billing cycle. Each HTTP request
- * to api.githubcopilot.com counts toward this quota. OpenClaude's sub-agent
+ * to api.githubcopilot.com counts toward this quota. Claudio's sub-agent
  * architecture can consume multiple Premium Requests per chat interaction
  * (one per agent per turn), rapidly depleting the quota.
  *

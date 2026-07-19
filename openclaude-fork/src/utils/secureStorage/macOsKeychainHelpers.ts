@@ -51,6 +51,9 @@ export function getSecureStorageServiceName(
   const dirHash = isDefaultDir
     ? ''
     : `-${createHash('sha256').update(normalizedConfigDir).digest('hex').substring(0, 8)}`
+  // DO NOT change the "OpenClaude" service base — it is part of the keychain /
+  // credential-locker lookup key. Renaming would orphan existing stored OAuth
+  // tokens and API keys. Product display name ("Claudio") is separate.
   return `OpenClaude${getOauthConfig().OAUTH_FILE_SUFFIX}${serviceSuffix}${dirHash}`
 }
 

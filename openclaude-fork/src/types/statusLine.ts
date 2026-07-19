@@ -63,7 +63,7 @@ export type StatusLineCommandInput = {
       cache_read_input_tokens: number
       /**
        * Present when the active provider did not report token usage and
-       * OpenClaude estimated the current context from the transcript.
+       * Claudio estimated the current context from the transcript.
        */
       is_estimated?: boolean
     } | null

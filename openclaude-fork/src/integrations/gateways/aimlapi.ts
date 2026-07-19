@@ -79,8 +79,8 @@ export default defineGateway({
         'X-AIMLAPI-Integration-Version': publicBuildVersion,
         // Attribution headers AI/ML API records for api.aimlapi.com requests
         // (issue #835). `HTTP-Referer`/`X-Title` identify the referring app.
-        'HTTP-Referer': 'OpenClaude',
-        'X-Title': 'OpenClaude',
+        'HTTP-Referer': 'Claudio',
+        'X-Title': 'Claudio',
       },
       supportsAuthHeaders: false,
     },

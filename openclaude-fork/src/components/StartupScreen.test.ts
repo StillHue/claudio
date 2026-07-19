@@ -107,7 +107,7 @@ function setupOpenAIMode(baseUrl: string, model: string): void {
 }
 
 describe('printStartupScreen logo', () => {
-  test('renders Claude-style Clawd welcome with OpenClaude branding', () => {
+  test('renders Claude-style Clawd welcome with Claudio branding', () => {
     ;(globalThis as Record<string, unknown>).MACRO = { VERSION: 'test-version' }
     Object.defineProperty(process.stdout, 'isTTY', {
       configurable: true,
@@ -123,7 +123,9 @@ describe('printStartupScreen logo', () => {
     printStartupScreen()
 
     const plainOutput = stripAnsi(output)
-    expect(plainOutput).toContain('Welcome to OpenClaude')
+    expect(plainOutput).toContain('Welcome to Claude Code')
+    expect(plainOutput).not.toContain('Welcome to OpenClaude')
+    expect(plainOutput).not.toContain('Welcome to Claudio')
     expect(plainOutput).toContain('vtest-version')
     expect(plainOutput).toContain('█████████')
     expect(plainOutput).toContain('██▄█████▄██')

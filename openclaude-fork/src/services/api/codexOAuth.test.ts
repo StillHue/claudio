@@ -244,10 +244,10 @@ test('serves updated success copy after a successful Codex OAuth flow', async ()
     )
     expect(fakeListenerInstance?.capture?.statusCode).toBe(200)
     expect(fakeListenerInstance?.capture?.body).toContain(
-      'You can return to OpenClaude now.',
+      'You can return to Claudio now.',
     )
     expect(fakeListenerInstance?.capture?.body).toContain(
-      'OpenClaude will finish activating your new Codex OAuth login.',
+      'Claudio will finish activating your new Codex OAuth login.',
     )
     expect(fakeListenerInstance?.capture?.body).not.toContain(
       'continue automatically',
@@ -426,7 +426,7 @@ test('cancellation during token exchange returns a cancelled page and rejects th
       'Codex login cancelled',
     )
     expect(fakeListenerInstance?.capture?.body).toContain(
-      'retry in OpenClaude',
+      'retry in Claudio',
     )
   } finally {
     restoreCodexOAuthTestIsolation()

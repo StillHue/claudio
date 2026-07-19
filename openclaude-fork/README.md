@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/assets/openclaude-wordmark.svg" alt="OpenClaude — Open terminal for any LLM" width="830">
+  <img src="docs/assets/openclaude-wordmark.svg" alt="Claudio — Open terminal for any LLM" width="830">
 
   <p>
     <a href="https://trendshift.io/repositories/25807?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-25807" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/25807/daily?language=TypeScript" alt="Gitlawb%2Fopenclaude | Trendshift" width="250" height="55"/></a>
@@ -8,7 +8,7 @@
   </p>
 </div>
 
-OpenClaude is an open-source coding-agent CLI for cloud and local model providers.
+Claudio is an open-source coding-agent CLI for cloud and local model providers.
 
 Use OpenAI-compatible APIs, Gemini, GitHub Models, Codex OAuth, Codex, Ollama, Atomic Chat, and other supported backends while keeping one terminal-first workflow: prompts, tools, agents, MCP, slash commands, and streaming output.
 
@@ -20,7 +20,7 @@ Use OpenAI-compatible APIs, Gemini, GitHub Models, Codex OAuth, Codex, Ollama, A
 [![Security Policy](https://img.shields.io/badge/security-policy-0f766e)](SECURITY.md)
 [![License](https://img.shields.io/badge/license-MIT-2563eb)](LICENSE)
 
-OpenClaude is also mirrored to GitLawb:
+Claudio is also mirrored to GitLawb:
 [gitlawb.com/node/repos/z6MkqDnb/openclaude](https://gitlawb.com/node/repos/z6MkqDnb/openclaude)
 
 [Quick Start](#quick-start) | [Setup Guides](#setup-guides) | [Providers](#supported-providers) | [Development](#development) | [VS Code Extension](#vs-code-extension) | [Sponsors](#sponsors) | [Community](#community)
@@ -64,7 +64,7 @@ OpenClaude is also mirrored to GitLawb:
   </tr>
 </table>
 
-## Why OpenClaude
+## Why Claudio
 
 - One CLI across cloud APIs and local model backends — no per-provider tooling
 - Guided provider setup and saved profiles with `/provider`
@@ -76,19 +76,19 @@ OpenClaude is also mirrored to GitLawb:
 
 ### Install
 
-OpenClaude requires Node.js `>=22.0.0` for npm installs and runtime. Bun is
+Claudio requires Node.js `>=22.0.0` for npm installs and runtime. Bun is
 only needed for source builds and local development.
 
 ```bash
 npm install -g @gitlawb/openclaude@latest
 ```
 
-If you're on Arch Linux, you can install OpenClaude from the community-maintained [AUR package](https://aur.archlinux.org/packages/openclaude):
+If you're on Arch Linux, you can install Claudio from the community-maintained [AUR package](https://aur.archlinux.org/packages/openclaude):
 ```bash
 paru -S openclaude
 ```
 
-If the install later reports `ripgrep not found`, install ripgrep system-wide and confirm `rg --version` works in the same terminal before starting OpenClaude.
+If the install later reports `ripgrep not found`, install ripgrep system-wide and confirm `rg --version` works in the same terminal before starting Claudio.
 
 **Verify / troubleshoot installed version:**
 
@@ -104,12 +104,12 @@ npm install -g @gitlawb/openclaude@latest
 openclaude
 ```
 
-Inside OpenClaude:
+Inside Claudio:
 
 - run `/provider` for guided provider setup and saved profiles
 - run `/onboard-github` for GitHub Models onboarding
 
-> **Note:** OpenClaude does not automatically load project `.env` files. We recommend using the `/provider` command for setup, which saves provider profiles and credentials in `.openclaude-profile.json`. If you prefer environment variables, export them explicitly or run `openclaude --provider-env-file .env` for provider/setup variables. Export runtime/debug knobs from your shell or launcher.
+> **Note:** Claudio does not automatically load project `.env` files. We recommend using the `/provider` command for setup, which saves provider profiles and credentials in `.openclaude-profile.json`. If you prefer environment variables, export them explicitly or run `openclaude --provider-env-file .env` for provider/setup variables. Export runtime/debug knobs from your shell or launcher.
 
 ### Resume or fork a conversation
 
@@ -145,12 +145,12 @@ openclaude logs auth-refactor -f
 openclaude kill auth-refactor
 ```
 
-Background sessions are local child processes. OpenClaude does not start a daemon
+Background sessions are local child processes. Claudio does not start a daemon
 or network service, and permission/provider/model/settings flags are passed to
 the child process the same way they are for a foreground `--print` run. Session
-metadata and logs are stored under the resolved OpenClaude config directory,
+metadata and logs are stored under the resolved Claudio config directory,
 usually `~/.openclaude/bg-sessions/`; `OPENCLAUDE_CONFIG_DIR` can point
-OpenClaude somewhere else. `CLAUDE_CONFIG_DIR` is ignored for OpenClaude
+Claudio somewhere else. `CLAUDE_CONFIG_DIR` is ignored for Claudio
 background-session storage. Session names can be reused after older sessions
 reach a terminal state; use the session ID to inspect older logs with the same
 name.
@@ -159,18 +159,18 @@ name.
 points to `openclaude logs <id> -f`; full terminal reattach is not implemented
 for local background sessions yet.
 
-### OpenClaude config cutover
+### Claudio config cutover
 
-OpenClaude stores its own config under `~/.openclaude` and `~/.openclaude.json`
+Claudio stores its own config under `~/.openclaude` and `~/.openclaude.json`
 by default. It does not read `~/.claude`, project `.claude/` directories, or
-`CLAUDE_CONFIG_DIR`; new users can start with an empty OpenClaude config and do
+`CLAUDE_CONFIG_DIR`; new users can start with an empty Claudio config and do
 not need Claude Code installed.
 
-If you previously used OpenClaude with `.claude` paths, migrate intentionally:
+If you previously used Claudio with `.claude` paths, migrate intentionally:
 copy only the settings, commands, agents, skills, scheduled tasks, or other files
-you personally created for OpenClaude into the matching `.openclaude` location.
+you personally created for Claudio into the matching `.openclaude` location.
 Do not blanket-copy `.claude`, and do not copy Claude Code credentials or auth
-files. For provider authentication, prefer running OpenClaude's provider setup
+files. For provider authentication, prefer running Claudio's provider setup
 again or exporting provider-specific environment variables.
 
 ### Fastest OpenAI setup
@@ -217,7 +217,7 @@ $env:OPENAI_MODEL="qwen2.5-coder:7b"
 openclaude
 ```
 
-For Ollama, OpenClaude uses Ollama's native chat API and requests a 32768-token
+For Ollama, Claudio uses Ollama's native chat API and requests a 32768-token
 context window on each chat request so same-session history is not silently
 truncated by Ollama's OpenAI-compatible shim. Set `OPENCLAUDE_OLLAMA_NUM_CTX`
 or `OLLAMA_CONTEXT_LENGTH` if you need a different request-level context size.
@@ -247,14 +247,14 @@ Advanced and source-build guides:
 | --- | --- | --- |
 | OpenAI-compatible | `/provider` or env vars | Works with OpenAI, OpenRouter, DeepSeek, Groq, Mistral, LM Studio, and other compatible `/v1` servers |
 | Z.AI GLM Coding Plan | `/provider` or OpenAI-compatible env vars | Uses `OPENAI_API_KEY` at `https://api.z.ai/api/coding/paas/v4` and defaults to `glm-5.2` |
-| AI/ML API | `/provider` or `AIMLAPI_API_KEY` ([setup guide](docs/aimlapi-setup.md)) | Uses `https://api.aimlapi.com/v1`, auto-detects the OpenAI-compatible route from `AIMLAPI_API_KEY`, sends OpenClaude attribution headers, and discovers chat-capable models from the public `/models` catalog |
+| AI/ML API | `/provider` or `AIMLAPI_API_KEY` ([setup guide](docs/aimlapi-setup.md)) | Uses `https://api.aimlapi.com/v1`, auto-detects the OpenAI-compatible route from `AIMLAPI_API_KEY`, sends Claudio attribution headers, and discovers chat-capable models from the public `/models` catalog |
 | Hicap | `/provider` or OpenAI-compatible env vars | Uses `api-key` auth, discovers models from unauthenticated `/models`, and supports Responses mode for `gpt-` models |
 | Fireworks AI | `/provider` or env vars | First-class provider with 276 curated models (DeepSeek, Qwen, Llama, Gemma, and more); uses `FIREWORKS_API_KEY` |
 | ClinePass | `/provider` or env vars | AI model gateway with usage limits (5hr, weekly, monthly); uses `CLINE_API_KEY` at `https://api.cline.bot/api/v1` |
 | Gemini | `/provider` or env vars | Supports API key only |
 | GitHub Models | `/onboard-github` | Interactive onboarding with saved credentials |
 | Codex OAuth | `/provider` | Opens ChatGPT sign-in in your browser and stores Codex credentials securely |
-| Codex | `/provider` | Uses existing Codex CLI auth, OpenClaude secure storage, or env credentials |
+| Codex | `/provider` | Uses existing Codex CLI auth, Claudio secure storage, or env credentials |
 | Gitlawb Opengateway | Startup default, `/provider`, or env vars | Smart gateway at `https://opengateway.gitlawb.com/v1`; requires an API key from https://gitlawb.com/opengateway/keys and routes Xiaomi MiMo and GMI Cloud partner models by `OPENAI_MODEL` |
 | OpenCode Zen | `/provider` or env vars | Pay-as-you-go AI gateway (48 models); uses `OPENCODE_API_KEY` via `https://opencode.ai/zen/v1`; shared key with OpenCode Go |
 | OpenCode Go | `/provider` or env vars | $10/mo subscription for open models (13 models); uses `OPENCODE_API_KEY` via `https://opencode.ai/zen/go/v1`; shared key with OpenCode Zen |
@@ -301,16 +301,16 @@ terminal at least 100 columns wide for the full sprite.
 
 ## Provider Notes
 
-OpenClaude supports multiple providers, but behavior is not identical across all of them.
+Claudio supports multiple providers, but behavior is not identical across all of them.
 
 - Anthropic-specific features may not exist on other providers
 - Tool quality depends heavily on the selected model
 - Smaller local models can struggle with long multi-step tool flows
-- Some providers impose lower output caps than the CLI defaults, and OpenClaude adapts where possible
+- Some providers impose lower output caps than the CLI defaults, and Claudio adapts where possible
 - AI/ML API uses the OpenAI-compatible route, defaults to `gpt-4o`, and only surfaces chat-capable models from its public catalog
 - Gitlawb Opengateway is the fresh-install startup default and requires an API key from https://gitlawb.com/opengateway/keys. It uses one OpenAI-compatible base URL; switch between `mimo-*` and `google/gemini-3.1-flash-lite-preview` with `/model`, and do not pin the base URL to `/v1/xiaomi-mimo`.
 - Z.AI GLM Coding Plan uses `https://api.z.ai/api/coding/paas/v4` with `glm-5.2` by default. Use `glm-5.2?reasoning=high` for enhanced reasoning, `glm-5.2?reasoning=xhigh` to request Z.AI `reasoning_effort=max`, or `glm-5.2?thinking=disabled` for faster direct answers.
-- Xiaomi MiMo uses `api-key` header auth on the direct OpenAI-compatible route and currently does not support `/usage` reporting in OpenClaude
+- Xiaomi MiMo uses `api-key` header auth on the direct OpenAI-compatible route and currently does not support `/usage` reporting in Claudio
 - GitHub Copilot serializes sub-agent execution by default to reduce Premium Request consumption — see [Agent Routing and Step Limits](docs/agent-routing.md#github-copilot-sub-agent-optimization) for tuning
 
 For best results, use models with strong tool/function calling support.
@@ -333,7 +333,7 @@ By default, `WebSearch` works on non-Anthropic models using DuckDuckGo. This giv
 
 > **Note:** DuckDuckGo fallback works by scraping search results and may be rate-limited, blocked, or subject to DuckDuckGo's Terms of Service. If you want a more reliable supported option, configure Firecrawl.
 
-For Anthropic-native backends and Codex responses, OpenClaude keeps the native provider web search behavior.
+For Anthropic-native backends and Codex responses, Claudio keeps the native provider web search behavior.
 
 `WebFetch` works, but its basic HTTP plus HTML-to-markdown path can still fail on JavaScript-rendered sites or sites that block plain HTTP requests.
 
@@ -352,7 +352,7 @@ Free tier at [firecrawl.dev](https://firecrawl.dev) includes 500 credits. The ke
 
 ## Headless gRPC Server
 
-OpenClaude can run as a headless gRPC service with bidirectional streaming —
+Claudio can run as a headless gRPC service with bidirectional streaming —
 integrate its agentic capabilities into other applications, CI/CD pipelines,
 or custom UIs. Start it with `npm run dev:grpc`; a test CLI client ships with
 the repo. See [Headless gRPC Server](docs/grpc-server.md) for configuration
@@ -397,7 +397,7 @@ Recommended validation before opening a PR:
 
 ## VS Code Extension
 
-The repo includes a VS Code extension in [`vscode-extension/openclaude-vscode`](vscode-extension/openclaude-vscode) for OpenClaude launch integration, provider-aware Control Center, in-editor chat, theme support, and optional **Microsoft Foundry / Azure OpenAI** configuration (endpoint, API version, deployment, API key via Secret Storage) injected into launched terminals. See that folder's [README](vscode-extension/openclaude-vscode/README.md).
+The repo includes a VS Code extension in [`vscode-extension/openclaude-vscode`](vscode-extension/openclaude-vscode) for Claudio launch integration, provider-aware Control Center, in-editor chat, theme support, and optional **Microsoft Foundry / Azure OpenAI** configuration (endpoint, API version, deployment, API key via Secret Storage) injected into launched terminals. See that folder's [README](vscode-extension/openclaude-vscode/README.md).
 
 ## Security
 
@@ -418,10 +418,10 @@ build, test, and pre-PR validation commands.
 
 ## Disclaimer
 
-OpenClaude is an independent community project and is not affiliated with, endorsed by, or sponsored by Anthropic.
+Claudio is an independent community project and is not affiliated with, endorsed by, or sponsored by Anthropic.
 
-OpenClaude originated from the Claude Code codebase and has since been substantially modified to support multiple providers and open use. "Claude" and "Claude Code" are trademarks of Anthropic PBC. See [LICENSE](LICENSE) for details.
+Claudio originated from the Claude Code codebase and has since been substantially modified to support multiple providers and open use. "Claude" and "Claude Code" are trademarks of Anthropic PBC. See [LICENSE](LICENSE) for details.
 
 ## License
 
-MIT for OpenClaude contributors' modifications; the derived Claude Code remains Anthropic's. [See more](LICENSE).
+MIT for Claudio contributors' modifications; the derived Claude Code remains Anthropic's. [See more](LICENSE).

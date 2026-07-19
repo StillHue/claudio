@@ -131,7 +131,7 @@ describe('generateCommandSuggestions localization', () => {
     expect(generateCommandSuggestions('/kho\u1ea3ng', commands)).toEqual([])
   })
 
-  test('localizes only OpenClaude-owned descriptions', () => {
+  test('localizes only Claudio-owned descriptions', () => {
     const commands = [
       promptCommand({
         name: 'project-review',

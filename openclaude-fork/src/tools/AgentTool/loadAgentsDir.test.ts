@@ -115,7 +115,7 @@ ${prompt}
 }
 
 describe('agent definition loading', () => {
-  test('loads user agents from the OpenClaude config dir in simple mode', async () => {
+  test('loads user agents from the Claudio config dir in simple mode', async () => {
     await writeAgent(
       join(userConfigDir, 'agents', 'user-agent.md'),
       'user-agent',

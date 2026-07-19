@@ -1,7 +1,7 @@
 /**
  * Tunable safety strictness.
  *
- * OpenClaude runs a number of "safety" checks: a model-level refusal directive
+ * Claudio runs a number of "safety" checks: a model-level refusal directive
  * (see cyberRiskInstruction.ts), bash command-injection heuristics
  * (bashSecurity.ts), and sensitive-file / auto-edit guards (filesystem.ts).
  * Those checks are intentionally conservative, but several of them surface as

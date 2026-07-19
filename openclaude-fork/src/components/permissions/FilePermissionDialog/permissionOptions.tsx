@@ -10,7 +10,7 @@ import { normalizeCaseForComparison, pathInAllowedWorkingPath } from '../../../u
 import type { OptionWithDescription } from '../../CustomSelect/select.js';
 /**
  * Check if a path is within the project's .openclaude/ folder.
- * This is used to determine whether to show the special OpenClaude folder permission option.
+ * This is used to determine whether to show the special Claudio folder permission option.
  */
 export function isInClaudeFolder(filePath: string): boolean {
   const absolutePath = expandPath(filePath);
@@ -28,7 +28,7 @@ export function isInClaudeFolder(filePath: string): boolean {
 
 /**
  * Check if a path is within the global ~/.openclaude/ folder.
- * This is used to determine whether to show the special OpenClaude folder permission option
+ * This is used to determine whether to show the special Claudio folder permission option
  * for files in the user's home directory.
  */
 export function isInGlobalClaudeFolder(filePath: string): boolean {

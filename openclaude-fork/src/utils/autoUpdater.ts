@@ -94,7 +94,7 @@ export async function assertMinVersion(): Promise<void> {
 
   // Skip version check for third-party providers using upstream Anthropic
   // builds — the min version kill-switch is first-party-specific. Builds
-  // with a custom PACKAGE_URL (like OpenClaude) should still be checked.
+  // with a custom PACKAGE_URL (like Claudio) should still be checked.
   if (
     getAPIProvider() !== 'firstParty' &&
     MACRO.PACKAGE_URL === '@anthropic-ai/claude-code'

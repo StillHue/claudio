@@ -1,8 +1,8 @@
-# Contributing to OpenClaude
+# Contributing to Claudio
 
 Thanks for contributing.
 
-OpenClaude is a rapidly evolving open-source coding-agent CLI with support for multiple providers, local backends, MCP, and a terminal-first workflow. The project is actively developed and updated frequently. Our current focus is on **stability and performance** — we're prioritizing reliable, well-tested contributions over new feature additions. The best contributions here are focused, well-tested, and easy to review.
+Claudio is a rapidly evolving open-source coding-agent CLI with support for multiple providers, local backends, MCP, and a terminal-first workflow. The project is actively developed and updated frequently. Our current focus is on **stability and performance** — we're prioritizing reliable, well-tested contributions over new feature additions. The best contributions here are focused, well-tested, and easy to review.
 
 ## Table of Contents
 
@@ -34,7 +34,7 @@ OpenClaude is a rapidly evolving open-source coding-agent CLI with support for m
 
 ## Proposing New Features
 
-OpenClaude is moving toward a more **maintainer-directed roadmap**. We are focusing development efforts on stability, performance, and core reliability. As a result, new feature additions are being evaluated more carefully to ensure they align with the project's direction.
+Claudio is moving toward a more **maintainer-directed roadmap**. We are focusing development efforts on stability, performance, and core reliability. As a result, new feature additions are being evaluated more carefully to ensure they align with the project's direction.
 
 **Before investing time in a feature PR, please open an issue first** to propose and discuss your idea with the maintainers. This isn't about gatekeeping — we genuinely value your ideas and want to help shape them into contributions that fit the project's goals. The conversation will help you understand:
 
@@ -111,7 +111,7 @@ This is not a judgment on the contributor. It is how the project stays reviewabl
 
 ### Contributor Conduct
 
-We want OpenClaude to be a welcoming community, but we must also protect the project's quality and contributor time. The following actions will result in a **ban from future contributions**:
+We want Claudio to be a welcoming community, but we must also protect the project's quality and contributor time. The following actions will result in a **ban from future contributions**:
 
 - Repeated fly-by PRs with no follow-up after review requests
 - Repeated submission of duplicate PRs
@@ -159,7 +159,7 @@ If you are an AI agent (Copilot, Cursor, Claude, etc.) working on this codebase,
 
 ## Provider Changes
 
-OpenClaude supports multiple provider paths. Before contributing provider changes, review the relevant documentation to ensure your implementation follows the expected patterns:
+Claudio supports multiple provider paths. Before contributing provider changes, review the relevant documentation to ensure your implementation follows the expected patterns:
 
 - start with `docs/integrations/overview.md` for an understanding of how integrations are structured
 - use the focused how-to guides under `docs/integrations/how-to/` for new vendors, gateways, models, anthropic proxies, and `/usage` support

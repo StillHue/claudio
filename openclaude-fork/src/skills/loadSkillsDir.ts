@@ -100,7 +100,7 @@ export function getProjectSkillsPaths(dir: string): string[] {
   )
 }
 
-function prefersOpenClaudeConfigDir(path: string): number {
+function prefersClaudioConfigDir(path: string): number {
   return path.split(pathSep).includes('.openclaude') ? 0 : 1
 }
 
@@ -109,7 +109,7 @@ function compareSkillDirPrecedence(a: string, b: string): number {
   if (depthDelta !== 0) {
     return depthDelta
   }
-  return prefersOpenClaudeConfigDir(a) - prefersOpenClaudeConfigDir(b)
+  return prefersClaudioConfigDir(a) - prefersClaudioConfigDir(b)
 }
 
 /**

@@ -35,7 +35,7 @@ export function checkSupportedNodeVersion(
       ok: false,
       version,
       major,
-      message: `Could not parse Node.js version: ${version}. OpenClaude requires Node.js ${MIN_NODE_ENGINE_RANGE}.`,
+      message: `Could not parse Node.js version: ${version}. Claudio requires Node.js ${MIN_NODE_ENGINE_RANGE}.`,
     }
   }
 
@@ -44,7 +44,7 @@ export function checkSupportedNodeVersion(
       ok: false,
       version,
       major,
-      message: `Detected ${version}. OpenClaude requires Node.js ${MIN_NODE_ENGINE_RANGE}. Install Node ${MIN_NODE_MAJOR} LTS or newer, then reinstall/re-run OpenClaude.`,
+      message: `Detected ${version}. Claudio requires Node.js ${MIN_NODE_ENGINE_RANGE}. Install Node ${MIN_NODE_MAJOR} LTS or newer, then reinstall/re-run Claudio.`,
     }
   }
 

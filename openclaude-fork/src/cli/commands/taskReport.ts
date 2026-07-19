@@ -26,7 +26,7 @@ export function registerTaskReportCommand(
 ): void {
   program
     .command('report')
-    .description('Generate a deterministic task report for an OpenClaude session')
+    .description('Generate a deterministic task report for an Claudio session')
     .addOption(new Option('--json', 'Print JSON output').conflicts('markdown'))
     .addOption(new Option('--markdown', 'Print Markdown output').conflicts('json'))
     .option('--transcript <file>', 'Path to a session JSONL transcript')

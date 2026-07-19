@@ -63,7 +63,7 @@ export function parseProfileCustomHeadersInput(input: string): {
     if (isReservedHeaderName(name)) {
       return {
         headers: {},
-        error: `Custom header "${name}" is managed by OpenClaude and cannot be set on a provider profile.`,
+        error: `Custom header "${name}" is managed by Claudio and cannot be set on a provider profile.`,
       }
     }
     if (!value) {

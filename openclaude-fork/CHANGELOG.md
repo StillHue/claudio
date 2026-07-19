@@ -81,7 +81,7 @@
 * **diff:** guard diff language detection against prototype-chain filenames ([#1433](https://github.com/Gitlawb/openclaude/issues/1433)) ([7d86174](https://github.com/Gitlawb/openclaude/commit/7d861743caf95a18a9524b4a2b5c51f06fea6cde))
 * guard convertToLogOption against empty transcript ([#1723](https://github.com/Gitlawb/openclaude/issues/1723)) ([4a60c0f](https://github.com/Gitlawb/openclaude/commit/4a60c0f30f7f81c19a4538cbc55d0030b470126e))
 * **hicap:** add missing hicap-claude-opus-4.7 catalog entry ([#1797](https://github.com/Gitlawb/openclaude/issues/1797)) ([885bd81](https://github.com/Gitlawb/openclaude/commit/885bd81045d4370fef028d129e0930159cbefcf8))
-* isolate OpenClaude config from Claude Code ([#1875](https://github.com/Gitlawb/openclaude/issues/1875)) ([1bd273d](https://github.com/Gitlawb/openclaude/commit/1bd273d4d3e551a64000b268a79bee7cb6946d8a))
+* isolate Claudio config from Claude Code ([#1875](https://github.com/Gitlawb/openclaude/issues/1875)) ([1bd273d](https://github.com/Gitlawb/openclaude/commit/1bd273d4d3e551a64000b268a79bee7cb6946d8a))
 * **lsp:** coalesce diagnostic bursts ([#1861](https://github.com/Gitlawb/openclaude/issues/1861)) ([11f4661](https://github.com/Gitlawb/openclaude/commit/11f4661ea99f559da5203570b0f47b49a4b26072))
 * **opencode-go:** surface clear error on subscription quota exhaustion ([#1749](https://github.com/Gitlawb/openclaude/issues/1749)) ([b8c8b24](https://github.com/Gitlawb/openclaude/commit/b8c8b2417bb329d8757d38c236868f2a23f0f535))
 * resolve zai-compatible config for all GLM remote models ([#1752](https://github.com/Gitlawb/openclaude/issues/1752)) ([4be017b](https://github.com/Gitlawb/openclaude/commit/4be017bd4dca1fc757e1664292c12a7057e8b05b))
@@ -156,7 +156,7 @@
 * **ollama:** cap qwen3-coder-next:cloud output at 32768 ([#1814](https://github.com/Gitlawb/openclaude/issues/1814)) ([185ffea](https://github.com/Gitlawb/openclaude/commit/185ffea893f61b10ab0c8cfbff06f69baa7df5b6))
 * **ollama:** preserve chat history with native context ([#1805](https://github.com/Gitlawb/openclaude/issues/1805)) ([259c7ec](https://github.com/Gitlawb/openclaude/commit/259c7ec27a1fc1bf5db39c23ce2544ccb0ccb588))
 * **openai-shim:** recover GLM/Qwen XML tool calls emitted as text ([#1791](https://github.com/Gitlawb/openclaude/issues/1791)) ([2083d1c](https://github.com/Gitlawb/openclaude/commit/2083d1cdffb3240b854e0ada588b8101b6e6cc64))
-* OpenClaude native launcher after Linux install ([#1798](https://github.com/Gitlawb/openclaude/issues/1798)) ([ab8645d](https://github.com/Gitlawb/openclaude/commit/ab8645da9fc855225259231f25cec19959a5347f))
+* Claudio native launcher after Linux install ([#1798](https://github.com/Gitlawb/openclaude/issues/1798)) ([ab8645d](https://github.com/Gitlawb/openclaude/commit/ab8645da9fc855225259231f25cec19959a5347f))
 * **plugins:** keep marketplace reconciliation prototype-safe ([#1821](https://github.com/Gitlawb/openclaude/issues/1821)) ([a7945e5](https://github.com/Gitlawb/openclaude/commit/a7945e5a70b875c636ed8bc013b897014adb74a4))
 * **plugins:** treat prototype-shadowing marketplace names as not found ([#1787](https://github.com/Gitlawb/openclaude/issues/1787)) ([8859c5d](https://github.com/Gitlawb/openclaude/commit/8859c5d6e2a734f259c8c1792b26e865c6a5ad1a))
 * **remote-session:** match ingress host by hostname, not raw substring ([#1792](https://github.com/Gitlawb/openclaude/issues/1792)) ([1cdca1c](https://github.com/Gitlawb/openclaude/commit/1cdca1cc7bcb1ca17203e81c9bee4325ec9c7b8c))
@@ -279,7 +279,7 @@
 * **ollama:** parse text-based tool calls as fallback ([#1053](https://github.com/Gitlawb/openclaude/issues/1053)) ([#1076](https://github.com/Gitlawb/openclaude/issues/1076)) ([a3f144b](https://github.com/Gitlawb/openclaude/commit/a3f144bbf26be5c7676e9a2f79a747186867f021))
 * **plugins:** prevent ENOENT on Windows marketplace cache finalization ([#1500](https://github.com/Gitlawb/openclaude/issues/1500)) ([#1531](https://github.com/Gitlawb/openclaude/issues/1531)) ([a7d6580](https://github.com/Gitlawb/openclaude/commit/a7d65805213b92d3f6eceb46c0c0cc2ffa9dcb01))
 * **read:** improve oversized file guidance ([#1626](https://github.com/Gitlawb/openclaude/issues/1626)) ([5fd4a09](https://github.com/Gitlawb/openclaude/commit/5fd4a09d0193431aaed07af2c56351a805db365b))
-* rename "Claude" to "OpenClaude" in feedback survey prompt ([#1598](https://github.com/Gitlawb/openclaude/issues/1598)) ([d00b105](https://github.com/Gitlawb/openclaude/commit/d00b1050f5acd07b12fc49bcb4802ab446fef27a))
+* rename "Claude" to "Claudio" in feedback survey prompt ([#1598](https://github.com/Gitlawb/openclaude/issues/1598)) ([d00b105](https://github.com/Gitlawb/openclaude/commit/d00b1050f5acd07b12fc49bcb4802ab446fef27a))
 * sandbox temp dir fallback ([#1662](https://github.com/Gitlawb/openclaude/issues/1662)) ([c3db798](https://github.com/Gitlawb/openclaude/commit/c3db79832bc0c35fb3ba6f652c81106bfe274d39))
 * **security:** bundle real sandbox runtime in open CLI ([#1641](https://github.com/Gitlawb/openclaude/issues/1641)) ([bd3ad89](https://github.com/Gitlawb/openclaude/commit/bd3ad89dd788e6efa4b8b9df6a36d841005eee52))
 * **session:** filter Anthropic-only params from 3P provider requests ([#248](https://github.com/Gitlawb/openclaude/issues/248)) ([#1533](https://github.com/Gitlawb/openclaude/issues/1533)) ([db2d093](https://github.com/Gitlawb/openclaude/commit/db2d093af3a0ad0dc5fc1b546faa44e56800362f))
@@ -761,7 +761,7 @@
 * add NVIDIA NIM and MiniMax provider support ([#552](https://github.com/Gitlawb/openclaude/issues/552)) ([51191d6](https://github.com/Gitlawb/openclaude/commit/51191d61326e1f8319d70b3a3c0d9229e185a564))
 * add ripgrep to Dockerfile for faster file searching ([#688](https://github.com/Gitlawb/openclaude/issues/688)) ([12dd375](https://github.com/Gitlawb/openclaude/commit/12dd3755c619cc27af3b151ae8fdb9d425a7b9a2))
 * **api:** classify openai-compatible provider failures ([#708](https://github.com/Gitlawb/openclaude/issues/708)) ([80a00ac](https://github.com/Gitlawb/openclaude/commit/80a00acc2c6dc4657a78de7366f7a9ebc920bfbb))
-* **vscode:** add full chat interface to OpenClaude extension ([#608](https://github.com/Gitlawb/openclaude/issues/608)) ([fbcd928](https://github.com/Gitlawb/openclaude/commit/fbcd928f7f8511da795aea3ad318bddf0ab9a1a7))
+* **vscode:** add full chat interface to Claudio extension ([#608](https://github.com/Gitlawb/openclaude/issues/608)) ([fbcd928](https://github.com/Gitlawb/openclaude/commit/fbcd928f7f8511da795aea3ad318bddf0ab9a1a7))
 
 
 ### Bug Fixes

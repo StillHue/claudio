@@ -81,7 +81,7 @@ export function OutputStylePicker(t0) {
   const t6 = !isStandaloneCommand;
   let t7;
   if ($[5] === Symbol.for("react.memo_cache_sentinel")) {
-    t7 = <Box marginTop={1}><Text dimColor={true}>This changes how OpenClaude communicates with you</Text></Box>;
+    t7 = <Box marginTop={1}><Text dimColor={true}>This changes how Claudio communicates with you</Text></Box>;
     $[5] = t7;
   } else {
     t7 = $[5];

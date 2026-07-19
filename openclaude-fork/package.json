@@ -1,10 +1,10 @@
 {
-  "name": "@gitlawb/openclaude",
+  "name": "claudio",
   "version": "0.24.0",
-  "description": "OpenClaude opens coding-agent workflows to any LLM — OpenAI, Gemini, DeepSeek, Ollama, and 200+ models",
+  "description": "Claudio — Claude Code–style coding agent CLI with any LLM",
   "type": "module",
   "bin": {
-    "openclaude": "./bin/openclaude"
+    "claudio": "./bin/claudio"
   },
   "exports": {
     "./package.json": "./package.json",
@@ -29,7 +29,7 @@
     "build": "bun run scripts/build.ts",
     "integrations:generate": "bun run scripts/generate-integrations-artifacts.ts",
     "integrations:check": "bun run scripts/generate-integrations-artifacts.ts --check",
-    "dev": "bun run build && node bin/openclaude",
+    "dev": "bun run build && node bin/claudio",
     "dev:profile": "bun run scripts/provider-launch.ts",
     "dev:profile:fast": "bun run scripts/provider-launch.ts auto --fast --bare",
     "dev:codex": "bun run scripts/provider-launch.ts codex",
@@ -48,7 +48,7 @@
     "dev:code": "bun run profile:code && bun run dev:profile",
     "dev:grpc": "bun run scripts/start-grpc.ts",
     "dev:grpc:cli": "bun run scripts/grpc-cli.ts",
-    "start": "node bin/openclaude",
+    "start": "node bin/claudio",
     "web:dev": "bun run --cwd web dev",
     "web:build": "bun run --cwd web build",
     "web:preview": "bun run --cwd web preview",

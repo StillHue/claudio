@@ -1,6 +1,6 @@
 /**
- * OpenClaude brand identity — single source of truth for the product name,
- * tagline, accent color, and wordmark art used across the TUI.
+ * Claudio brand identity — single source of truth for the product name,
+ * welcome label, tagline, and accent color used across the TUI.
  *
  * Accent matches Claude Code's terracotta so the startup / Clawd aesthetic
  * feels familiar. Theme entries MUST stay in `rgb(r,g,b)` form (never hex):
@@ -8,7 +8,11 @@
  * which only matches `rgb(...)` strings.
  */
 
-export const BRAND_NAME = 'OpenClaude'
+/** Product name shown in prompts, help, and chrome. */
+export const BRAND_NAME = 'Claudio'
+
+/** Splash / welcome line only — matches Claude Code wording. */
+export const WELCOME_NAME = 'Claude Code'
 
 export const BRAND_TAGLINE = 'Open terminal for any LLM'
 

@@ -12,7 +12,7 @@ const {
   resolveCommandCheckPath,
 } = require('./state');
 const { buildControlCenterViewModel } = require('./presentation');
-const { ChatController, OpenClaudeChatViewProvider, OpenClaudeChatPanelManager } = require('./chat/chatProvider');
+const { ChatController, ClaudioChatViewProvider, ClaudioChatPanelManager } = require('./chat/chatProvider');
 const { SessionManager } = require('./chat/sessionManager');
 const { DiffContentProvider, SCHEME: DIFF_SCHEME } = require('./chat/diffController');
 
@@ -111,13 +111,13 @@ async function buildLaunchAzureEnv(configured) {
   const apiKey = await resolveAzureApiKey(ctx, configured);
   if (!endpoint || !deployment) {
     void vscode.window.showWarningMessage(
-      'OpenClaude Azure chat is enabled but endpoint or deployment is missing. Run "OpenClaude: Configure Azure / Foundry Chat" or set openclaude.azure.* in settings.',
+      'Claudio Azure chat is enabled but endpoint or deployment is missing. Run "Claudio: Configure Azure / Foundry Chat" or set openclaude.azure.* in settings.',
     );
     return env;
   }
   if (!apiKey) {
     void vscode.window.showWarningMessage(
-      'OpenClaude Azure chat is enabled but no API key is set. Use "OpenClaude: Set Azure / Foundry API Key" or openclaude.azure.apiKey (not recommended).',
+      'Claudio Azure chat is enabled but no API key is set. Use "Claudio: Set Azure / Foundry API Key" or openclaude.azure.apiKey (not recommended).',
     );
     return env;
   }
@@ -138,7 +138,7 @@ async function buildLaunchAzureEnv(configured) {
  */
 async function setAzureApiKey(context) {
   const key = await vscode.window.showInputBox({
-    title: 'OpenClaude — Azure / Foundry API key',
+    title: 'Claudio — Azure / Foundry API key',
     prompt: 'Stored in VS Code Secret Storage (not committed to the repo).',
     password: true,
     ignoreFocusOut: true,
@@ -148,7 +148,7 @@ async function setAzureApiKey(context) {
     return;
   }
   await context.secrets.store(SECRET_AZURE_API_KEY, key.trim());
-  void vscode.window.showInformationMessage('OpenClaude Azure / Foundry API key saved to Secret Storage.');
+  void vscode.window.showInformationMessage('Claudio Azure / Foundry API key saved to Secret Storage.');
 }
 
 /**
@@ -156,7 +156,7 @@ async function setAzureApiKey(context) {
  */
 async function clearAzureApiKey(context) {
   await context.secrets.delete(SECRET_AZURE_API_KEY);
-  void vscode.window.showInformationMessage('OpenClaude Azure / Foundry API key removed from Secret Storage.');
+  void vscode.window.showInformationMessage('Claudio Azure / Foundry API key removed from Secret Storage.');
 }
 
 /**
@@ -167,7 +167,7 @@ async function configureAzureChat(context) {
   const target = vscode.ConfigurationTarget.Global;
 
   const endpoint = await vscode.window.showInputBox({
-    title: 'OpenClaude — Azure / Foundry API endpoint',
+    title: 'Claudio — Azure / Foundry API endpoint',
     prompt: 'Resource base URL only (no api-version query). Example: https://YOUR_RESOURCE.openai.azure.com',
     ignoreFocusOut: true,
     value: cfg.get('azure.endpoint', ''),
@@ -178,7 +178,7 @@ async function configureAzureChat(context) {
   }
 
   const apiVersion = await vscode.window.showInputBox({
-    title: 'OpenClaude — Azure API version',
+    title: 'Claudio — Azure API version',
     prompt: 'Matches the api-version used by your deployment (e.g. 2024-12-01-preview).',
     value: (cfg.get('azure.apiVersion', '2024-12-01-preview') || '').trim(),
     ignoreFocusOut: true,
@@ -189,7 +189,7 @@ async function configureAzureChat(context) {
   }
 
   const deployment = await vscode.window.showInputBox({
-    title: 'OpenClaude — Azure deployment / model',
+    title: 'Claudio — Azure deployment / model',
     prompt: 'Deployment name in Azure (this becomes OPENAI_MODEL for the OpenAI shim).',
     value: cfg.get('azure.deployment', ''),
     ignoreFocusOut: true,
@@ -200,7 +200,7 @@ async function configureAzureChat(context) {
   }
 
   const key = await vscode.window.showInputBox({
-    title: 'OpenClaude — Azure / Foundry API key',
+    title: 'Claudio — Azure / Foundry API key',
     prompt: 'Stored in VS Code Secret Storage.',
     password: true,
     ignoreFocusOut: true,
@@ -218,7 +218,7 @@ async function configureAzureChat(context) {
   await context.secrets.store(SECRET_AZURE_API_KEY, key.trim());
 
   void vscode.window.showInformationMessage(
-    'OpenClaude Azure / Foundry chat saved. Launch OpenClaude from the Control Center or command palette.',
+    'Claudio Azure / Foundry chat saved. Launch Claudio from the Control Center or command palette.',
   );
 }
 
@@ -376,7 +376,7 @@ function readWorkspaceProfile(profilePath) {
 async function collectControlCenterState() {
   const configured = vscode.workspace.getConfiguration('openclaude');
   const launchCommand = configured.get('launchCommand', 'openclaude');
-  const terminalName = configured.get('terminalName', 'OpenClaude');
+  const terminalName = configured.get('terminalName', 'Claudio');
   const shimEnabled = configured.get('useOpenAIShim', false);
   const executable = getExecutableFromCommand(launchCommand);
   const launchWorkspace = resolveLaunchWorkspace();
@@ -432,11 +432,11 @@ async function collectControlCenterState() {
   };
 }
 
-async function launchOpenClaude(options = {}) {
+async function launchClaudio(options = {}) {
   const { requireWorkspace = false } = options;
   const configured = vscode.workspace.getConfiguration('openclaude');
   const launchCommand = configured.get('launchCommand', 'openclaude');
-  const terminalName = configured.get('terminalName', 'OpenClaude');
+  const terminalName = configured.get('terminalName', 'Claudio');
   const shimEnabled = configured.get('useOpenAIShim', false);
   const executable = getExecutableFromCommand(launchCommand);
   const launchWorkspace = resolveLaunchWorkspace();
@@ -461,7 +461,7 @@ async function launchOpenClaude(options = {}) {
 
   if (!installed) {
     const action = await vscode.window.showErrorMessage(
-      `OpenClaude command not found: ${executable}. Install it with: npm install -g @gitlawb/openclaude@latest`,
+      `Claudio command not found: ${executable}. Install it with: npm install -g @gitlawb/openclaude@latest`,
       'Open Setup Guide',
       'Open Repository',
     );
@@ -593,7 +593,7 @@ function getWorkspaceRootActionDetail(status, fallbackDetail) {
   }
 
   if (status.launchActionsShareTargetReason === 'relative-launch-command') {
-    return `Same workspace-root target as Launch OpenClaude because the relative command resolves from the workspace root · ${status.workspaceRootCwdLabel}`;
+    return `Same workspace-root target as Launch Claudio because the relative command resolves from the workspace root · ${status.workspaceRootCwdLabel}`;
   }
 
   return `Always starts at the workspace root · ${status.workspaceRootCwdLabel}`;
@@ -1011,7 +1011,7 @@ function renderControlCenterHtml(status, options = {}) {
         <div class="hero-top">
           <div class="brand">
             <div class="eyebrow">${escapeHtml(viewModel.header.eyebrow)}</div>
-            <div class="wordmark" aria-label="OpenClaude wordmark">Open<span class="wordmark-accent">Claude</span></div>
+            <div class="wordmark" aria-label="Claudio wordmark">Open<span class="wordmark-accent">Claude</span></div>
             <div class="headline">
               <h1 class="headline-title" id="control-center-title">${escapeHtml(viewModel.header.title)}</h1>
               <p class="headline-subtitle">${escapeHtml(viewModel.header.subtitle)}</p>
@@ -1051,11 +1051,11 @@ function renderControlCenterHtml(status, options = {}) {
             </button>
             <button class="support-link" id="repo" type="button">
               <span class="support-link-label">Open Repository</span>
-              <span class="summary-detail">Browse the upstream OpenClaude project.</span>
+              <span class="summary-detail">Browse the upstream Claudio project.</span>
             </button>
             <button class="support-link" id="commands" type="button">
               <span class="support-link-label">Open Command Palette</span>
-              <span class="summary-detail">Access VS Code and OpenClaude commands quickly.</span>
+              <span class="summary-detail">Access VS Code and Claudio commands quickly.</span>
             </button>
             <button class="support-link" id="azureFoundry" type="button">
               <span class="support-link-label">Azure / Foundry settings</span>
@@ -1090,7 +1090,7 @@ function renderControlCenterHtml(status, options = {}) {
 </html>`;
 }
 
-class OpenClaudeControlCenterProvider {
+class ClaudioControlCenterProvider {
   constructor() {
     this.webviewView = null;
   }
@@ -1108,10 +1108,10 @@ class OpenClaudeControlCenterProvider {
     webviewView.webview.onDidReceiveMessage(async message => {
       switch (message?.type) {
         case 'launch':
-          await launchOpenClaude();
+          await launchClaudio();
           break;
         case 'launchRoot':
-          await launchOpenClaude({ requireWorkspace: true });
+          await launchClaudio({ requireWorkspace: true });
           break;
         case 'openProfile':
           await openWorkspaceProfile();
@@ -1225,7 +1225,7 @@ function activate(context) {
   extensionContext = context;
 
   // ── Control Center (existing) ──
-  const provider = new OpenClaudeControlCenterProvider();
+  const provider = new ClaudioControlCenterProvider();
   const refreshProvider = () => {
     void provider.refresh();
   };
@@ -1238,8 +1238,8 @@ function activate(context) {
   }
 
   const chatController = new ChatController(sessionManager);
-  const chatViewProvider = new OpenClaudeChatViewProvider(chatController);
-  const chatPanelManager = new OpenClaudeChatPanelManager(chatController);
+  const chatViewProvider = new ClaudioChatViewProvider(chatController);
+  const chatPanelManager = new ClaudioChatPanelManager(chatController);
 
   // ── Diff content provider ──
   const diffProvider = new DiffContentProvider();
@@ -1253,37 +1253,37 @@ function activate(context) {
     vscode.StatusBarAlignment.Right,
     100,
   );
-  statusBarItem.text = '$(comment-discussion) OpenClaude';
-  statusBarItem.tooltip = 'Open OpenClaude Chat';
+  statusBarItem.text = '$(comment-discussion) Claudio';
+  statusBarItem.tooltip = 'Open Claudio Chat';
   statusBarItem.command = 'openclaude.openChat';
   statusBarItem.show();
 
   chatController.onDidChangeState((state) => {
     switch (state) {
       case 'streaming':
-        statusBarItem.text = '$(sync~spin) OpenClaude';
-        statusBarItem.tooltip = 'OpenClaude is generating...';
+        statusBarItem.text = '$(sync~spin) Claudio';
+        statusBarItem.tooltip = 'Claudio is generating...';
         break;
       case 'connected':
-        statusBarItem.text = '$(comment-discussion) OpenClaude';
-        statusBarItem.tooltip = 'OpenClaude connected';
+        statusBarItem.text = '$(comment-discussion) Claudio';
+        statusBarItem.tooltip = 'Claudio connected';
         break;
       default:
-        statusBarItem.text = '$(comment-discussion) OpenClaude';
-        statusBarItem.tooltip = 'Open OpenClaude Chat';
+        statusBarItem.text = '$(comment-discussion) Claudio';
+        statusBarItem.tooltip = 'Open Claudio Chat';
         break;
     }
   });
 
   // ── Existing commands ──
   const startCommand = vscode.commands.registerCommand('openclaude.start', async () => {
-    await launchOpenClaude();
+    await launchClaudio();
   });
 
   const startInWorkspaceRootCommand = vscode.commands.registerCommand(
     'openclaude.startInWorkspaceRoot',
     async () => {
-      await launchOpenClaude({ requireWorkspace: true });
+      await launchClaudio({ requireWorkspace: true });
     },
   );
 
@@ -1428,10 +1428,10 @@ function deactivate() {
 module.exports = {
   activate,
   deactivate,
-  OpenClaudeControlCenterProvider,
+  ClaudioControlCenterProvider,
   renderControlCenterHtml,
   resolveLaunchTargets,
   ChatController,
-  OpenClaudeChatViewProvider,
-  OpenClaudeChatPanelManager,
+  ClaudioChatViewProvider,
+  ClaudioChatPanelManager,
 };

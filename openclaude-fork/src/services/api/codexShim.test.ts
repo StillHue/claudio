@@ -893,7 +893,7 @@ describe('Codex request translation', () => {
             type: 'web_search_call',
             sources: [
               {
-                title: 'OpenClaude repo',
+                title: 'Claudio repo',
                 url: 'https://github.com/example/openclaude',
               },
             ],
@@ -904,7 +904,7 @@ describe('Codex request translation', () => {
             content: [
               {
                 type: 'text',
-                text: 'OpenClaude is available on GitHub.',
+                text: 'Claudio is available on GitHub.',
                 sources: [
                   {
                     title: 'Docs',
@@ -916,17 +916,17 @@ describe('Codex request translation', () => {
           },
         ],
       },
-      'OpenClaude GitHub 2026',
+      'Claudio GitHub 2026',
       0.42,
     )
 
     expect(output.results).toEqual([
-      'OpenClaude is available on GitHub.',
+      'Claudio is available on GitHub.',
       {
         tool_use_id: 'codex-web-search',
         content: [
           {
-            title: 'OpenClaude repo',
+            title: 'Claudio repo',
             url: 'https://github.com/example/openclaude',
           },
           {
@@ -941,7 +941,7 @@ describe('Codex request translation', () => {
   test('falls back to a non-empty Codex web search result message', () => {
     const output = webSearchToolTest.makeOutputFromCodexWebSearchResponse(
       { output: [] },
-      'OpenClaude GitHub 2026',
+      'Claudio GitHub 2026',
       0.11,
     )
 
@@ -959,7 +959,7 @@ describe('Codex request translation', () => {
           },
         ],
       },
-      'OpenClaude GitHub 2026',
+      'Claudio GitHub 2026',
       0.05,
     )
 
@@ -979,7 +979,7 @@ describe('Codex request translation', () => {
           },
         ],
       },
-      'OpenClaude GitHub 2026',
+      'Claudio GitHub 2026',
       0.05,
     )
 
@@ -996,7 +996,7 @@ describe('Codex request translation', () => {
           },
         ],
       },
-      'OpenClaude GitHub 2026',
+      'Claudio GitHub 2026',
       0.05,
     )
 
@@ -1027,7 +1027,7 @@ describe('Codex request translation', () => {
           },
         ],
       },
-      'OpenClaude GitHub 2026',
+      'Claudio GitHub 2026',
       0.05,
     )
 

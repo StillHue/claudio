@@ -28,7 +28,7 @@ describe('isThirdPartyBuildBlockedFor', () => {
     expect(isThirdPartyBuildBlockedFor('firstParty', UPSTREAM)).toBe(false)
   })
 
-  test('allows a custom-PACKAGE_URL build (OpenClaude) on any provider', () => {
+  test('allows a custom-PACKAGE_URL build (Claudio) on any provider', () => {
     expect(isThirdPartyBuildBlockedFor('bedrock', OPENCLAUDE)).toBe(false)
     expect(isThirdPartyBuildBlockedFor('firstParty', OPENCLAUDE)).toBe(false)
   })

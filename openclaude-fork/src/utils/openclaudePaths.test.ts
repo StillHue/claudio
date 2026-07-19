@@ -40,7 +40,7 @@ afterEach(() => {
   }
 })
 
-describe('OpenClaude paths', () => {
+describe('Claudio paths', () => {
   test('defaults user config home to ~/.openclaude', async () => {
     await acquireEnvMutex()
     delete process.env.OPENCLAUDE_CONFIG_DIR

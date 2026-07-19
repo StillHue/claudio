@@ -2,7 +2,7 @@
  * No-op GrowthBook stub — all feature gates return false / default values,
  * all config lookups return the provided default, and initialization is a no-op.
  *
- * OpenClaude does not phone home. This module replaces the original
+ * Claudio does not phone home. This module replaces the original
  * analytics-driven GrowthBook client with a local-only implementation that
  * reads feature flags from ~/.openclaude/feature-flags.json for developer overrides.
  *

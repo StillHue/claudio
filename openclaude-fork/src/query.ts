@@ -356,7 +356,7 @@ function createAutoCompactDiagnosticMessage(args: {
         ? ` It will retry after ${formatAutoCompactRetryDelay(retryDelayMs)}.`
         : ''
     return createSystemMessage(
-      `Automatic compaction is paused after repeated failures.${retryText} OpenClaude will stop before sending oversized requests while the guard is active.`,
+      `Automatic compaction is paused after repeated failures.${retryText} Claudio will stop before sending oversized requests while the guard is active.`,
       'warning',
     )
   }
@@ -366,7 +366,7 @@ function createAutoCompactDiagnosticMessage(args: {
     consecutiveFailures > 0
   ) {
     return createSystemMessage(
-      `Automatic compaction failed (${consecutiveFailures}/${MAX_CONSECUTIVE_AUTOCOMPACT_FAILURES}); OpenClaude will retry compaction on the next eligible turn.`,
+      `Automatic compaction failed (${consecutiveFailures}/${MAX_CONSECUTIVE_AUTOCOMPACT_FAILURES}); Claudio will retry compaction on the next eligible turn.`,
       'warning',
     )
   }
@@ -411,7 +411,7 @@ function shouldRecoverContextOverflow(
 function createContextOverflowRecoveryMessage(): UserMessage {
   return createUserMessage({
     content:
-      'The previous provider request exceeded the context window. OpenClaude compacted the conversation and is retrying this turn once; continue from the compacted context, avoid repeating the oversized request shape, and use narrower tool reads if more detail is needed.',
+      'The previous provider request exceeded the context window. Claudio compacted the conversation and is retrying this turn once; continue from the compacted context, avoid repeating the oversized request shape, and use narrower tool reads if more detail is needed.',
     isMeta: true,
   })
 }
@@ -1264,10 +1264,10 @@ async function* queryLoop(
         const content =
           retryDelayMs !== undefined && retryDelayMs > 0
             ? 'The conversation is over the auto-compact safety threshold, but automatic compaction is cooling down after repeated failures. ' +
-              'OpenClaude stopped before sending another oversized request. ' +
+              'Claudio stopped before sending another oversized request. ' +
               `Retry after ${formatAutoCompactRetryDelay(retryDelayMs)}, run /compact, or start a new session with /new.`
             : 'The conversation is over the auto-compact safety threshold and automatic compaction has failed repeatedly. ' +
-              'OpenClaude stopped before sending another oversized request. Run /compact, undo recent large tool output, or start a new session with /new.'
+              'Claudio stopped before sending another oversized request. Run /compact, undo recent large tool output, or start a new session with /new.'
         yield createAssistantAPIErrorMessage({
           content,
           error: 'invalid_request',
@@ -1285,7 +1285,7 @@ async function* queryLoop(
     ) {
       yield createAssistantAPIErrorMessage({
         content:
-          'The conversation is over the active-message safety limit, but automatic compaction could not reduce it before the next provider request. OpenClaude stopped before sending another oversized request. Run /compact, undo recent large tool output, or start a new session with /new.',
+          'The conversation is over the active-message safety limit, but automatic compaction could not reduce it before the next provider request. Claudio stopped before sending another oversized request. Run /compact, undo recent large tool output, or start a new session with /new.',
         error: 'invalid_request',
       })
       return { reason: 'blocking_limit' }

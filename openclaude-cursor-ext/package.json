@@ -1,7 +1,7 @@
 {
-  "name": "openclaude-sidebar",
-  "displayName": "OpenClaude",
-  "description": "Open Claude-style OpenClaude CLI in a Cursor/VS Code sidebar",
+  "name": "claudio-sidebar",
+  "displayName": "Claudio",
+  "description": "Claudio CLI in Cursor/VS Code — Activity Bar icon and full editor tab",
   "version": "0.1.0",
   "publisher": "local",
   "private": true,
@@ -13,28 +13,28 @@
     "Other"
   ],
   "activationEvents": [
-    "onView:openclaude.sidebar",
-    "onCommand:openclaude.open"
+    "onView:claudio.sidebar",
+    "onCommand:claudio.open"
   ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "openclaude.open",
-        "title": "OpenClaude: Open Sidebar",
+        "command": "claudio.open",
+        "title": "Claudio: Open Sidebar",
         "icon": {
           "light": "resources/icon-mono.svg",
           "dark": "resources/icon-mono.svg"
         }
       },
       {
-        "command": "openclaude.restart",
-        "title": "OpenClaude: Restart Session",
+        "command": "claudio.restart",
+        "title": "Claudio: Restart Session",
         "icon": "$(refresh)"
       },
       {
-        "command": "openclaude.openEditor",
-        "title": "OpenClaude: Open in Editor",
+        "command": "claudio.openEditor",
+        "title": "Claudio: Open in Editor",
         "icon": {
           "light": "resources/icon-mono.svg",
           "dark": "resources/icon-mono.svg"
@@ -44,18 +44,18 @@
     "viewsContainers": {
       "activitybar": [
         {
-          "id": "openclaude",
-          "title": "OpenClaude",
+          "id": "claudio",
+          "title": "Claudio",
           "icon": "resources/icon-mono.svg"
         }
       ]
     },
     "views": {
-      "openclaude": [
+      "claudio": [
         {
           "type": "webview",
-          "id": "openclaude.sidebar",
-          "name": "OpenClaude",
+          "id": "claudio.sidebar",
+          "name": "Claudio",
           "icon": "resources/icon-mono.svg",
           "retainContextWhenHidden": true
         }
@@ -64,33 +64,33 @@
     "menus": {
       "view/title": [
         {
-          "command": "openclaude.restart",
-          "when": "view == openclaude.sidebar",
+          "command": "claudio.restart",
+          "when": "view == claudio.sidebar",
           "group": "navigation"
         }
       ],
       "editor/title": [
         {
-          "command": "openclaude.openEditor",
+          "command": "claudio.openEditor",
           "group": "navigation@100"
         }
       ]
     },
     "configuration": {
-      "title": "OpenClaude",
+      "title": "Claudio",
       "properties": {
-        "openclaude.command": {
+        "claudio.command": {
           "type": "string",
-          "default": "openclaude",
-          "description": "Shell command used to launch OpenClaude"
+          "default": "claudio",
+          "description": "Shell command used to launch Claudio"
         },
-        "openclaude.args": {
+        "claudio.args": {
           "type": "array",
           "items": {
             "type": "string"
           },
           "default": [],
-          "description": "Extra arguments passed to the OpenClaude command"
+          "description": "Extra arguments passed to the Claudio command"
         }
       }
     }

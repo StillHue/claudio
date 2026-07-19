@@ -444,7 +444,7 @@ export function getVisionNotSupportedErrorMessage(): string {
     : interactiveMessage!
 }
 export const OAUTH_ORG_NOT_ALLOWED_ERROR_MESSAGE =
-  'Your account does not have access to OpenClaude. Please run /login.'
+  'Your account does not have access to Claudio. Please run /login.'
 
 // OpenCode Go subscription quota exhaustion. The opencode.ai gateway returns
 // 429 with one of these error types in the response body:
@@ -1635,8 +1635,8 @@ export function getErrorMessageIfRefusal(
       : "your provider's acceptable use policy"
 
   const baseMessage = getIsNonInteractiveSession()
-    ? `${API_ERROR_MESSAGE_PREFIX}: OpenClaude is unable to respond to this request, which appears to violate our Usage Policy (${usagePolicyUrl}). Try rephrasing the request or attempting a different approach.`
-    : `${API_ERROR_MESSAGE_PREFIX}: OpenClaude is unable to respond to this request, which appears to violate our Usage Policy (${usagePolicyUrl}). Please double press esc to edit your last message or start a new session for OpenClaude to assist with a different task.`
+    ? `${API_ERROR_MESSAGE_PREFIX}: Claudio is unable to respond to this request, which appears to violate our Usage Policy (${usagePolicyUrl}). Try rephrasing the request or attempting a different approach.`
+    : `${API_ERROR_MESSAGE_PREFIX}: Claudio is unable to respond to this request, which appears to violate our Usage Policy (${usagePolicyUrl}). Please double press esc to edit your last message or start a new session for Claudio to assist with a different task.`
 
   const defaultModel = getDefaultMainLoopModel()
   const modelSuggestion =

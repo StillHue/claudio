@@ -140,7 +140,7 @@ export function HelpV2(t0) {
   const publicBuildVersion = getPublicBuildVersion();
   let t6;
   if ($[31] !== publicBuildVersion || $[32] !== tabs) {
-    t6 = <Tabs title={false ? "/help" : `OpenClaude v${publicBuildVersion}`} color="professionalBlue" defaultTab="general">{tabs}</Tabs>;
+    t6 = <Tabs title={false ? "/help" : `Claudio v${publicBuildVersion}`} color="professionalBlue" defaultTab="general">{tabs}</Tabs>;
     $[31] = publicBuildVersion;
     $[32] = tabs;
     $[33] = t6;

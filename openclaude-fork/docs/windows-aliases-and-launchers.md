@@ -1,6 +1,6 @@
 # Windows aliases and launchers
 
-This page documents optional PowerShell helper functions for launching OpenClaude on Windows after a global npm install.
+This page documents optional PowerShell helper functions for launching Claudio on Windows after a global npm install.
 
 These helpers are designed for the installed package workflow:
 
@@ -44,7 +44,7 @@ Open a new PowerShell window after setup, or dot-source the profile:
 
 ## Daily commands
 
-### Launch OpenClaude using the installed CLI
+### Launch Claudio using the installed CLI
 
 ~~~powershell
 oc
@@ -99,7 +99,7 @@ Like `oc-local`, the environment overrides are scoped to that single invocation.
 oc-provider
 ~~~
 
-This opens the provider manager through the installed OpenClaude CLI.
+This opens the provider manager through the installed Claudio CLI.
 
 ### Check local Ollama state
 
@@ -143,7 +143,7 @@ oc-help
 
 | Command | Purpose |
 | --- | --- |
-| `oc` | Launch OpenClaude using the installed CLI and saved/default behavior |
+| `oc` | Launch Claudio using the installed CLI and saved/default behavior |
 | `oc-local` | Launch once with local Ollama/OpenAI-compatible environment hints |
 | `oc-fast` | Launch once with local Ollama/OpenAI-compatible low-latency hints |
 | `oc-provider` | Open the provider manager |

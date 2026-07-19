@@ -1,6 +1,6 @@
 ---
 name: Bug report
-about: Report a reproducible problem in OpenClaude
+about: Report a reproducible problem in Claudio
 title: ""
 labels: ""
 assignees: ""

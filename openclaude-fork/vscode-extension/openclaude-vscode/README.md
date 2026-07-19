@@ -1,6 +1,6 @@
-# OpenClaude VS Code Extension
+# Claudio VS Code Extension
 
-A practical VS Code companion for OpenClaude with a project-aware **Control Center**, predictable terminal launch behavior, and quick access to useful OpenClaude workflows.
+A practical VS Code companion for Claudio with a project-aware **Control Center**, predictable terminal launch behavior, and quick access to useful Claudio workflows.
 
 ## Features
 
@@ -13,18 +13,18 @@ A practical VS Code companion for OpenClaude with a project-aware **Control Cent
   - whether `.openclaude-profile.json` exists in the current workspace root
   - a conservative provider summary derived from the workspace profile or known environment flags
 - **Project-aware launch behavior**:
-  - `Launch OpenClaude` launches from the active editor's workspace when possible
+  - `Launch Claudio` launches from the active editor's workspace when possible
   - falls back to the first workspace folder when needed
   - avoids launching from an arbitrary default cwd when a project is open
 - **Practical sidebar actions**:
-  - Launch OpenClaude
+  - Launch Claudio
   - Launch in Workspace Root
   - Open Workspace Profile
   - Open Repository
   - Open Setup Guide
   - Open Command Palette
-- **Built-in dark theme**: `OpenClaude Terminal Black`
-- **Microsoft Foundry / Azure OpenAI**: optional wizard and settings store endpoint, API version, deployment name, and API key (Secret Storage); launch injects `OPENAI_*` and `AZURE_OPENAI_API_VERSION` into the OpenClaude terminal (see `docs/advanced-setup.md` on the repo).
+- **Built-in dark theme**: `Claudio Terminal Black`
+- **Microsoft Foundry / Azure OpenAI**: optional wizard and settings store endpoint, API version, deployment name, and API key (Secret Storage); launch injects `OPENAI_*` and `AZURE_OPENAI_API_VERSION` into the Claudio terminal (see `docs/advanced-setup.md` on the repo).
 
 ## Requirements
 
@@ -33,30 +33,30 @@ A practical VS Code companion for OpenClaude with a project-aware **Control Cent
 
 ## Commands
 
-- `OpenClaude: Open Control Center`
-- `OpenClaude: Launch in Terminal`
-- `OpenClaude: Launch in Workspace Root`
-- `OpenClaude: Open Repository`
-- `OpenClaude: Open Setup Guide`
-- `OpenClaude: Open Workspace Profile`
-- `OpenClaude: New Chat` / `OpenClaude: Open Chat Panel` / `OpenClaude: Resume Session` / `OpenClaude: Abort Generation`
-- `OpenClaude: Configure Azure / Foundry Chat (wizard)`
-- `OpenClaude: Set Azure / Foundry API Key (Secret Storage)`
-- `OpenClaude: Clear Azure / Foundry API Key`
-- `OpenClaude: Open Azure / Foundry Settings`
+- `Claudio: Open Control Center`
+- `Claudio: Launch in Terminal`
+- `Claudio: Launch in Workspace Root`
+- `Claudio: Open Repository`
+- `Claudio: Open Setup Guide`
+- `Claudio: Open Workspace Profile`
+- `Claudio: New Chat` / `Claudio: Open Chat Panel` / `Claudio: Resume Session` / `Claudio: Abort Generation`
+- `Claudio: Configure Azure / Foundry Chat (wizard)`
+- `Claudio: Set Azure / Foundry API Key (Secret Storage)`
+- `Claudio: Clear Azure / Foundry API Key`
+- `Claudio: Open Azure / Foundry Settings`
 
 ## Microsoft Foundry / Azure OpenAI (terminal chat)
 
-1. Command Palette → **OpenClaude: Configure Azure / Foundry Chat (wizard)** and enter endpoint, API version, deployment name, and API key; or set `openclaude.azure.*` in Settings and use **OpenClaude: Set Azure / Foundry API Key**.
-2. Enable **OpenClaude: Azure: Enabled** (the wizard turns this on).
-3. **OpenClaude: Launch in Terminal** — the extension merges env vars the OpenAI shim expects (`CLAUDE_CODE_USE_OPENAI`, `OPENAI_BASE_URL`, `OPENAI_API_KEY`, `OPENAI_MODEL`, `AZURE_OPENAI_API_VERSION`, and `OPENAI_AZURE_STYLE` when forced).
+1. Command Palette → **Claudio: Configure Azure / Foundry Chat (wizard)** and enter endpoint, API version, deployment name, and API key; or set `openclaude.azure.*` in Settings and use **Claudio: Set Azure / Foundry API Key**.
+2. Enable **Claudio: Azure: Enabled** (the wizard turns this on).
+3. **Claudio: Launch in Terminal** — the extension merges env vars the OpenAI shim expects (`CLAUDE_CODE_USE_OPENAI`, `OPENAI_BASE_URL`, `OPENAI_API_KEY`, `OPENAI_MODEL`, `AZURE_OPENAI_API_VERSION`, and `OPENAI_AZURE_STYLE` when forced).
 
 If you use `.openclaude-profile.json` for the same workspace, leave Azure injection off to avoid conflicting provider configuration.
 
 ## Settings
 
 - `openclaude.launchCommand` (default: `openclaude`)
-- `openclaude.terminalName` (default: `OpenClaude`)
+- `openclaude.terminalName` (default: `Claudio`)
 - `openclaude.useOpenAIShim` (default: `false`)
 - `openclaude.azure.*` — Foundry / Azure OpenAI terminal injection (see Settings UI)
 - `openclaude.permissionMode` — chat permission mode

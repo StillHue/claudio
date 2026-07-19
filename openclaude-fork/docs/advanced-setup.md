@@ -1,10 +1,10 @@
-# OpenClaude Advanced Setup
+# Claudio Advanced Setup
 
 This guide is for users who want source builds, Bun workflows, provider profiles, diagnostics, or more control over runtime behavior.
 
 ## Install Options
 
-OpenClaude requires Node.js `>=22.0.0` for npm installs and runtime. Bun is
+Claudio requires Node.js `>=22.0.0` for npm installs and runtime. Bun is
 only required when building or running from source.
 
 ### Option A: npm
@@ -51,9 +51,9 @@ export OPENAI_MODEL=gpt-4o
 `codexplan` maps to GPT-5.5 on the Codex backend with high reasoning.
 `codexspark` maps to GPT-5.3 Codex Spark for faster loops.
 
-If you use the in-app provider wizard, choose `Codex OAuth` to open ChatGPT sign-in in your browser and let OpenClaude store Codex credentials securely.
+If you use the in-app provider wizard, choose `Codex OAuth` to open ChatGPT sign-in in your browser and let Claudio store Codex credentials securely.
 
-If you already use the Codex CLI, OpenClaude reads `~/.codex/auth.json` automatically. You can also point it elsewhere with `CODEX_AUTH_JSON_PATH` or override the token directly with `CODEX_API_KEY`.
+If you already use the Codex CLI, Claudio reads `~/.codex/auth.json` automatically. You can also point it elsewhere with `CODEX_AUTH_JSON_PATH` or override the token directly with `CODEX_API_KEY`.
 
 If you set `CODEX_API_KEY` manually and are not relying on `auth.json` or stored
 Codex OAuth credentials, also set `CHATGPT_ACCOUNT_ID` (or
@@ -154,14 +154,14 @@ export OPENAI_MODEL=llama3.3:70b
 
 #### Ollama Context Length
 
-OpenClaude sends the current conversation history to Ollama on each turn and
-uses Ollama's native chat API for Ollama endpoints. Native chat lets OpenClaude
+Claudio sends the current conversation history to Ollama on each turn and
+uses Ollama's native chat API for Ollama endpoints. Native chat lets Claudio
 send `options.num_ctx` with each request, so Ollama receives a 32768-token
 context window by default instead of falling back to the smaller context often
 used by Ollama's OpenAI-compatible `/v1/chat/completions` shim.
 
 To choose a different request-level context size, set
-`OPENCLAUDE_OLLAMA_NUM_CTX` before launching OpenClaude:
+`OPENCLAUDE_OLLAMA_NUM_CTX` before launching Claudio:
 
 ```bash
 export OPENCLAUDE_OLLAMA_NUM_CTX=65536
@@ -191,7 +191,7 @@ ollama ps
 ```
 
 Check the `CONTEXT` column. If it still shows a small value such as `4K` after a
-new OpenClaude request, stop the existing Ollama app/server, start it again, and
+new Claudio request, stop the existing Ollama app/server, start it again, and
 retry the request.
 
 Use a concrete recall test after changing the setting, such as asking the model
@@ -387,7 +387,7 @@ export OPENAI_BASE_URL=https://api.fireworks.ai/inference/v1
 export OPENAI_MODEL=accounts/fireworks/models/llama-v3p1-70b-instruct
 ```
 
-The **OpenClaude VS Code extension** can store the key in Secret Storage and set these variables for you when you launch from the Control Center. See `vscode-extension/openclaude-vscode/README.md`.
+The **Claudio VS Code extension** can store the key in Secret Storage and set these variables for you when you launch from the Control Center. See `vscode-extension/openclaude-vscode/README.md`.
 
 ## Optional provider packages
 
@@ -404,7 +404,7 @@ missing. Install only what you need:
 | Claude on Vertex AI / Gemini ADC | `CLAUDE_CODE_USE_VERTEX=1` / Gemini ADC auth | `npm i -g google-auth-library` |
 | Reading/processing images | reading an image file | `npm i -g sharp` |
 
-When installing OpenClaude from source (`bun install`), all of these are
+When installing Claudio from source (`bun install`), all of these are
 already present as dev dependencies, so source/dev builds need no extra steps.
 
 ## Environment Variables
@@ -505,7 +505,7 @@ addition to the `CLAUDE_CODE_OPENAI_CONTEXT_WINDOWS` /
 
 ## Safety strictness
 
-OpenClaude runs several "safety" checks: a model-level refusal directive, bash
+Claudio runs several "safety" checks: a model-level refusal directive, bash
 command-injection validation, and sensitive-file / auto-edit guards. These are
 conservative by design, but a few of them can surface as refusals or approval
 prompts for entirely benign, routine coding tasks (e.g. editing `.gitmodules`,
@@ -676,7 +676,7 @@ For `dev:atomic-chat`, make sure Atomic Chat is running with a model loaded befo
 
 ## Message-Count Compaction Threshold
 
-By default, OpenClaude compacts conversations based on token usage and also
+By default, Claudio compacts conversations based on token usage and also
 applies a safety hard cap of 1000 active messages. The hard cap catches long
 sessions that accumulate many small messages with negligible token cost.
 

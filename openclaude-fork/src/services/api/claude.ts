@@ -2510,7 +2510,7 @@ async function* queryModel(
                 max_tokens: maxOutputTokens,
               })
               const is3pProvider = shouldUseIntegrationRuntimeLimits()
-              const providerNoun = is3pProvider ? "Model's" : "OpenClaude's"
+              const providerNoun = is3pProvider ? "Model's" : "Claudio's"
               yield createAssistantAPIErrorMessage({
                 content: `${API_ERROR_MESSAGE_PREFIX}: ${providerNoun} response exceeded the ${
                   maxOutputTokens

@@ -43,7 +43,7 @@ describe('node runtime contract', () => {
       version: '20.11.1',
       major: 20,
       message:
-        'Detected 20.11.1. OpenClaude requires Node.js >=22.0.0. Install Node 22 LTS or newer, then reinstall/re-run OpenClaude.',
+        'Detected 20.11.1. Claudio requires Node.js >=22.0.0. Install Node 22 LTS or newer, then reinstall/re-run Claudio.',
     })
   })
 
@@ -53,7 +53,7 @@ describe('node runtime contract', () => {
       version: 'nightly',
       major: null,
       message:
-        'Could not parse Node.js version: nightly. OpenClaude requires Node.js >=22.0.0.',
+        'Could not parse Node.js version: nightly. Claudio requires Node.js >=22.0.0.',
     })
   })
 })

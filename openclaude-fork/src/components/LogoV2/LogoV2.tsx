@@ -260,8 +260,8 @@ export function LogoV2() {
   }
   const layoutMode = getLayoutMode(columns);
   const userTheme = resolveThemeSetting(getGlobalConfig().theme);
-  const borderTitle = ` ${color("text", userTheme)("OpenClaude")} ${color("inactive", userTheme)(`v${version}`)} `;
-  const compactBorderTitle = color("text", userTheme)(" OpenClaude ");
+  const borderTitle = ` ${color("text", userTheme)("Claudio")} ${color("inactive", userTheme)(`v${version}`)} `;
+  const compactBorderTitle = color("text", userTheme)(" Claudio ");
   if (layoutMode === "compact") {
     let welcomeMessage = formatWelcomeMessage(username);
     if (stringWidth(welcomeMessage) > columns - 4) {

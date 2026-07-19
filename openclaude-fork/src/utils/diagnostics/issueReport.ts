@@ -646,10 +646,10 @@ function tableEscape(value: string | number | boolean | null | undefined): strin
 
 export function formatIssueReportAsMarkdown(report: IssueReport): string {
   const lines = [
-    '# OpenClaude diagnostic report',
+    '# Claudio diagnostic report',
     '',
     '## Summary',
-    `- OpenClaude: ${report.openclaude.displayVersion ?? report.openclaude.version}`,
+    `- Claudio: ${report.openclaude.displayVersion ?? report.openclaude.version}`,
     `- Runtime: ${report.runtime.platform} ${report.runtime.arch}, Node ${report.runtime.node}`,
     `- Provider: ${report.provider.label} (${report.provider.routeId})`,
     `- Model: ${report.provider.model}`,

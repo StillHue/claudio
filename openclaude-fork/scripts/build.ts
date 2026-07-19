@@ -1,5 +1,5 @@
 /**
- * OpenClaude build script — bundles the TypeScript source into a single
+ * Claudio build script — bundles the TypeScript source into a single
  * distributable JS file using Bun's bundler.
  *
  * Handles:

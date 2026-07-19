@@ -1,12 +1,12 @@
 # Reasoning and /effort Metadata
 
-OpenClaude treats reasoning support as a per-model capability. Provider and gateway catalogs can contain a mix of reasoning and non-reasoning models, so reasoning controls must never be inferred provider-wide.
+Claudio treats reasoning support as a per-model capability. Provider and gateway catalogs can contain a mix of reasoning and non-reasoning models, so reasoning controls must never be inferred provider-wide.
 
 ## Concepts
 
-`capabilities.supportsReasoning` means the model is known to support reasoning or thinking behavior. It is safe capability metadata, but by itself it does not authorize OpenClaude to mutate API requests.
+`capabilities.supportsReasoning` means the model is known to support reasoning or thinking behavior. It is safe capability metadata, but by itself it does not authorize Claudio to mutate API requests.
 
-`reasoning` describes the request control surface OpenClaude can safely use for that exact model entry or model descriptor.
+`reasoning` describes the request control surface Claudio can safely use for that exact model entry or model descriptor.
 
 ```ts
 reasoning: {
@@ -52,7 +52,7 @@ For `deepseek_compatible` and `zai_compatible`, metadata levels must be limited 
 
 Before adding `reasoning` metadata for a model:
 
-1. Probe the exact route and model ID OpenClaude will send.
+1. Probe the exact route and model ID Claudio will send.
 2. Record accepted levels and rejected levels.
 3. Check whether disabling thinking is supported and what request shape is required.
 4. Confirm whether accepted parameters actually change behavior or are silent no-ops.

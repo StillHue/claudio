@@ -1,25 +1,24 @@
-# OpenClaude Sidebar (Cursor / VS Code)
+# Claudio Sidebar (Cursor / VS Code)
 
-Ícone na Activity Bar que abre o **OpenClaude** embutido numa sidebar (xterm + PTY), com o asterisco estilo Claude.
+Activity Bar icon that opens **Claudio** in a full editor tab (OpenCode-style).
 
-## Instalar
+## Install
 
-```powershell
-cd C:\Users\gabdr\openclaude-cursor-ext
+```bash
+cd openclaude-cursor-ext
 npm install
 npm run build
-npx --yes @vscode/vsce package --allow-missing-repository
-cursor --install-extension .\openclaude-sidebar-0.1.0.vsix
+npx @vscode/vsce package --no-dependencies --allow-missing-repository
+# then: cursor --install-extension ./claudio-sidebar-0.1.0.vsix --force
 ```
 
-Depois: **Developer: Reload Window**, e clique no ícone OpenClaude na barra esquerda.
+Reload the window (**Developer: Reload Window**).
 
-## Requisitos
+## Requirements
 
-- `openclaude` no PATH (seu fork linkado via `npm link` serve)
-- No Windows, `node-pty` usa ConPTY
+- `claudio` on your PATH (`npm link` from `openclaude-fork` after build)
 
 ## Config
 
-- `openclaude.command` (default: `openclaude`)
-- `openclaude.args` (lista de argumentos extras)
+- `claudio.command` (default: `claudio`)
+- `claudio.args`

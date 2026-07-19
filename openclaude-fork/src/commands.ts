@@ -179,7 +179,7 @@ import {
 } from './skills/loadSkillsDir.js'
 import { getBundledSkills } from './skills/bundledSkills.js'
 import {
-  getOpenClaudeCommandDescriptionKey,
+  getClaudioCommandDescriptionKey,
   localize,
 } from './i18n/index.js'
 import { getBuiltinPluginSkillCommands } from './plugins/builtinPlugins.js'
@@ -213,7 +213,7 @@ import stats from './commands/stats/index.js'
 const usageReport: Command = {
   type: 'prompt',
   name: 'insights',
-  description: 'Generate a report analyzing your OpenClaude sessions',
+  description: 'Generate a report analyzing your Claudio sessions',
   contentLength: 0,
   progressMessage: 'analyzing your sessions',
   source: 'builtin',
@@ -390,10 +390,10 @@ const COMMANDS = memoize((): Command[] => [
   ...(process.env.USER_TYPE === 'ant' && !process.env.IS_DEMO
     ? INTERNAL_ONLY_COMMANDS
     : []),
-].filter(isCommand).map(withOpenClaudeCommandLocalizationKey))
+].filter(isCommand).map(withClaudioCommandLocalizationKey))
 
-function withOpenClaudeCommandLocalizationKey(cmd: Command): Command {
-  cmd.localizationKey ??= getOpenClaudeCommandDescriptionKey(cmd.name)
+function withClaudioCommandLocalizationKey(cmd: Command): Command {
+  cmd.localizationKey ??= getClaudioCommandDescriptionKey(cmd.name)
   return cmd
 }
 
@@ -786,7 +786,7 @@ export function getCommand(commandName: string, commands: Command[]): Command {
  */
 export function formatDescriptionWithSource(cmd: Command): string {
   if (cmd.type !== 'prompt') {
-    return formatOpenClaudeOwnedDescription(cmd)
+    return formatClaudioOwnedDescription(cmd)
   }
 
   const desc = cmd.description ?? ''
@@ -805,18 +805,18 @@ export function formatDescriptionWithSource(cmd: Command): string {
 
   if (cmd.source === 'builtin' || cmd.source === 'mcp') {
     return cmd.source === 'builtin'
-      ? formatOpenClaudeOwnedDescription(cmd)
+      ? formatClaudioOwnedDescription(cmd)
       : desc
   }
 
   if (cmd.source === 'bundled') {
-    return `${formatOpenClaudeOwnedDescription(cmd)} (bundled)`
+    return `${formatClaudioOwnedDescription(cmd)} (bundled)`
   }
 
   return `${desc} (${getSettingSourceName(cmd.source)})`
 }
 
-function formatOpenClaudeOwnedDescription(cmd: Command): string {
+function formatClaudioOwnedDescription(cmd: Command): string {
   const desc = cmd.description ?? ''
   if (cmd.localizationKey) {
     return localize(cmd.localizationKey, desc)

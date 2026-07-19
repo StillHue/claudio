@@ -837,7 +837,7 @@ export const SettingsSchema = lazySchema(() =>
         .optional()
         .describe(
           'Ordered list of providerProfile ids. When the active provider returns a rate-limit ' +
-            'or quota error, OpenClaude advances to the next profile in this list (starting after ' +
+            'or quota error, Claudio advances to the next profile in this list (starting after ' +
             'the currently-active id) and retries the turn. ' +
             'Example: ["provider_anthropic", "provider_openai", "provider_ollama"]',
         ),
@@ -1126,7 +1126,7 @@ export const SettingsSchema = lazySchema(() =>
             .boolean()
             .optional()
             .describe(
-              'When true, opt in to the generated OpenClaude footer for PR descriptions. When false in any settings source, generated PR attribution is blocked.',
+              'When true, opt in to the generated Claudio footer for PR descriptions. When false in any settings source, generated PR attribution is blocked.',
             ),
           forbiddenCommitMessagePatterns: z
             .array(z.string())

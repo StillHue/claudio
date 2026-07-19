@@ -1,5 +1,5 @@
 /**
- * Inert stub for the OpenClaude session-server HTTP listener.
+ * Inert stub for the Claudio session-server HTTP listener.
  *
  * The bundler noop-stubs this specifier in current builds; this module
  * mirrors that behavior for the typechecker. `startServer` binds nothing and

@@ -17,7 +17,7 @@ import {
 import { getValidationTip } from './settings/validationTips.ts'
 
 const originalConfigDir = process.env.CLAUDE_CONFIG_DIR
-const originalOpenClaudeConfigDir = process.env.OPENCLAUDE_CONFIG_DIR
+const originalClaudioConfigDir = process.env.OPENCLAUDE_CONFIG_DIR
 
 beforeEach(async () => {
   await acquireSharedMutationLock('openclaudeUiSurfaces.test.ts')
@@ -33,17 +33,17 @@ afterEach(() => {
     } else {
       process.env.CLAUDE_CONFIG_DIR = originalConfigDir
     }
-    if (originalOpenClaudeConfigDir === undefined) {
+    if (originalClaudioConfigDir === undefined) {
       delete process.env.OPENCLAUDE_CONFIG_DIR
     } else {
-      process.env.OPENCLAUDE_CONFIG_DIR = originalOpenClaudeConfigDir
+      process.env.OPENCLAUDE_CONFIG_DIR = originalClaudioConfigDir
     }
   } finally {
     releaseSharedMutationLock()
   }
 })
 
-describe('OpenClaude settings path surfaces', () => {
+describe('Claudio settings path surfaces', () => {
   test('isClaudeSettingsPath recognizes project .openclaude settings files', () => {
     expect(
       isClaudeSettingsPath(
@@ -186,7 +186,7 @@ describe('OpenClaude settings path surfaces', () => {
   })
 })
 
-describe('OpenClaude validation tips', () => {
+describe('Claudio validation tips', () => {
   test('permissions.defaultMode invalid value keeps suggestion but no Claude docs link', () => {
     const tip = getValidationTip({
       path: 'permissions.defaultMode',
@@ -208,7 +208,7 @@ describe('OpenClaude validation tips', () => {
   })
 })
 
-describe('OpenClaude permission mode surfaces', () => {
+describe('Claudio permission mode surfaces', () => {
   test('default permission mode picker excludes dangerous persisted modes', () => {
     const options = getDefaultPermissionModeOptions(true)
 

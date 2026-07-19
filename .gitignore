@@ -1,28 +1,51 @@
-# Dependencies & build
+# Dependencies & build artifacts
 **/node_modules/
 **/dist/
+**/build/
 **/*.tsbuildinfo
-**/.vsix
+**/.turbo/
+**/.cache/
 *.vsix
+**/*.vsix
 
-# Env & secrets
+# Environment & secrets — never commit
 .env
 .env.*
 !.env.example
+**/.env
+**/.env.*
+!**/.env.example
 **/auth.json
+**/*credentials.json
 **/.openclaude-profile.json
 **/.openclaude/
+**/.claude/
+**/secrets/
+**/*.pem
+**/*.p12
+**/*.pfx
+**/id_rsa
+**/id_rsa.pub
+**/id_ed25519
+**/id_ed25519.pub
 
-# OS / editor
+# Local IDE / OS
 .DS_Store
 Thumbs.db
+Desktop.ini
 .idea/
 .vscode/*
 !.vscode/extensions.json
+*.swp
+*.swo
 
-# Logs / temp
+# Logs / coverage / temp
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
 coverage/
+.nyc_output/
 .tmp/
 .tmp-*/
 temp_reference/
@@ -31,13 +54,14 @@ plan/
 __pycache__/
 *.py[cod]
 .pytest_cache/
-
-# Agent / local tooling
 .worktrees/
-.claude/
 agent.log
 
-# Fork-specific (also covered by nested ignore patterns)
+# Package manager / local agent docs (fork)
 openclaude-fork/package-lock.json
 openclaude-fork/GEMINI.md
 openclaude-fork/CLAUDE.md
+
+# Local dumps
+*.local.json
+*.local.md

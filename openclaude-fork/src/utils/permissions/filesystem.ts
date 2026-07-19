@@ -541,7 +541,7 @@ export function getActiveSessionPlanFilePath(
   return getPlanFilePath(agentId)
 }
 
-export function isOpenClaudeCommitMessagePath(absolutePath: string): boolean {
+export function isClaudioCommitMessagePath(absolutePath: string): boolean {
   const expectedPath = join(getOriginalCwd(), '.git', 'OPENCLAUDE_COMMIT_MSG')
   const expectedForms = getPathsForPermissionCheck(expectedPath)
   const targetForms = getPathsForPermissionCheck(absolutePath)
@@ -587,7 +587,7 @@ function isDangerousFilePathToAutoEdit(
         continue
       }
 
-      // Special case: .openclaude/worktrees/ is a structural path (where OpenClaude stores
+      // Special case: .openclaude/worktrees/ is a structural path (where Claudio stores
       // git worktrees), not a user-created dangerous directory. Skip the .openclaude
       // segment when it's followed by 'worktrees'. Any nested .openclaude directories
       // within the worktree (not followed by 'worktrees') are still blocked.
@@ -1766,14 +1766,14 @@ export function checkEditableInternalPath(
   if (
     (toolPermissionContext?.mode === 'bypassPermissions' ||
       toolPermissionContext?.mode === 'fullAccess') &&
-    isOpenClaudeCommitMessagePath(normalizedPath)
+    isClaudioCommitMessagePath(normalizedPath)
   ) {
     return {
       behavior: 'allow',
       updatedInput: input,
       decisionReason: {
         type: 'other',
-        reason: 'OpenClaude commit message file is allowed for writing',
+        reason: 'Claudio commit message file is allowed for writing',
       },
     }
   }

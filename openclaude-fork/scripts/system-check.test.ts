@@ -846,7 +846,7 @@ describe('checkNodeVersion', () => {
       ok: false,
       label: 'Node.js version',
       detail:
-        'Detected 20.11.1. OpenClaude requires Node.js >=22.0.0. Install Node 22 LTS or newer, then reinstall/re-run OpenClaude.',
+        'Detected 20.11.1. Claudio requires Node.js >=22.0.0. Install Node 22 LTS or newer, then reinstall/re-run Claudio.',
     })
   })
 
@@ -862,7 +862,7 @@ describe('checkNodeVersion', () => {
       ok: false,
       label: 'Node.js version',
       detail:
-        'Unable to run `node --version`: spawn node ENOENT. OpenClaude requires Node.js >=22.0.0 on PATH.',
+        'Unable to run `node --version`: spawn node ENOENT. Claudio requires Node.js >=22.0.0 on PATH.',
     })
   })
 
@@ -871,7 +871,7 @@ describe('checkNodeVersion', () => {
       ok: false,
       label: 'Node.js version',
       detail:
-        'Detected 20.11.1. OpenClaude requires Node.js >=22.0.0. Install Node 22 LTS or newer, then reinstall/re-run OpenClaude.',
+        'Detected 20.11.1. Claudio requires Node.js >=22.0.0. Install Node 22 LTS or newer, then reinstall/re-run Claudio.',
     })
   })
 

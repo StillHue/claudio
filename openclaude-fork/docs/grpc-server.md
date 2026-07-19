@@ -1,6 +1,6 @@
 # Headless gRPC Server
 
-OpenClaude can be run as a headless gRPC service, allowing you to integrate
+Claudio can be run as a headless gRPC service, allowing you to integrate
 its agentic capabilities (tools, bash, file editing) into other applications,
 CI/CD pipelines, or custom user interfaces. The server uses bidirectional
 streaming to send real-time text chunks, tool calls, and request permissions

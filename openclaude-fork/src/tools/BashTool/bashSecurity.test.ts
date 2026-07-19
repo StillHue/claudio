@@ -126,7 +126,7 @@ describe('git commit governance policy (#1326)', () => {
       { git: { forbiddenCommitMessagePatterns: ['Co-Authored-By:'] } },
       () => {
         const result = bashCommandIsSafe_DEPRECATED(
-          'git commit -m "fix: policy\n\nCo-Authored-By: OpenClaude <openclaude@gitlawb.com>"',
+          'git commit -m "fix: policy\n\nCo-Authored-By: Claudio <openclaude@gitlawb.com>"',
         )
 
         expectAskMessage(result, 'Co-Authored-By:')
@@ -139,7 +139,7 @@ describe('git commit governance policy (#1326)', () => {
       { git: { addAICoAuthor: false } },
       () => {
         const result = bashCommandIsSafe_DEPRECATED(
-          "git commit -m \"$(cat <<'EOF'\nfix: policy\n\nGenerated with OpenClaude\nEOF\n)\"",
+          "git commit -m \"$(cat <<'EOF'\nfix: policy\n\nGenerated with Claudio\nEOF\n)\"",
         )
 
         expectAskMessage(result, 'AI attribution')
@@ -152,7 +152,7 @@ describe('git commit governance policy (#1326)', () => {
       { git: { forbiddenCommitMessagePatterns: ['Generated with'] } },
       () => {
         const result = bashCommandIsSafe_DEPRECATED(
-          'git -C ./repo -c user.name=bot commit -m "fix: policy\n\nGenerated with OpenClaude"',
+          'git -C ./repo -c user.name=bot commit -m "fix: policy\n\nGenerated with Claudio"',
         )
 
         expectAskMessage(result, 'Generated with')
@@ -165,7 +165,7 @@ describe('git commit governance policy (#1326)', () => {
       { git: { forbiddenCommitMessagePatterns: ['Generated with'] } },
       () => {
         const result = bashCommandIsSafe_DEPRECATED(
-          'GIT_AUTHOR_NAME=bot git commit -m "fix: policy\n\nGenerated with OpenClaude"',
+          'GIT_AUTHOR_NAME=bot git commit -m "fix: policy\n\nGenerated with Claudio"',
         )
 
         expectAskMessage(result, 'Generated with')
@@ -178,22 +178,22 @@ describe('git commit governance policy (#1326)', () => {
       { git: { forbiddenCommitMessagePatterns: ['Generated with'] } },
       () => {
         const doubleQuoted = bashCommandIsSafe_DEPRECATED(
-          '"git" commit -m "fix: policy\n\nGenerated with OpenClaude"',
+          '"git" commit -m "fix: policy\n\nGenerated with Claudio"',
         )
         const singleQuoted = bashCommandIsSafe_DEPRECATED(
-          "'git' commit -m \"fix: policy\n\nGenerated with OpenClaude\"",
+          "'git' commit -m \"fix: policy\n\nGenerated with Claudio\"",
         )
         const gitExe = bashCommandIsSafe_DEPRECATED(
-          'git.exe commit -m "fix: policy\n\nGenerated with OpenClaude"',
+          'git.exe commit -m "fix: policy\n\nGenerated with Claudio"',
         )
         const commandWrapped = bashCommandIsSafe_DEPRECATED(
-          'command git commit -m "fix: policy\n\nGenerated with OpenClaude"',
+          'command git commit -m "fix: policy\n\nGenerated with Claudio"',
         )
         const commandPathWrapped = bashCommandIsSafe_DEPRECATED(
-          'command -p git commit -m "fix: policy\n\nGenerated with OpenClaude"',
+          'command -p git commit -m "fix: policy\n\nGenerated with Claudio"',
         )
         const commandEndOfOptionsWrapped = bashCommandIsSafe_DEPRECATED(
-          'command -- git commit -m "fix: policy\n\nGenerated with OpenClaude"',
+          'command -- git commit -m "fix: policy\n\nGenerated with Claudio"',
         )
 
         expect(doubleQuoted.behavior).toBe('ask')
@@ -211,25 +211,25 @@ describe('git commit governance policy (#1326)', () => {
       { git: { forbiddenCommitMessagePatterns: ['Generated with'] } },
       () => {
         const envWrapped = bashCommandIsSafe_DEPRECATED(
-          'env git commit -m "fix: policy\n\nGenerated with OpenClaude"',
+          'env git commit -m "fix: policy\n\nGenerated with Claudio"',
         )
         const envAssignmentWrapped = bashCommandIsSafe_DEPRECATED(
-          'env GIT_AUTHOR_NAME=bot git commit -m "fix: policy\n\nGenerated with OpenClaude"',
+          'env GIT_AUTHOR_NAME=bot git commit -m "fix: policy\n\nGenerated with Claudio"',
         )
         const envOptionWrapped = bashCommandIsSafe_DEPRECATED(
-          'env -i -u GIT_CONFIG_GLOBAL git commit -m "fix: policy\n\nGenerated with OpenClaude"',
+          'env -i -u GIT_CONFIG_GLOBAL git commit -m "fix: policy\n\nGenerated with Claudio"',
         )
         const envSplitStringWrapped = bashCommandIsSafe_DEPRECATED(
-          'env -S \'git commit -m "fix: policy\n\nGenerated with OpenClaude"\'',
+          'env -S \'git commit -m "fix: policy\n\nGenerated with Claudio"\'',
         )
         const envInlineSplitStringWrapped = bashCommandIsSafe_DEPRECATED(
-          'env --split-string="git commit -m \\"fix: policy\n\nGenerated with OpenClaude\\""',
+          'env --split-string="git commit -m \\"fix: policy\n\nGenerated with Claudio\\""',
         )
         const envSplitStringAssignmentWrapped = bashCommandIsSafe_DEPRECATED(
-          'env -S \'GIT_AUTHOR_NAME=bot git commit -m "fix: policy\n\nGenerated with OpenClaude"\'',
+          'env -S \'GIT_AUTHOR_NAME=bot git commit -m "fix: policy\n\nGenerated with Claudio"\'',
         )
         const envSplitStringGlobalOptionWrapped = bashCommandIsSafe_DEPRECATED(
-          'env -S \'git -c user.name=bot commit -m "fix: policy\n\nGenerated with OpenClaude"\'',
+          'env -S \'git -c user.name=bot commit -m "fix: policy\n\nGenerated with Claudio"\'',
         )
 
         expect(envWrapped.behavior).toBe('ask')
@@ -248,10 +248,10 @@ describe('git commit governance policy (#1326)', () => {
       { git: { forbiddenCommitMessagePatterns: ['Generated'] } },
       () => {
         const spaced = bashCommandIsSafe_DEPRECATED(
-          'git commit --message "fix: policy\n\nGenerated with OpenClaude"',
+          'git commit --message "fix: policy\n\nGenerated with Claudio"',
         )
         const equals = bashCommandIsSafe_DEPRECATED(
-          'git commit --message="fix: policy\n\nGenerated with OpenClaude"',
+          'git commit --message="fix: policy\n\nGenerated with Claudio"',
         )
         const unquoted = bashCommandIsSafe_DEPRECATED(
           'git commit --message=Generated',
@@ -337,7 +337,7 @@ describe('git commit governance policy (#1326)', () => {
           'git commit -m $(cat <<EOF\n$MSG\nEOF\n)',
         )
         const literalHeredocWithForbiddenText = bashCommandIsSafe_DEPRECATED(
-          "git commit -m $(cat <<'EOF'\nGenerated with OpenClaude\nEOF\n)",
+          "git commit -m $(cat <<'EOF'\nGenerated with Claudio\nEOF\n)",
         )
 
         expectAskMessage(unquotedHeredoc, 'cannot be checked')
@@ -351,7 +351,7 @@ describe('git commit governance policy (#1326)', () => {
       { git: { addGeneratedWithFooter: false } },
       () => {
         const result = bashCommandIsSafe_DEPRECATED(
-          'git commit -m "fix: policy\n\nCo-Authored-By: OpenClaude <openclaude@gitlawb.com>"',
+          'git commit -m "fix: policy\n\nCo-Authored-By: Claudio <openclaude@gitlawb.com>"',
         )
 
         expect(result.behavior).toBe('passthrough')

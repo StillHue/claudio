@@ -1,9 +1,9 @@
 import * as vscode from 'vscode'
 
-const TERMINAL_NAME = 'OpenClaude'
+const TERMINAL_NAME = 'Claudio'
 
 export function activate(context: vscode.ExtensionContext): void {
-  // Sidebar view exists only to give OpenClaude an Activity Bar icon.
+  // Sidebar view exists only to give Claudio an Activity Bar icon.
   // Clicking it opens the CLI as a full editor tab (OpenCode style).
   const provider: vscode.WebviewViewProvider = {
     resolveWebviewView(view: vscode.WebviewView) {
@@ -18,10 +18,10 @@ export function activate(context: vscode.ExtensionContext): void {
   }
 
   context.subscriptions.push(
-    vscode.window.registerWebviewViewProvider('openclaude.sidebar', provider),
-    vscode.commands.registerCommand('openclaude.open', () => openInEditorTab(context)),
-    vscode.commands.registerCommand('openclaude.openEditor', () => openInEditorTab(context)),
-    vscode.commands.registerCommand('openclaude.restart', () => {
+    vscode.window.registerWebviewViewProvider('claudio.sidebar', provider),
+    vscode.commands.registerCommand('claudio.open', () => openInEditorTab(context)),
+    vscode.commands.registerCommand('claudio.openEditor', () => openInEditorTab(context)),
+    vscode.commands.registerCommand('claudio.restart', () => {
       const existing = vscode.window.terminals.find(t => t.name === TERMINAL_NAME)
       existing?.dispose()
       openInEditorTab(context)
@@ -31,7 +31,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
 export function deactivate(): void {}
 
-/** Run the OpenClaude CLI in a terminal editor tab (full main-area screen). */
+/** Run the Claudio CLI in a terminal editor tab (full main-area screen). */
 function openInEditorTab(context: vscode.ExtensionContext): void {
   const existing = vscode.window.terminals.find(t => t.name === TERMINAL_NAME)
   if (existing) {
@@ -39,8 +39,8 @@ function openInEditorTab(context: vscode.ExtensionContext): void {
     return
   }
 
-  const config = vscode.workspace.getConfiguration('openclaude')
-  const command = config.get<string>('command') || 'openclaude'
+  const config = vscode.workspace.getConfiguration('claudio')
+  const command = config.get<string>('command') || 'claudio'
   const args = config.get<string[]>('args') || []
   const cwd = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath
 
@@ -87,7 +87,7 @@ function getSidebarHtml(): string {
 </head>
 <body>
   <div class="mark">✳</div>
-  <button id="open">Open OpenClaude</button>
+  <button id="open">Open Claudio</button>
   <p>Opens the CLI in a full editor tab</p>
   <script>
     const vscode = acquireVsCodeApi();

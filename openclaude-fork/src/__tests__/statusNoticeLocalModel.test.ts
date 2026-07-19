@@ -176,12 +176,12 @@ describe('buildLocalModelContextLoad', () => {
         id: 'ollama_context_length',
         message: 'Ollama context length is too small',
         details: ['llama3.1:8b: active CONTEXT is 4K'],
-        summary: 'Ollama CONTEXT: 4K (OpenClaude requests 32K)',
+        summary: 'Ollama CONTEXT: 4K (Claudio requests 32K)',
       },
     ])
 
     expect(result?.lines).toEqual([
-      'Ollama CONTEXT: 4K (OpenClaude requests 32K)',
+      'Ollama CONTEXT: 4K (Claudio requests 32K)',
     ])
   })
 })
@@ -195,9 +195,9 @@ llama3.1:8b     46e0c10c039e    6.7 GB    100% GPU     4 minutes from now 4K
 
     expect(result).toMatchObject({
       id: 'ollama_context_length',
-      summary: 'Ollama CONTEXT: 4K (OpenClaude requests 32K)',
+      summary: 'Ollama CONTEXT: 4K (Claudio requests 32K)',
     })
-    expect(result?.details.join('\n')).toContain('OpenClaude requests 32768')
+    expect(result?.details.join('\n')).toContain('Claudio requests 32768')
   })
 
   test('does not warn when the active context is already large enough', () => {
@@ -218,7 +218,7 @@ llama3.1:8b     7e0c10c039e46    6.7 GB    100% GPU     4 minutes from now 32K
 
     expect(parseOllamaPsContextWarning(output, 'llama3.1:8b')).toBeNull()
     expect(parseOllamaPsContextWarning(output, 'tinyllama:1b')).toMatchObject({
-      summary: 'Ollama CONTEXT: 4K (OpenClaude requests 32K)',
+      summary: 'Ollama CONTEXT: 4K (Claudio requests 32K)',
     })
   })
 

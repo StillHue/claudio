@@ -636,7 +636,7 @@ function renderChatHtml({ nonce, platform }) {
   </div>
 
   <div class="input-area">
-    <textarea id="chatInput" placeholder="Message OpenClaude..." rows="1"></textarea>
+    <textarea id="chatInput" placeholder="Message Claudio..." rows="1"></textarea>
     <button class="send-btn" id="sendBtn" title="Send message">&#x27A4;</button>
   </div>
 

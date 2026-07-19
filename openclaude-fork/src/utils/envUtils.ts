@@ -4,9 +4,9 @@ import { join } from 'path'
 
 /**
  * Resolves the override env value for the config home directory.
- * Resolves the OpenClaude config home override.
+ * Resolves the Claudio config home override.
  *
- * Intentionally does not read `CLAUDE_CONFIG_DIR`: OpenClaude config must stay
+ * Intentionally does not read `CLAUDE_CONFIG_DIR`: Claudio config must stay
  * independent from Claude Code config and credentials.
  */
 export function resolveConfigDirEnv(options?: {

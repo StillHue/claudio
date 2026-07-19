@@ -1,7 +1,7 @@
 /**
  * Loopback HTTP server that receives the xAI OAuth redirect.
  *
- * Unlike OpenClaude's general `AuthCodeListener`, this one explicitly answers
+ * Unlike Claudio's general `AuthCodeListener`, this one explicitly answers
  * CORS preflight (`OPTIONS`) for the xAI auth origins (`auth.x.ai`,
  * `accounts.x.ai`). xAI's web client pushes the authorization code to the
  * loopback URL via a browser-side fetch; without echoing CORS the browser
@@ -186,7 +186,7 @@ export async function startXaiOAuthCallback(params: {
         `<!doctype html><html><head><meta charset="utf-8"/><title>${safeTitle}</title></head>` +
           `<body style="font-family:sans-serif;padding:32px;line-height:1.5;color:#111827">` +
           `<h1 style="margin:0 0 12px;font-size:22px">${safeTitle}</h1>` +
-          `<p>You can return to OpenClaude — the CLI will finish setup automatically.</p>` +
+          `<p>You can return to Claudio — the CLI will finish setup automatically.</p>` +
           `</body></html>`,
       )
       settle(

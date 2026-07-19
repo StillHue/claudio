@@ -82,7 +82,7 @@ test('forbidden commit message patterns are combined across settings sources', (
 
   expect(
     governancePolicy.findForbiddenCommitMessagePattern(
-      'fix: policy\n\nco-authored-by: OpenClaude <x@y.z>',
+      'fix: policy\n\nco-authored-by: Claudio <x@y.z>',
     ),
   ).toBe('Co-Authored-By:')
 })

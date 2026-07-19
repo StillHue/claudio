@@ -35,7 +35,7 @@ const MAX_TITLE_CHARS = 60
 const MAX_TITLE_WORDS = 10
 const MAX_CANDIDATE_CHARS = 200
 const MAX_CANDIDATE_WORDS = 20
-const FALLBACK_SESSION_TITLE = 'OpenClaude'
+const FALLBACK_SESSION_TITLE = 'Claudio'
 const TERMINAL_CONTROL_SEQUENCE_PATTERN =
   /\x1B(?:\][\s\S]*?(?:\x07|\x1B\\)|[PX^_][\s\S]*?\x1B\\|\[[0-?]*[ -/]*[@-~]|[@-_])|\x9B[0-?]*[ -/]*[@-~]/g
 const CONTROL_CHARACTER_PATTERN = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g
@@ -379,7 +379,7 @@ function logSessionTitleDiagnostic({
 
 /**
  * Generate a sentence-case session title from a description or first message.
- * Returns null for empty input and otherwise falls back to OpenClaude when
+ * Returns null for empty input and otherwise falls back to Claudio when
  * provider output cannot be turned into a safe short title.
  *
  * @param description - The user's first message or a description of the session

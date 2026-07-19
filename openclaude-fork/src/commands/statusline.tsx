@@ -9,7 +9,7 @@ function getUserSettingsPath(): string {
 
 const statusline = {
   type: 'prompt',
-  description: "Set up OpenClaude's status line UI",
+  description: "Set up Claudio's status line UI",
   contentLength: 0,
   // Dynamic content
   aliases: [],

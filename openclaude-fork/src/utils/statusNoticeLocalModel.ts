@@ -76,9 +76,9 @@ function summarizeOllamaContextWarning(
     message: 'Ollama context length is too small',
     details: [
       `${warning.modelName}: active CONTEXT is ${warning.contextValue}`,
-      'OpenClaude requests 32768 tokens for Ollama chats. If `ollama ps` keeps showing a smaller CONTEXT after a new request, restart Ollama and verify with `ollama ps`.',
+      'Claudio requests 32768 tokens for Ollama chats. If `ollama ps` keeps showing a smaller CONTEXT after a new request, restart Ollama and verify with `ollama ps`.',
     ],
-    summary: `Ollama CONTEXT: ${warning.contextValue} (OpenClaude requests 32K)`,
+    summary: `Ollama CONTEXT: ${warning.contextValue} (Claudio requests 32K)`,
   }
 }
 

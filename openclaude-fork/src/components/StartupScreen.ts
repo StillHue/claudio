@@ -1,8 +1,8 @@
 /**
- * OpenClaude startup screen — Claude Code-style Clawd welcome scene.
+ * Claudio startup screen — Claude Code-style Clawd welcome scene.
  * Called once at CLI startup before the Ink UI renders.
  *
- * Keeps the product name "OpenClaude" while matching the official Claude CLI
+ * Keeps the product name "Claudio" while matching the official Claude CLI
  * mascot / landscape aesthetic (instead of the previous giant OPEN/CLAUDE
  * block-letter splash).
  */
@@ -17,7 +17,7 @@ import { getLocalOpenAICompatibleProviderLabel } from '../utils/providerDiscover
 import { getSettings_DEPRECATED } from '../utils/settings/settings.js'
 import { parseUserSpecifiedModel } from '../utils/model/model.js'
 import { DEFAULT_GEMINI_MODEL } from '../utils/providerProfile.js'
-import { BRAND_NAME, BRAND_TAGLINE } from '../constants/brand.js'
+import { BRAND_TAGLINE, WELCOME_NAME } from '../constants/brand.js'
 import { ANSI_DIM, ANSI_RESET, ansiRgb } from '../utils/terminalAnsi.js'
 import { type RGB } from './StartupScreen.palettes.js'
 
@@ -223,7 +223,7 @@ export function printStartupScreen(modelOverride?: string): void {
   out.push('')
   // Claude Code header: accent title + dim version.
   out.push(
-    `  ${paintSolid(`Welcome to ${BRAND_NAME}`, ACCENT)} ${DIM}${paintSolid(`v${version}`, GRAY)}`,
+    `  ${paintSolid(`Welcome to ${WELCOME_NAME}`, ACCENT)} ${DIM}${paintSolid(`v${version}`, GRAY)}`,
   )
   out.push(`  ${DIM}${paintSolid('·'.repeat(56), GRAY)}`)
   // Landscape in normal text color (like WelcomeV2), Clawd in accent.
@@ -234,7 +234,7 @@ export function printStartupScreen(modelOverride?: string): void {
   out.push(`  ${DIM}${paintSolid(`\u2726 ${BRAND_TAGLINE} \u2726`, GRAY)}`)
   out.push('')
 
-  // Provider info box (OpenClaude multi-provider context)
+  // Provider info box (Claudio multi-provider context)
   out.push(`${ansiRgb(...BORDER)}\u2554${'\u2550'.repeat(W - 2)}\u2557${RESET}`)
 
   const lbl = (k: string, v: string, c: RGB = TEXT): [string, number] => {

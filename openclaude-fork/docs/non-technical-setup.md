@@ -1,4 +1,4 @@
-# OpenClaude for Non-Technical Users
+# Claudio for Non-Technical Users
 
 This guide is for people who want the easiest setup path.
 
@@ -6,9 +6,9 @@ You do not need to build from source. You do not need Bun. You do not need to un
 
 If you can copy and paste commands into a terminal, you can set this up.
 
-## What OpenClaude Does
+## What Claudio Does
 
-OpenClaude lets you use an AI coding assistant with different model providers such as:
+Claudio lets you use an AI coding assistant with different model providers such as:
 
 - OpenAI
 - DeepSeek
@@ -28,7 +28,7 @@ You need:
 
 ## Fastest Path
 
-1. Install OpenClaude with npm
+1. Install Claudio with npm
 2. Run `openclaude`
 3. Inside the CLI, run `/provider` for guided provider setup
 
@@ -41,7 +41,7 @@ The `/provider` command walks you through choosing a provider and entering crede
 
 ## Which Provider Should You Choose?
 
-Once you have picked a provider, run `/provider` inside OpenClaude to set it up with guided prompts.
+Once you have picked a provider, run `/provider` inside Claudio to set it up with guided prompts.
 
 ### OpenAI
 
@@ -115,20 +115,20 @@ Cause:
 Fix:
 
 1. Get a fresh key from your provider
-2. Run `/provider` inside OpenClaude to update your credentials
+2. Run `/provider` inside Claudio to update your credentials
 3. Re-run `openclaude`
 
 ### Missing Provider Key after copying .env.example
 
 Cause:
 
-- OpenClaude does not automatically load `.env` files. If you copied `.env.example` to `.env`, OpenClaude won't see the variables unless you tell it to.
+- Claudio does not automatically load `.env` files. If you copied `.env.example` to `.env`, Claudio won't see the variables unless you tell it to.
 
 Fix:
 
 - Load the file explicitly:
   `openclaude --provider-env-file .env`
-- Or, use the `/provider` command inside OpenClaude instead (recommended).
+- Or, use the `/provider` command inside Claudio instead (recommended).
 - Do not commit your `.env` file to git.
 - The explicit loader accepts provider/setup variables. Export runtime/debug variables from your shell or launcher instead.
 
@@ -161,7 +161,7 @@ If you want source builds, advanced provider profiles, diagnostics, or Bun-based
 
 ### Quick diagnostic check
 
-If OpenClaude is not working after setup, run:
+If Claudio is not working after setup, run:
 
 ```bash
 openclaude --version

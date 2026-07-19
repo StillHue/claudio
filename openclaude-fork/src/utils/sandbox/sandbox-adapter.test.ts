@@ -56,7 +56,7 @@ describe('convertToSandboxRuntimeConfig', () => {
     }
   })
 
-  test('denies canonical OpenClaude settings files in changed cwd', () => {
+  test('denies canonical Claudio settings files in changed cwd', () => {
     const config = convertToSandboxRuntimeConfig({} as SettingsJson)
 
     expect(config.filesystem.denyWrite).toContain(

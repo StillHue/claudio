@@ -13,7 +13,7 @@ const dictionaries: Record<string, I18nDictionary> = {
 }
 
 export { detectLocale }
-export { getOpenClaudeCommandDescriptionKey } from './commandDescriptions.js'
+export { getClaudioCommandDescriptionKey } from './commandDescriptions.js'
 export type { InterpolationValues, Locale, LocalizationKey } from './types.js'
 
 export function localize(

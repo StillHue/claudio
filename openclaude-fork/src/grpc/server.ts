@@ -150,7 +150,7 @@ export class GrpcServer {
             tools: getTools(appState.toolPermissionContext), // Gets all available tools
             commands: [], // Slash commands
             mcpClients: [],
-            // Register OpenClaude's built-in agents (general-purpose,
+            // Register Claudio's built-in agents (general-purpose,
             // statusline-setup, optional code-guide). Without this the Agent
             // tool throws "Agent type 'general-purpose' not found" the moment
             // the model tries to spawn a subagent for investigation.

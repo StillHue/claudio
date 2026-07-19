@@ -1,5 +1,5 @@
 /**
- * Inert stub for the OpenClaude session-server logger.
+ * Inert stub for the Claudio session-server logger.
  *
  * The bundler noop-stubs this specifier in current builds; this module
  * mirrors that behavior for the typechecker. `createServerLogger` returns a

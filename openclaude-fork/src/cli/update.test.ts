@@ -46,7 +46,7 @@ describe('writePackageManagerUpdateGuidance', () => {
       })
 
       expect(output).toContain(
-        'OpenClaude is managed by Homebrew. Use Homebrew to update OpenClaude.',
+        'Claudio is managed by Homebrew. Use Homebrew to update Claudio.',
       )
       expect(output).toContain('Update available: 1.0.0 → 2.0.0')
       if (expectsUpstreamCommand) {

@@ -25,7 +25,7 @@ export const vi = {
     'Hiện tổng chi phí và thời lượng phiên hiện tại',
   'commands.diff.description': 'Xem thay đổi chưa commit và diff từng lượt',
   'commands.doctor.description':
-    'Chẩn đoán và xác minh cài đặt OpenClaude',
+    'Chẩn đoán và xác minh cài đặt Claudio',
   'commands.dream.description':
     'Chạy hợp nhất bộ nhớ — tổng hợp các phiên gần đây thành bộ nhớ lâu dài',
   'commands.effort.description': 'Đặt mức độ nỗ lực cho mô hình',
@@ -39,7 +39,7 @@ export const vi = {
   'commands.init.description':
     'Khởi tạo file hướng dẫn dự án mới với tài liệu codebase',
   'commands.insights.description':
-    'Tạo báo cáo phân tích các phiên OpenClaude',
+    'Tạo báo cáo phân tích các phiên Claudio',
   'commands.install-github-app.description':
     'Thiết lập Claude GitHub Actions cho kho lưu trữ',
   'commands.knowledge.description': 'Quản lý Knowledge Graph',
@@ -57,7 +57,7 @@ export const vi = {
     'Quản lý quy tắc cho phép & từ chối tool',
   'commands.plan.description':
     'Bật chế độ kế hoạch hoặc xem kế hoạch phiên hiện tại',
-  'commands.plugin.description': 'Quản lý plugin OpenClaude',
+  'commands.plugin.description': 'Quản lý plugin Claudio',
   'commands.provider.description': 'Quản lý hồ sơ nhà cung cấp API',
   'commands.pr-comments.description':
     'Lấy bình luận từ pull request GitHub',
@@ -75,12 +75,12 @@ export const vi = {
     'Hoàn thành đánh giá bảo mật cho các thay đổi đang chờ trên nhánh hiện tại',
   'commands.skills.description': 'Liệt kê các kỹ năng có sẵn',
   'commands.stats.description':
-    'Hiện thống kê sử dụng và hoạt động OpenClaude',
+    'Hiện thống kê sử dụng và hoạt động Claudio',
   'commands.status.description':
-    'Hiển thị trạng thái OpenClaude bao gồm phiên bản, mô hình, tài khoản, kết nối API và trạng thái công cụ',
+    'Hiển thị trạng thái Claudio bao gồm phiên bản, mô hình, tài khoản, kết nối API và trạng thái công cụ',
   'commands.statusline.description':
-    'Thiết lập giao diện dòng trạng thái của OpenClaude',
-  'commands.stickers.description': 'Đặt mua sticker OpenClaude',
+    'Thiết lập giao diện dòng trạng thái của Claudio',
+  'commands.stickers.description': 'Đặt mua sticker Claudio',
   'commands.tasks.description': 'Liệt kê và quản lý tác vụ nền',
   'commands.terminal-setup.description':
     'Cài đặt phím tắt Shift+Enter để xuống dòng',
@@ -88,7 +88,7 @@ export const vi = {
   'commands.usage.description': 'Hiện giới hạn sử dụng gói',
   'commands.vim.description': 'Chuyển đổi giữa chế độ Vim và Normal',
   'commands.wiki.description':
-    'Khởi tạo và kiểm tra wiki dự án OpenClaude',
+    'Khởi tạo và kiểm tra wiki dự án Claudio',
   'skills.batch.description':
     'Nghiên cứu và lập kế hoạch cho một thay đổi quy mô lớn, rồi thực thi song song trên 5–30 agent worktree cô lập, mỗi agent mở một PR.',
   'skills.batch.whenToUse':

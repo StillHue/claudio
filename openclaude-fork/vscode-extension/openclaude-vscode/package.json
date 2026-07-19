@@ -1,7 +1,7 @@
 {
   "name": "openclaude-vscode",
-  "displayName": "OpenClaude",
-  "description": "Practical VS Code companion for OpenClaude with project-aware launch, Control Center, optional Microsoft Foundry / Azure OpenAI terminal env, and chat.",
+  "displayName": "Claudio",
+  "description": "Practical VS Code companion for Claudio with project-aware launch, Control Center, optional Microsoft Foundry / Azure OpenAI terminal env, and chat.",
   "version": "0.2.0",
   "publisher": "devnull-bootloader",
   "engines": {
@@ -44,80 +44,80 @@
     "commands": [
       {
         "command": "openclaude.start",
-        "title": "OpenClaude: Launch in Terminal",
-        "category": "OpenClaude"
+        "title": "Claudio: Launch in Terminal",
+        "category": "Claudio"
       },
       {
         "command": "openclaude.startInWorkspaceRoot",
-        "title": "OpenClaude: Launch in Workspace Root",
-        "category": "OpenClaude"
+        "title": "Claudio: Launch in Workspace Root",
+        "category": "Claudio"
       },
       {
         "command": "openclaude.openDocs",
-        "title": "OpenClaude: Open Repository",
-        "category": "OpenClaude"
+        "title": "Claudio: Open Repository",
+        "category": "Claudio"
       },
       {
         "command": "openclaude.openSetupDocs",
-        "title": "OpenClaude: Open Setup Guide",
-        "category": "OpenClaude"
+        "title": "Claudio: Open Setup Guide",
+        "category": "Claudio"
       },
       {
         "command": "openclaude.openWorkspaceProfile",
-        "title": "OpenClaude: Open Workspace Profile",
-        "category": "OpenClaude"
+        "title": "Claudio: Open Workspace Profile",
+        "category": "Claudio"
       },
       {
         "command": "openclaude.openControlCenter",
-        "title": "OpenClaude: Open Control Center",
-        "category": "OpenClaude"
+        "title": "Claudio: Open Control Center",
+        "category": "Claudio"
       },
       {
         "command": "openclaude.newChat",
-        "title": "OpenClaude: New Chat",
-        "category": "OpenClaude"
+        "title": "Claudio: New Chat",
+        "category": "Claudio"
       },
       {
         "command": "openclaude.openChat",
-        "title": "OpenClaude: Open Chat Panel",
-        "category": "OpenClaude"
+        "title": "Claudio: Open Chat Panel",
+        "category": "Claudio"
       },
       {
         "command": "openclaude.resumeSession",
-        "title": "OpenClaude: Resume Session",
-        "category": "OpenClaude"
+        "title": "Claudio: Resume Session",
+        "category": "Claudio"
       },
       {
         "command": "openclaude.abortChat",
-        "title": "OpenClaude: Abort Generation",
-        "category": "OpenClaude"
+        "title": "Claudio: Abort Generation",
+        "category": "Claudio"
       },
       {
         "command": "openclaude.setAzureApiKey",
-        "title": "OpenClaude: Set Azure / Foundry API Key (Secret Storage)",
-        "category": "OpenClaude"
+        "title": "Claudio: Set Azure / Foundry API Key (Secret Storage)",
+        "category": "Claudio"
       },
       {
         "command": "openclaude.clearAzureApiKey",
-        "title": "OpenClaude: Clear Azure / Foundry API Key",
-        "category": "OpenClaude"
+        "title": "Claudio: Clear Azure / Foundry API Key",
+        "category": "Claudio"
       },
       {
         "command": "openclaude.configureAzureChat",
-        "title": "OpenClaude: Configure Azure / Foundry Chat (wizard)",
-        "category": "OpenClaude"
+        "title": "Claudio: Configure Azure / Foundry Chat (wizard)",
+        "category": "Claudio"
       },
       {
         "command": "openclaude.openAzureSettings",
-        "title": "OpenClaude: Open Azure / Foundry Settings",
-        "category": "OpenClaude"
+        "title": "Claudio: Open Azure / Foundry Settings",
+        "category": "Claudio"
       }
     ],
     "viewsContainers": {
       "activitybar": [
         {
           "id": "openclaude",
-          "title": "OpenClaude",
+          "title": "Claudio",
           "icon": "media/openclaude.svg"
         }
       ]
@@ -144,32 +144,32 @@
       }
     ],
     "configuration": {
-      "title": "OpenClaude",
+      "title": "Claudio",
       "properties": {
         "openclaude.launchCommand": {
           "type": "string",
           "default": "openclaude",
-          "description": "Command run in the integrated terminal when launching OpenClaude."
+          "description": "Command run in the integrated terminal when launching Claudio."
         },
         "openclaude.terminalName": {
           "type": "string",
-          "default": "OpenClaude",
-          "description": "Integrated terminal tab name for OpenClaude sessions."
+          "default": "Claudio",
+          "description": "Integrated terminal tab name for Claudio sessions."
         },
         "openclaude.useOpenAIShim": {
           "type": "boolean",
           "default": false,
-          "description": "Optionally set CLAUDE_CODE_USE_OPENAI=1 in launched OpenClaude terminals when Azure injection is off or incomplete."
+          "description": "Optionally set CLAUDE_CODE_USE_OPENAI=1 in launched Claudio terminals when Azure injection is off or incomplete."
         },
         "openclaude.azure.enabled": {
           "type": "boolean",
           "default": false,
-          "description": "When true, launch injects Microsoft Foundry / Azure OpenAI-compatible chat env (OPENAI_* + AZURE_OPENAI_API_VERSION) into the OpenClaude terminal."
+          "description": "When true, launch injects Microsoft Foundry / Azure OpenAI-compatible chat env (OPENAI_* + AZURE_OPENAI_API_VERSION) into the Claudio terminal."
         },
         "openclaude.azure.endpoint": {
           "type": "string",
           "default": "",
-          "markdownDescription": "Azure resource base URL for OpenAI-compatible chat (example: `https://YOUR_RESOURCE.openai.azure.com`). Do not put `api-version` here; use **OpenClaude: Azure API Version**."
+          "markdownDescription": "Azure resource base URL for OpenAI-compatible chat (example: `https://YOUR_RESOURCE.openai.azure.com`). Do not put `api-version` here; use **Claudio: Azure API Version**."
         },
         "openclaude.azure.apiVersion": {
           "type": "string",
@@ -189,7 +189,7 @@
         "openclaude.azure.apiKey": {
           "type": "string",
           "default": "",
-          "markdownDescription": "Optional API key in settings (not recommended). Prefer **OpenClaude: Set Azure / Foundry API Key**. Secret wins if both are set."
+          "markdownDescription": "Optional API key in settings (not recommended). Prefer **Claudio: Set Azure / Foundry API Key**. Secret wins if both are set."
         },
         "openclaude.permissionMode": {
           "type": "string",
@@ -207,9 +207,9 @@
     },
     "themes": [
       {
-        "label": "OpenClaude Terminal Black",
+        "label": "Claudio Terminal Black",
         "uiTheme": "vs-dark",
-        "path": "./themes/OpenClaude-Terminal-Black.json"
+        "path": "./themes/Claudio-Terminal-Black.json"
       }
     ]
   },

@@ -149,7 +149,7 @@ async function resolveRealPath(target: string): Promise<string> {
 }
 
 /**
- * Detect which package manager owns the currently running OpenClaude install.
+ * Detect which package manager owns the currently running Claudio install.
  *
  * Strategy:
  *  1. Resolve the real path of the running binary (following the bin symlink

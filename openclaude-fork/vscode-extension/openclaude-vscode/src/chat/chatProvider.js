@@ -465,7 +465,7 @@ class ChatController {
   }
 }
 
-class OpenClaudeChatViewProvider {
+class ClaudioChatViewProvider {
   constructor(chatController) {
     this._chatController = chatController;
     this._webviewView = null;
@@ -560,7 +560,7 @@ class OpenClaudeChatViewProvider {
   }
 }
 
-class OpenClaudeChatPanelManager {
+class ClaudioChatPanelManager {
   constructor(chatController) {
     this._chatController = chatController;
     this._panel = null;
@@ -574,7 +574,7 @@ class OpenClaudeChatPanelManager {
 
     this._panel = vscode.window.createWebviewPanel(
       'openclaude.chatPanel',
-      'OpenClaude Chat',
+      'Claudio Chat',
       vscode.ViewColumn.Beside,
       {
         enableScripts: true,
@@ -678,6 +678,6 @@ class OpenClaudeChatPanelManager {
 
 module.exports = {
   ChatController,
-  OpenClaudeChatViewProvider,
-  OpenClaudeChatPanelManager,
+  ClaudioChatViewProvider,
+  ClaudioChatPanelManager,
 };

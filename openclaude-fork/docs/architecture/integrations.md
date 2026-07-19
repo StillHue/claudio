@@ -2,7 +2,7 @@
 
 ## Purpose
 
-OpenClaude's provider system is now descriptor-first:
+Claudio's provider system is now descriptor-first:
 
 - descriptors under `src/integrations/` define vendors, gateways, brands,
   shared model metadata, validation hints, discovery strategy, and supported

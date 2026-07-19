@@ -2,7 +2,7 @@
  * Memory Pressure Monitor
  *
  * Watches process RSS and triggers cleanup actions at configurable thresholds.
- * Designed to prevent OOM when running multiple OpenClaude sessions.
+ * Designed to prevent OOM when running multiple Claudio sessions.
  */
 
 import { logForDebugging } from './debug.js'

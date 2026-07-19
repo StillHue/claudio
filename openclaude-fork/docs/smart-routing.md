@@ -1,6 +1,6 @@
 # Smart auto-routing
 
-Smart routing is an opt-in mode that classifies each user turn as **simple** or **strong** and sends it to your configured **simple** or **strong** model accordingly, so trivial turns ("ok", "rename this", "what does this do?") can go to a cheaper model while the strong model handles everything non-trivial. Whether the simple role is actually cheaper depends on how your provider bills it. OpenClaude routes to the role you set and does not verify your provider's pricing.
+Smart routing is an opt-in mode that classifies each user turn as **simple** or **strong** and sends it to your configured **simple** or **strong** model accordingly, so trivial turns ("ok", "rename this", "what does this do?") can go to a cheaper model while the strong model handles everything non-trivial. Whether the simple role is actually cheaper depends on how your provider bills it. Claudio routes to the role you set and does not verify your provider's pricing.
 
 It is **off by default** and **experimental** — the classifier is a fast heuristic (prompt length, code blocks, reasoning/planning keywords, first turn of a session), not a perfect judge. When in doubt it routes to the strong model, so the failure mode is "no savings on a turn that could have been cheap," never a silently degraded answer on a turn you cared about.
 

@@ -359,7 +359,7 @@ export function ModelPicker(t0) {
   } else {
     t15 = $[41];
   }
-  const t16 = headerText ?? "Switch between Claude models. Applies to this session and future OpenClaude sessions. For other/previous model names, specify with --model.";
+  const t16 = headerText ?? "Switch between Claude models. Applies to this session and future Claudio sessions. For other/previous model names, specify with --model.";
   let t17;
   if ($[42] !== t16) {
     t17 = <Text dimColor={true}>{t16}</Text>;

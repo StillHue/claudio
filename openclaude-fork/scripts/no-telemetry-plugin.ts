@@ -1,5 +1,5 @@
 /**
- * No-Telemetry Build Plugin for OpenClaude
+ * No-Telemetry Build Plugin for Claudio
  *
  * Replaces phone-home, internal-only, and deleted-Anthropics-internal modules
  * with no-op stubs at compile time. Zero runtime cost, zero network calls.

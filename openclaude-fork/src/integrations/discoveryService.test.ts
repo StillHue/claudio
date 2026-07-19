@@ -464,8 +464,8 @@ describe('discoverModelsForRoute', () => {
       'X-AIMLAPI-Partner-ID': 'part_62yQoGYDq4Yqnrj2R1iGrDNJ',
       'X-AIMLAPI-Integration-Repo': 'Gitlawb/openclaude',
       'X-AIMLAPI-Integration-Version': publicBuildVersion,
-      'HTTP-Referer': 'OpenClaude',
-      'X-Title': 'OpenClaude',
+      'HTTP-Referer': 'Claudio',
+      'X-Title': 'Claudio',
     })
     expect(result?.models.map((model: { apiName: string }) => model.apiName)).toEqual([
       'gpt-4o',

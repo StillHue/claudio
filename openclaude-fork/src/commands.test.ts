@@ -1,4 +1,4 @@
-﻿import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { chdir } from 'node:process'
@@ -655,7 +655,7 @@ describe('formatDescriptionWithSource', () => {
     expect(formatDescriptionWithSource(command)).toBe('Đánh giá pull request')
   })
 
-  test('falls back to English when an OpenClaude localization key is missing', () => {
+  test('falls back to English when an Claudio localization key is missing', () => {
     const command = {
       name: 'example',
       type: 'prompt',

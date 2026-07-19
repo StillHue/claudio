@@ -33,11 +33,11 @@ test('initializeWiki creates the expected wiki scaffold', async () => {
     join('.openclaude', 'wiki', 'pages', 'conventions.md'),
   ])
   expect(await readFile(paths.schemaFile, 'utf8')).toContain(
-    '# OpenClaude Wiki Schema',
+    '# Claudio Wiki Schema',
   )
   expect(await readFile(paths.indexFile, 'utf8')).toContain('Wiki')
   expect(await readFile(paths.logFile, 'utf8')).toContain(
-    'Wiki initialized by OpenClaude',
+    'Wiki initialized by Claudio',
   )
   expect(await readFile(join(paths.pagesDir, 'architecture.md'), 'utf8')).toContain(
     '# Architecture',

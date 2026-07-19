@@ -511,13 +511,13 @@ export function buildProfileSaveMessage(
 
   lines.push(`Profile: ${filePath}`)
   if (options?.activatedInSession) {
-    lines.push('OpenClaude switched to it for this session.')
+    lines.push('Claudio switched to it for this session.')
   } else if (options?.activationWarning) {
     lines.push(
       `Saved for next startup. Warning: could not activate it in this session (${options.activationWarning}).`,
     )
   } else {
-    lines.push('Restart OpenClaude to use it.')
+    lines.push('Restart Claudio to use it.')
   }
 
   return lines.join('\n')
@@ -675,7 +675,7 @@ function ProviderChooser({
   const geminiMetadata = getProviderPresetUiMetadata('gemini')
   const mistralMetadata = getProviderPresetUiMetadata('mistral')
   const helperText = canUseCodexOAuth
-    ? 'Save a provider profile without editing environment variables first. Codex profiles backed by env, auth.json, or OpenClaude secure storage can switch this session immediately when validation succeeds.'
+    ? 'Save a provider profile without editing environment variables first. Codex profiles backed by env, auth.json, or Claudio secure storage can switch this session immediately when validation succeeds.'
     : 'Save a provider profile without editing environment variables first. Codex profiles backed by env or auth.json can switch this session immediately.'
   const options: OptionWithDescription<ProviderChoice>[] = [
     {
@@ -1119,7 +1119,7 @@ function CodexOAuthStep({
     const env = buildCodexOAuthProfileEnv(tokens)
     if (!env) {
       throw new Error(
-        'Codex OAuth succeeded, but OpenClaude could not build a Codex profile from the stored credentials.',
+        'Codex OAuth succeeded, but Claudio could not build a Codex profile from the stored credentials.',
       )
     }
 
@@ -1159,7 +1159,7 @@ function CodexOAuthStep({
     <Dialog title="Codex OAuth" onCancel={onBack}>
       <Box flexDirection="column" gap={1}>
         <Text>
-          Finish signing in with ChatGPT in your browser. OpenClaude will store
+          Finish signing in with ChatGPT in your browser. Claudio will store
           the resulting Codex credentials securely for future sessions.
         </Text>
         {status.browserOpened === false ? (
@@ -1168,7 +1168,7 @@ function CodexOAuthStep({
           </Text>
         ) : status.browserOpened === true ? (
           <Text dimColor>
-            Browser opened. Complete the sign-in there, then OpenClaude will
+            Browser opened. Complete the sign-in there, then Claudio will
             finish setup automatically.
           </Text>
         ) : (
@@ -1293,7 +1293,7 @@ function resolveCodexCredentials(processEnv: NodeJS.ProcessEnv):
       credentials.source === 'env'
         ? 'the current shell environment'
         : credentials.source === 'secure-storage'
-          ? 'OpenClaude secure storage'
+          ? 'Claudio secure storage'
         : credentials.authPath ?? DEFAULT_CODEX_BASE_URL,
   }
 }
@@ -1331,7 +1331,7 @@ export function ProviderWizard({
               setStep({ name: 'codex-oauth' })
             } else if (value === 'clear') {
               const filePath = deleteProfileFile()
-              onDone(`Removed saved provider profile at ${filePath}. Restart OpenClaude to go back to normal startup.`, {
+              onDone(`Removed saved provider profile at ${filePath}. Restart Claudio to go back to normal startup.`, {
                 display: 'system',
               })
             } else {

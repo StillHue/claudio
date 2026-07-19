@@ -1,4 +1,4 @@
-# OpenClaude Quick Start for macOS and Linux
+# Claudio Quick Start for macOS and Linux
 
 This guide uses a standard shell such as Terminal, iTerm, bash, or zsh.
 
@@ -15,12 +15,12 @@ node --version
 npm --version
 ```
 
-## 2. Install OpenClaude
+## 2. Install Claudio
 
 ```bash
 npm install -g @gitlawb/openclaude@latest
 ```
-On Arch Linux, you can alternatively install OpenClaude via the community-maintained [AUR package](https://aur.archlinux.org/packages/openclaude):
+On Arch Linux, you can alternatively install Claudio via the community-maintained [AUR package](https://aur.archlinux.org/packages/openclaude):
 
 ```bash
 paru -S openclaude
@@ -72,9 +72,9 @@ openclaude
 
 No API key is needed for Ollama local models.
 
-OpenClaude asks Ollama for a 32768-token context window on each chat request.
+Claudio asks Ollama for a 32768-token context window on each chat request.
 If you need a different size, set `OPENCLAUDE_OLLAMA_NUM_CTX` before launching
-OpenClaude, or start Ollama with a global context setting:
+Claudio, or start Ollama with a global context setting:
 
 ```bash
 # Stop any existing Ollama app/server first, then run:
@@ -114,7 +114,7 @@ No API key is needed for LM Studio local models (but uncomment the `OPENAI_API_K
 
 ### Option E: Using a .env file (Optional)
 
-If you prefer to keep your keys in a `.env` file instead of exporting them individually, note that OpenClaude does not load `.env` files automatically. You must explicitly pass it:
+If you prefer to keep your keys in a `.env` file instead of exporting them individually, note that Claudio does not load `.env` files automatically. You must explicitly pass it:
 
 ```bash
 openclaude --provider-env-file .env
@@ -146,7 +146,7 @@ Check the basics:
 - make sure Ollama is running
 - make sure the model was pulled successfully
 - if same-session chat history appears missing, verify the active `CONTEXT`
-  value with `ollama ps`; OpenClaude requests 32K by default
+  value with `ollama ps`; Claudio requests 32K by default
 
 ### For LM Studio
 
@@ -156,7 +156,7 @@ Check the basics:
 - make sure a model is loaded in LM Studio
 - make sure the model name matches what you set in `OPENAI_MODEL`
 
-## 6. Updating OpenClaude
+## 6. Updating Claudio
 
 **Via npm:**
 ```bash
@@ -169,7 +169,7 @@ paru
 ```
 *(Or use your preferred AUR helper like `yay -Syu`)*
 
-## 7. Uninstalling OpenClaude
+## 7. Uninstalling Claudio
 
 **Via npm:**
 ```bash
