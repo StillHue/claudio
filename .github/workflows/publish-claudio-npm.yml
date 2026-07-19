@@ -1,0 +1,100 @@
+# Publish @gaburieuru/claudio to npm when package.json version is newer than registry.
+#
+# Trigger: push to main that touches openclaude-fork/
+# Behavior: build → compare versions → publish only if local > published
+#
+# Setup (one-time):
+# 1. Create an npm access token (Automation) with publish rights to @gaburieuru
+# 2. Add repo secret NPM_TOKEN = that token
+#    Settings → Secrets and variables → Actions → New repository secret
+
+name: Publish Claudio npm
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'openclaude-fork/**'
+      - '.github/workflows/publish-claudio-npm.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: publish-claudio-npm
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: openclaude-fork
+
+jobs:
+  publish:
+    name: Build & publish @gaburieuru/claudio
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build
+        run: bun run build
+
+      - name: Smoke
+        run: node dist/cli.mjs --version
+
+      - name: Decide whether to publish
+        id: decide
+        shell: bash
+        run: |
+          set -euo pipefail
+          LOCAL="$(node -p "require('./package.json').version")"
+          PUBLISHED="$(npm view @gaburieuru/claudio version 2>/dev/null || echo '0.0.0')"
+          echo "local=${LOCAL}"
+          echo "published=${PUBLISHED}"
+          echo "local=${LOCAL}" >> "$GITHUB_OUTPUT"
+          echo "published=${PUBLISHED}" >> "$GITHUB_OUTPUT"
+          if node -e "
+            const [a,b]=process.argv.slice(1).map(v=>v.split('.').map(Number));
+            const cmp=(x,y)=>{for(let i=0;i<3;i++){if((x[i]||0)>(y[i]||0))process.exit(0);if((x[i]||0)<(y[i]||0))process.exit(1);} process.exit(1);};
+            cmp(a,b);
+          " "$LOCAL" "$PUBLISHED"; then
+            echo "should_publish=true" >> "$GITHUB_OUTPUT"
+            echo "Local ${LOCAL} is newer than published ${PUBLISHED} — will publish"
+          else
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+            echo "Local ${LOCAL} is not newer than published ${PUBLISHED} — skip publish"
+            echo "Bump openclaude-fork/package.json version to release a new npm package."
+          fi
+
+      - name: Publish to npm
+        if: steps.decide.outputs.should_publish == 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public
+
+      - name: Summary
+        run: |
+          {
+            echo "## Claudio npm publish"
+            echo
+            echo "- local version: \`${{ steps.decide.outputs.local }}\`"
+            echo "- published (before): \`${{ steps.decide.outputs.published }}\`"
+            echo "- published this run: \`${{ steps.decide.outputs.should_publish }}\`"
+            echo "- package: https://www.npmjs.com/package/@gaburieuru/claudio"
+          } >> "$GITHUB_STEP_SUMMARY"

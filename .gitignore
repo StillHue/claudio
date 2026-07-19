@@ -65,3 +65,6 @@ openclaude-fork/CLAUDE.md
 # Local dumps
 *.local.json
 *.local.md
+
+# Agent scratch (SDD / local tooling)
+.superpowers/
