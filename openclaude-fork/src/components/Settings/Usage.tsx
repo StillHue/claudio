@@ -1,7 +1,6 @@
 import { c as _c } from "react-compiler-runtime";
 import * as React from 'react';
 import { useEffect, useState } from 'react';
-import { extraUsage as extraUsageCommand } from 'src/commands/extra-usage/index.js';
 import {
   getUsageDescriptor,
   resolveActiveUsageId,
@@ -20,7 +19,6 @@ import { jsonStringify } from '../../utils/slowOperations.js';
 import { ConfigurableShortcutHint } from '../ConfigurableShortcutHint.js';
 import { Byline } from '../design-system/Byline.js';
 import { ProgressBar } from '../design-system/ProgressBar.js';
-import { isEligibleForOverageCreditGrant, OverageCreditUpsell } from '../LogoV2/OverageCreditUpsell.js';
 import { CodexUsage } from './CodexUsage.js';
 import { ClinePassUsage } from './ClinePassUsage.js';
 import { MiniMaxUsage } from './MiniMaxUsage.js';
@@ -266,8 +264,6 @@ function AnthropicUsage(): React.ReactNode {
 
       {utilization.extra_usage && <ExtraUsageSection extraUsage={utilization.extra_usage} maxWidth={maxWidth} />}
 
-      {isEligibleForOverageCreditGrant() && <OverageCreditUpsell maxWidth={maxWidth} />}
-
       <Text dimColor>
         <ConfigurableShortcutHint action="confirm:no" context="Settings" fallback="Esc" description="cancel" />
       </Text>
@@ -312,17 +308,14 @@ function ExtraUsageSection(t0: ExtraUsageSectionProps) {
     return false;
   }
   if (!extraUsage.is_enabled) {
-    if (extraUsageCommand.isEnabled()) {
-      let t1;
-      if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
-        t1 = <Box flexDirection="column"><Text bold={true}>{EXTRA_USAGE_SECTION_TITLE}</Text><Text dimColor={true}>Extra usage not enabled · /extra-usage to enable</Text></Box>;
-        $[0] = t1;
-      } else {
-        t1 = $[0];
-      }
-      return t1;
+    let t1;
+    if ($[0] === Symbol.for("react.memo_cache_sentinel")) {
+      t1 = <Box flexDirection="column"><Text bold={true}>{EXTRA_USAGE_SECTION_TITLE}</Text><Text dimColor={true}>Extra usage not enabled</Text></Box>;
+      $[0] = t1;
+    } else {
+      t1 = $[0];
     }
-    return null;
+    return t1;
   }
   if (extraUsage.monthly_limit === null) {
     let t1;

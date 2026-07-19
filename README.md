@@ -28,7 +28,19 @@ Claudio is **not** an official Anthropic product. The CLI under `openclaude-fork
 - [Bun](https://bun.sh) recommended for building the CLI
 - Windows, macOS, or Linux
 
-## Quick start (CLI)
+## Install (no clone needed)
+
+```bash
+npm install -g @gaburieuru/claudio@latest
+# or
+bun install -g @gaburieuru/claudio@latest
+
+claudio
+```
+
+Publishing: pushes to `main` that bump `openclaude-fork/package.json` `version` above the npm registry version auto-publish `@gaburieuru/claudio` via `.github/workflows/publish-claudio-npm.yml` (requires repo secret `NPM_TOKEN`).
+
+## Quick start (from source)
 
 ```bash
 cd openclaude-fork
@@ -36,7 +48,7 @@ bun install
 bun run build
 npm link
 claudio --version
-# → 0.24.0 (Claudio)
+# → 0.25.0 (Claudio)
 ```
 
 Configure providers via environment variables / OpenClaude docs in `openclaude-fork/docs/`. Prefer project-local `.env` (gitignored) over committing secrets.

@@ -1,68 +1,15 @@
 <div align="center">
   <img src="docs/assets/openclaude-wordmark.svg" alt="Claudio — Open terminal for any LLM" width="830">
-
-  <p>
-    <a href="https://trendshift.io/repositories/25807?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-25807" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/25807/daily?language=TypeScript" alt="Gitlawb%2Fopenclaude | Trendshift" width="250" height="55"/></a>
-    <a href="https://trendshift.io/repositories/25807?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-25807" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/25807/monthly?language=TypeScript" alt="Gitlawb%2Fopenclaude | Trendshift" width="250" height="55"/></a>
-    <a href="https://trendshift.io/repositories/25807?utm_source=repository-badge&amp;utm_medium=badge&amp;utm_campaign=badge-repository-25807" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/repositories/25807" alt="Gitlawb%2Fopenclaude | Trendshift" width="250" height="55"/></a>
-  </p>
 </div>
 
 Claudio is an open-source coding-agent CLI for cloud and local model providers.
 
 Use OpenAI-compatible APIs, Gemini, GitHub Models, Codex OAuth, Codex, Ollama, Atomic Chat, and other supported backends while keeping one terminal-first workflow: prompts, tools, agents, MCP, slash commands, and streaming output.
 
-[![PR Checks](https://github.com/Gitlawb/openclaude/actions/workflows/pr-checks.yml/badge.svg?branch=main)](https://github.com/Gitlawb/openclaude/actions/workflows/pr-checks.yml)
-[![Release](https://img.shields.io/github/v/tag/Gitlawb/openclaude?label=release&color=0ea5e9)](https://github.com/Gitlawb/openclaude/tags)
-[![Discussions](https://img.shields.io/badge/discussions-open-7c3aed)](https://github.com/Gitlawb/openclaude/discussions)
-[![Discord](https://img.shields.io/badge/Discord-join-5865F2?logo=discord&logoColor=white)](https://discord.gg/k68zFR6AcB)
-[![X](https://img.shields.io/badge/X-@gitlawb-000000?logo=x&logoColor=white)](https://x.com/gitlawb)
 [![Security Policy](https://img.shields.io/badge/security-policy-0f766e)](SECURITY.md)
 [![License](https://img.shields.io/badge/license-MIT-2563eb)](LICENSE)
 
-Claudio is also mirrored to GitLawb:
-[gitlawb.com/node/repos/z6MkqDnb/openclaude](https://gitlawb.com/node/repos/z6MkqDnb/openclaude)
-
-[Quick Start](#quick-start) | [Setup Guides](#setup-guides) | [Providers](#supported-providers) | [Development](#development) | [VS Code Extension](#vs-code-extension) | [Sponsors](#sponsors) | [Community](#community)
-
-## Sponsors
-
-<table align="center">
-  <tr>
-    <td align="center" width="150" height="80">
-      <a href="https://gitlawb.com">
-        <img src="https://gitlawb.com/logo.png" alt="GitLawb logo" width="72">
-      </a>
-    </td>
-    <td align="center" width="150" height="80">
-      <a href="https://bankr.bot">
-        <img src="https://bankr.bot/favicon.svg" alt="Bankr.bot logo" width="72">
-      </a>
-    </td>
-    <td align="center" width="150" height="80">
-      <a href="https://atomic.chat/">
-        <img src="docs/assets/atomic-chat-logo.png" alt="Atomic Chat logo" width="72">
-      </a>
-    </td>
-    <td align="center" width="150" height="80">
-      <a href="https://mimo.mi.com">
-        <img src="https://mimo.xiaomi.com/mimo-v2-pro/assets/logo.svg" alt="Xiaomi MiMo logo" width="136">
-      </a>
-    </td>
-    <td align="center" width="150" height="80">
-      <a href="https://www.atlascloud.ai/">
-        <img src="docs/assets/atlas-cloud-banner.png" alt="Atlas Cloud logo" width="136">
-      </a>
-    </td>
-  </tr>
-  <tr>
-    <td align="center"><a href="https://gitlawb.com"><strong>GitLawb</strong></a></td>
-    <td align="center"><a href="https://bankr.bot"><strong>Bankr.bot</strong></a></td>
-    <td align="center"><a href="https://atomic.chat/"><strong>Atomic Chat</strong></a></td>
-    <td align="center"><a href="https://mimo.mi.com"><strong>Xiaomi MiMo</strong></a></td>
-    <td align="center"><a href="https://www.atlascloud.ai/"><strong>Atlas Cloud</strong></a></td>
-  </tr>
-</table>
+[Quick Start](#quick-start) | [Setup Guides](#setup-guides) | [Providers](#supported-providers) | [Development](#development) | [VS Code Extension](#vs-code-extension) | [Community](#community)
 
 ## Why Claudio
 
@@ -70,7 +17,6 @@ Claudio is also mirrored to GitLawb:
 - Guided provider setup and saved profiles with `/provider`
 - Coding-agent workflows in one place: bash, file tools, grep, glob, agents, tasks, MCP, and web tools
 - A bundled VS Code extension for launch integration and theme support
-- A pixel-art hero companion who fires an arrow every time you press Enter (really — see [Meet your buddy](#meet-your-buddy))
 
 ## Quick Start
 
@@ -80,12 +26,9 @@ Claudio requires Node.js `>=22.0.0` for npm installs and runtime. Bun is
 only needed for source builds and local development.
 
 ```bash
-npm install -g @gitlawb/openclaude@latest
-```
-
-If you're on Arch Linux, you can install Claudio from the community-maintained [AUR package](https://aur.archlinux.org/packages/openclaude):
-```bash
-paru -S openclaude
+npm install -g @gaburieuru/claudio@latest
+# or
+bun install -g @gaburieuru/claudio@latest
 ```
 
 If the install later reports `ripgrep not found`, install ripgrep system-wide and confirm `rg --version` works in the same terminal before starting Claudio.
@@ -93,15 +36,15 @@ If the install later reports `ripgrep not found`, install ripgrep system-wide an
 **Verify / troubleshoot installed version:**
 
 ```bash
-openclaude --version
-npm view @gitlawb/openclaude dist-tags
-npm install -g @gitlawb/openclaude@latest
+claudio --version
+npm view @gaburieuru/claudio dist-tags
+npm install -g @gaburieuru/claudio@latest
 ```
 
 ### Start
 
 ```bash
-openclaude
+claudio
 ```
 
 Inside Claudio:
@@ -109,7 +52,7 @@ Inside Claudio:
 - run `/provider` for guided provider setup and saved profiles
 - run `/onboard-github` for GitHub Models onboarding
 
-> **Note:** Claudio does not automatically load project `.env` files. We recommend using the `/provider` command for setup, which saves provider profiles and credentials in `.openclaude-profile.json`. If you prefer environment variables, export them explicitly or run `openclaude --provider-env-file .env` for provider/setup variables. Export runtime/debug knobs from your shell or launcher.
+> **Note:** Claudio does not automatically load project `.env` files. We recommend using the `/provider` command for setup, which saves provider profiles and credentials in `.openclaude-profile.json`. If you prefer environment variables, export them explicitly or run `claudio --provider-env-file .env` for provider/setup variables. Export runtime/debug knobs from your shell or launcher.
 
 ### Resume or fork a conversation
 
@@ -117,16 +60,16 @@ Resume an existing conversation by session ID, or continue the most recent
 conversation in the current directory:
 
 ```bash
-openclaude --resume <session-id>
-openclaude --continue
+claudio --resume <session-id>
+claudio --continue
 ```
 
 Add `--fork-session` to branch the conversation history into a new session ID
 instead of reusing the original transcript:
 
 ```bash
-openclaude --resume <session-id> --fork-session
-openclaude --continue --fork-session
+claudio --resume <session-id> --fork-session
+claudio --continue --fork-session
 ```
 
 Forking is conversation branching only. It does not create filesystem isolation,
@@ -137,12 +80,12 @@ copy your working tree, or create a git worktree branch.
 Run long non-interactive prompts detached from the current terminal:
 
 ```bash
-openclaude --bg "fix failing tests"
-openclaude --bg --name auth-refactor "refactor auth middleware"
-openclaude ps
-openclaude logs auth-refactor
-openclaude logs auth-refactor -f
-openclaude kill auth-refactor
+claudio --bg "fix failing tests"
+claudio --bg --name auth-refactor "refactor auth middleware"
+claudio ps
+claudio logs auth-refactor
+claudio logs auth-refactor -f
+claudio kill auth-refactor
 ```
 
 Background sessions are local child processes. Claudio does not start a daemon
@@ -155,8 +98,8 @@ background-session storage. Session names can be reused after older sessions
 reach a terminal state; use the session ID to inspect older logs with the same
 name.
 
-`openclaude attach <id-or-name>` currently reports the matching session and
-points to `openclaude logs <id> -f`; full terminal reattach is not implemented
+`claudio attach <id-or-name>` currently reports the matching session and
+points to `claudio logs <id> -f`; full terminal reattach is not implemented
 for local background sessions yet.
 
 ### Claudio config cutover
@@ -182,7 +125,7 @@ export CLAUDE_CODE_USE_OPENAI=1
 export OPENAI_API_KEY=sk-your-key-here
 export OPENAI_MODEL=gpt-4o
 
-openclaude
+claudio
 ```
 
 Windows PowerShell:
@@ -192,7 +135,7 @@ $env:CLAUDE_CODE_USE_OPENAI="1"
 $env:OPENAI_API_KEY="sk-your-key-here"
 $env:OPENAI_MODEL="gpt-4o"
 
-openclaude
+claudio
 ```
 
 ### Fastest local Ollama setup
@@ -204,7 +147,7 @@ export CLAUDE_CODE_USE_OPENAI=1
 export OPENAI_BASE_URL=http://localhost:11434/v1
 export OPENAI_MODEL=qwen2.5-coder:7b
 
-openclaude
+claudio
 ```
 
 Windows PowerShell:
@@ -214,7 +157,7 @@ $env:CLAUDE_CODE_USE_OPENAI="1"
 $env:OPENAI_BASE_URL="http://localhost:11434/v1"
 $env:OPENAI_MODEL="qwen2.5-coder:7b"
 
-openclaude
+claudio
 ```
 
 For Ollama, Claudio uses Ollama's native chat API and requests a 32768-token
@@ -274,30 +217,6 @@ Advanced and source-build guides:
 - **Provider profiles**: Guided setup plus saved user-level provider profile support
 - **Local and remote model backends**: Cloud APIs, local servers, and Apple Silicon local inference
 - **Codebase intelligence (repo map)**: Structural map of the repository ranked by PageRank importance, auto-injected into context when the `REPO_MAP` flag is enabled or the `REPO_MAP` environment variable is set. Inspect with `/repomap` (2048-token default). See [docs/repo-map.md](docs/repo-map.md) for details.
-- **A companion with signature moves**: A truecolor pixel-art hero who lives beside your prompt and reacts when you work. See below.
-
-## Meet Your Buddy
-
-Run `/buddy` to hatch a companion — a truecolor pixel-art hero who stands
-beside your prompt, idles, blinks, and fires their signature move every time
-you submit a message:
-
-```
-/buddy                  hatch (first run) or pet your companion
-/buddy set robinhood    the green archer — arrow shot on every Enter
-/buddy set kaio         gold-haired warrior — charges a full-width energy wave
-/buddy set strawhat     stretchy punch that snaps back
-/buddy set merlin       twinkling sparkle stream
-/buddy set kage         spinning shuriken
-/buddy set ember        dragon fire with a real heat gradient
-/buddy set corsair      cannonball with smoke trail
-/buddy name Robin       rename your companion
-/buddy set random       back to your rolled hero
-```
-
-Companions respect `prefersReducedMotion`, degrade gracefully to line art in
-low-color terminals, and can be silenced with `/buddy mute`. Requires a
-terminal at least 100 columns wide for the full sprite.
 
 ## Provider Notes
 

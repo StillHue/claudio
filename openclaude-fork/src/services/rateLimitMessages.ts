@@ -259,40 +259,8 @@ function getEarlyWarningText(limits: ClaudeAILimits): string | null {
  * Only used for warnings because actual rate limit hits will see an interactive menu of options.
  */
 function getWarningUpsellText(
-  rateLimitType: ClaudeAILimits['rateLimitType'],
+  _rateLimitType: ClaudeAILimits['rateLimitType'],
 ): string | null {
-  const subscriptionType = getSubscriptionType()
-  const hasExtraUsageEnabled =
-    getOauthAccountInfo()?.hasExtraUsageEnabled === true
-
-  // 5-hour session limit warning
-  if (rateLimitType === 'five_hour') {
-    // Teams/Enterprise with overages disabled: prompt to request extra usage
-    // Only show if overage provisioning is allowed for this org type (e.g., not AWS marketplace)
-    if (subscriptionType === 'team' || subscriptionType === 'enterprise') {
-      if (!hasExtraUsageEnabled && isOverageProvisioningAllowed()) {
-        return '/extra-usage to request more'
-      }
-      // Teams/Enterprise with overages enabled or unsupported billing type don't need upsell
-      return null
-    }
-
-    // Pro/Max users: prompt to upgrade
-    if (subscriptionType === 'pro' || subscriptionType === 'max') {
-      return '/upgrade to keep using Claudio'
-    }
-  }
-
-  // Overage warning (approaching spending limit)
-  if (rateLimitType === 'overage') {
-    if (subscriptionType === 'team' || subscriptionType === 'enterprise') {
-      if (!hasExtraUsageEnabled && isOverageProvisioningAllowed()) {
-        return '/extra-usage to request more'
-      }
-    }
-  }
-
-  // Weekly limit warnings don't show upsell per spec
   return null
 }
 

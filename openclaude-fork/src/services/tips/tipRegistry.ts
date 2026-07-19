@@ -7,9 +7,7 @@ import {
   getSettingsForSource,
 } from 'src/utils/settings/settings.js'
 import { shouldOfferTerminalSetup } from '../../commands/terminalSetup/terminalSetup.js'
-import { getDesktopUpsellConfig } from '../../components/DesktopUpsell/DesktopUpsellStartup.js'
 import { color } from '../../components/design-system/color.js'
-import { shouldShowOverageCreditUpsell } from '../../components/LogoV2/OverageCreditUpsell.js'
 import { getShortcutDisplay } from '../../keybindings/shortcutFormat.js'
 import { isKairosCronEnabled } from '../../tools/ScheduleCronTool/prompt.js'
 import { is1PApiCustomer } from '../../utils/auth.js'
@@ -45,16 +43,6 @@ import {
   isCustomTitleEnabled,
 } from '../../utils/sessionStorage.js'
 import { getFeatureValue_CACHED_MAY_BE_STALE } from '../analytics/growthbook.js'
-import {
-  formatGrantAmount,
-  getCachedOverageCreditGrant,
-} from '../api/overageCreditGrant.js'
-import {
-  checkCachedPassesEligibility,
-  formatCreditAmount,
-  getCachedReferrerReward,
-} from '../api/referral.js'
-import { sponsoredTips } from './sponsoredTips.js'
 import { getSessionsSinceLastShown } from './tipHistory.js'
 import type { Tip, TipContext } from './types.js'
 
@@ -335,12 +323,6 @@ const externalTips: Tip[] = [
     isRelevant: async () => !getGlobalConfig().githubActionSetupCount,
   },
   {
-    id: 'install-slack-app',
-    content: async () => 'Run /install-slack-app to use Claudio in Slack',
-    cooldownSessions: 10,
-    isRelevant: async () => !getGlobalConfig().slackAppInstallCount,
-  },
-  {
     id: 'permissions',
     content: async () =>
       'Use /permissions to pre-approve and pre-deny bash, edit, and MCP tools',
@@ -442,21 +424,6 @@ const externalTips: Tip[] = [
       'Run Claudio locally or remotely with /desktop',
     cooldownSessions: 15,
     isRelevant: async () => getPlatform() !== 'linux',
-  },
-  {
-    id: 'desktop-shortcut',
-    content: async ctx => {
-      const blue = color('suggestion', ctx.theme)
-      return `Continue your session with ${blue('/desktop')}`
-    },
-    cooldownSessions: 15,
-    isRelevant: async () => {
-      if (!getDesktopUpsellConfig().enable_shortcut_tip) return false
-      return (
-        process.platform === 'darwin' ||
-        (process.platform === 'win32' && process.arch === 'x64')
-      )
-    },
   },
   {
     id: 'web-app',
@@ -582,38 +549,6 @@ const externalTips: Tip[] = [
     },
   },
   {
-    id: 'guest-passes',
-    content: async ctx => {
-      const claude = color('claude', ctx.theme)
-      const reward = getCachedReferrerReward()
-      return reward
-        ? `Share Claudio and earn ${claude(formatCreditAmount(reward))} of extra usage · ${claude('/passes')}`
-        : `You have free guest passes to share · ${claude('/passes')}`
-    },
-    cooldownSessions: 3,
-    isRelevant: async () => {
-      const config = getGlobalConfig()
-      if (config.hasVisitedPasses) {
-        return false
-      }
-      const { eligible } = checkCachedPassesEligibility()
-      return eligible
-    },
-  },
-  {
-    id: 'overage-credit',
-    content: async ctx => {
-      const claude = color('claude', ctx.theme)
-      const info = getCachedOverageCreditGrant()
-      const amount = info ? formatGrantAmount(info) : null
-      if (!amount) return ''
-      // Copy from "OC & Bulk Overages copy" doc (#5 — CLI Rotating tip)
-      return `${claude(`${amount} in extra usage, on us`)} · third-party apps · ${claude('/extra-usage')}`
-    },
-    cooldownSessions: 3,
-    isRelevant: async () => shouldShowOverageCreditUpsell(),
-  },
-  {
     id: 'feedback-command',
     content: async () => 'Report bugs or feature requests in the issue tracker to help us improve.',
     cooldownSessions: 15,
@@ -644,15 +579,11 @@ export async function getRelevantTips(context?: TipContext): Promise<Tip[]> {
   const customTips = getCustomTips()
 
   // If excludeDefault is true and there are custom tips, skip built-in tips entirely.
-  // Sponsored tips are also excluded — user has opted into their own list.
   if (override?.excludeDefault && customTips.length > 0) {
     return customTips
   }
 
-  // Otherwise, filter built-in tips as before and combine with custom + sponsored.
-  // The scheduler enforces the sponsored frequency cap; this just returns
-  // everything currently eligible.
-  const tips = [...externalTips, ...internalOnlyTips, ...sponsoredTips]
+  const tips = [...externalTips, ...internalOnlyTips]
   const isRelevant = await Promise.all(tips.map(_ => _.isRelevant(context)))
   const filtered = tips
     .filter((_, index) => isRelevant[index])

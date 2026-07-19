@@ -14,7 +14,7 @@ export const BRAND_NAME = 'Claudio'
 /** Splash / welcome line only — matches Claude Code wording. */
 export const WELCOME_NAME = 'Claude Code'
 
-export const BRAND_TAGLINE = 'Open terminal for any LLM'
+export const BRAND_TAGLINE = 'you already know me'
 
 /** Claude Code terracotta (#D97757) in the rgb() form required by theme consumers. */
 export const BRAND_ACCENT_RGB = 'rgb(217,119,87)'
