@@ -82,10 +82,32 @@ jobs:
           fi
 
       - name: Publish to npm
+        id: npm_publish
         if: steps.decide.outputs.should_publish == 'true'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --access public
+        shell: bash
+        run: |
+          set +e
+          OUT="$(npm publish --access public 2>&1)"
+          CODE=$?
+          echo "$OUT"
+          if [ "$CODE" -eq 0 ]; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Already on registry (race with local publish / re-run) — not a build failure.
+          if echo "$OUT" | grep -qiE 'cannot publish over|EPUBLISHCONFLICT|previously published'; then
+            echo "Version already on npm — treating as success"
+            echo "published=false" >> "$GITHUB_OUTPUT"
+            echo "already_published=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if echo "$OUT" | grep -qiE 'E403|403 Forbidden|these credentials'; then
+            echo "::error::npm publish got 403. Refresh GitHub secret NPM_TOKEN (Automation token with publish on @gaburieuru)."
+            exit 1
+          fi
+          exit "$CODE"
 
       - name: Summary
         run: |
@@ -94,6 +116,6 @@ jobs:
             echo
             echo "- local version: \`${{ steps.decide.outputs.local }}\`"
             echo "- published (before): \`${{ steps.decide.outputs.published }}\`"
-            echo "- published this run: \`${{ steps.decide.outputs.should_publish }}\`"
+            echo "- attempted publish: \`${{ steps.decide.outputs.should_publish }}\`"
             echo "- package: https://www.npmjs.com/package/@gaburieuru/claudio"
           } >> "$GITHUB_STEP_SUMMARY"
