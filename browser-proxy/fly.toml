@@ -1,0 +1,45 @@
+# Claudio browser proxy on Fly.io (MITM → OpenAI/Zen bridge)
+# Deploy from this directory:  fly deploy
+#
+# After first deploy:
+#   fly volumes create proxy_data --region gru --size 1
+#   fly secrets set OPENAI_API_KEY=… OPENAI_BASE_URL=… OPENAI_MODEL=… PROXY_USER=… PROXY_PASS=…
+#
+# Edge: proxy http://USER:PASS@APP.fly.dev:8080  + trust GET http://APP.fly.dev:8080/ca.crt
+
+app = "claudio-browser-proxy"
+primary_region = "gru"
+
+[build]
+
+[env]
+  CLAUDIO_BROWSER_PROXY_HOST = "0.0.0.0"
+  CLAUDIO_BROWSER_PROXY_PORT = "8080"
+  BRIDGE_MODE = "openai"
+  BROWSER_PROXY_DATA_DIR = "/data"
+  CLAUDIO_BROWSER_PROXY_MODE = "local"
+
+[mounts]
+  source = "proxy_data"
+  destination = "/data"
+
+# Raw TCP so HTTP CONNECT (MITM proxy) works — no Fly TLS terminator on this port.
+[[services]]
+  protocol = "tcp"
+  internal_port = 8080
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[services.ports]]
+    port = 8080
+
+  [[services.tcp_checks]]
+    interval = "15s"
+    timeout = "2s"
+    grace_period = "10s"
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1

@@ -1,4 +1,6 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 
 const ENV_KEY_PATTERN = /^[A-Za-z_][A-Za-z0-9_]*$/
 
@@ -68,6 +70,14 @@ const ALLOWED_ENV_FILE_KEYS = new Set([
   'GOOGLE_CLOUD_PROJECT',
   'GOOGLE_CSE_ID',
   'GROQ_API_KEY',
+  'CLAUDE_CODE_VISION_API_KEY',
+  'CLAUDE_CODE_VISION_BASE_URL',
+  'CLAUDE_CODE_VISION_MODEL',
+  'CLAUDE_CODE_VISION_ROUTE',
+  'CLAUDE_CODE_DISABLE_VISION_ROUTE',
+  'MANIAC_VISION_API_KEY',
+  'MANIAC_VISION_BASE_URL',
+  'MANIAC_VISION_MODEL',
   'HICAP_API_KEY',
   'JINA_API_KEY',
   'KIMI_API_KEY',
@@ -368,4 +378,30 @@ export function loadEnvFile(filePath: string): Record<string, string> {
     const message = error instanceof Error ? error.message : String(error)
     throw new Error(`Failed to load --provider-env-file at ${filePath}: ${message}`)
   }
+}
+
+/**
+ * Quietly load ~/.openclaude/.env (and ~/.claude/.env) if present.
+ * Used for local secrets like GROQ_API_KEY without putting them in settings.json.
+ */
+export function loadDefaultConfigEnvFiles(): Record<string, string> {
+  const home = homedir()
+  const candidates = [
+    process.env.OPENCLAUDE_CONFIG_DIR
+      ? join(process.env.OPENCLAUDE_CONFIG_DIR, '.env')
+      : null,
+    join(home, '.openclaude', '.env'),
+    join(home, '.claude', '.env'),
+  ].filter((p): p is string => !!p)
+
+  const loaded: Record<string, string> = {}
+  for (const filePath of candidates) {
+    if (!existsSync(filePath)) continue
+    try {
+      Object.assign(loaded, loadEnvFile(filePath))
+    } catch {
+      // ignore malformed optional defaults — explicit --provider-env-file still throws
+    }
+  }
+  return loaded
 }

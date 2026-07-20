@@ -69,7 +69,7 @@ export default defineGateway({
   label: 'OpenCode Go',
   category: 'aggregating',
   defaultBaseUrl: 'https://opencode.ai/zen/go/v1',
-  defaultModel: 'glm-5.1',
+  defaultModel: 'deepseek-v4-flash-free',
   setup: {
     requiresAuth: true,
     authMode: 'api-key',

@@ -1,0 +1,6 @@
+# CA / certs live under ~/.openclaude/browser-proxy/ — never commit keys
+*.pem
+*.key
+*.crt
+node_modules/
+proxy.log

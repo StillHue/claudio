@@ -1,0 +1,19 @@
+{
+  "mode": "local",
+  "host": "127.0.0.1",
+  "port": 18765,
+  "claudioBin": "claudio",
+  "model": "big-pickle",
+  "mitmHosts": ["api.anthropic.com"],
+  "allowHosts": [
+    "api.anthropic.com",
+    "www.claude.ai",
+    "preview.claude.ai",
+    "platform.claude.com",
+    "claude.ai"
+  ],
+  "interceptPaths": ["/v1/messages"],
+  "bare": true,
+  "tools": "",
+  "logRequests": true
+}

@@ -1,11 +1,10 @@
 # Claudio — Cursor / VS Code extension
 
-Opens Claudio in a full editor tab (terminal), similar to OpenCode’s editor experience.
+Opens Claudio in a full editor tab (terminal).
 
 ## Build / install
 
 ```bash
-# from this extension directory
 npm install
 npm run build
 npx @vscode/vsce package --no-dependencies --allow-missing-repository
@@ -15,9 +14,9 @@ Install the generated `.vsix` in Cursor/VS Code.
 
 ## Requirements
 
-- `claudio` on your PATH (`npm install -g @gaburieuru/claudio@latest`, or `npm link` after building the CLI)
+- `claude` or `claudio` on PATH (`npm install -g @gaburieuru/claudio@latest`)
 
 ## Settings
 
-- `claudio.command` — default `claudio`
+- `claudio.command` — default `claudio` (set to `claude` if you use that shim)
 - `claudio.args` — extra CLI args

@@ -58,6 +58,11 @@ __pycache__/
 .worktrees/
 agent.log
 
+# Browser proxy — runtime config/certs, not source
+**/browser-proxy.json
+**/claudio-browser-proxy.json
+browser-proxy/scripts/*.ps1
+
 # Package manager / local agent docs (fork)
 cli/package-lock.json
 cli/GEMINI.md

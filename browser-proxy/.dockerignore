@@ -1,0 +1,8 @@
+node_modules
+.git
+*.log
+scripts/fake-claudio.mjs
+scripts/claudio-fake*
+docs
+README.md
+browser-proxy.example.json

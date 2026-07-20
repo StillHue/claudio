@@ -1,0 +1,21 @@
+{
+  "name": "@gaburieuru/claudio-browser-proxy",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local HTTPS MITM proxy: official Claude extension → Claudio (personal use)",
+  "type": "module",
+  "bin": {
+    "claudio-browser-proxy": "./bin/claudio-browser-proxy.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "install-ca": "powershell -ExecutionPolicy Bypass -File ./scripts/install-ca.ps1",
+    "smoke": "node scripts/smoke-translator.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "node-forge": "^1.3.1"
+  }
+}

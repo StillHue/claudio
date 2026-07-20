@@ -95,7 +95,7 @@ export default defineGateway({
   label: 'OpenCode Zen',
   category: 'aggregating',
   defaultBaseUrl: 'https://opencode.ai/zen/v1',
-  defaultModel: 'gpt-5.4',
+  defaultModel: 'deepseek-v4-flash-free',
   setup: {
     requiresAuth: true,
     authMode: 'api-key',

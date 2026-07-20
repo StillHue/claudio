@@ -357,12 +357,15 @@ export async function main(
   // --provider-env-file: Load explicit environment files before any provider resolution.
   {
     const {
+      loadDefaultConfigEnvFiles,
       loadEnvFile,
       parseProviderEnvFileArgs,
       reapplyRememberedEnvFileValues,
       rememberLoadedEnvFileValues,
     } = await importers.envFile()
     reapplyProviderEnvFileValues = reapplyRememberedEnvFileValues
+    // Local secrets (~/.openclaude/.env) — e.g. GROQ_API_KEY for vision routing.
+    rememberLoadedEnvFileValues(loadDefaultConfigEnvFiles())
     const providerEnvFiles = parseProviderEnvFileArgs(args)
     if (providerEnvFiles.error) {
       // biome-ignore lint/suspicious/noConsole:: intentional error output
