@@ -50,10 +50,11 @@ Write-Host ""
 Write-Host "Done. Open a new terminal and run: claude --version"
 Write-Host "Expect: Claude Code X.Y.Z (not Claudio 0.26)"
 Write-Host "Providers: ~/.claude-native/providers.json with API key enables OpenCode/Cohere bridge."
+Write-Host "Provider UI: node .\enable-provider.js  (do not use a /provider chat skill — keys in transcript)"
 Write-Host "Legacy Ink fork: set CLAUDE_WRAPPER_MODE=claudio"
 
-# Install /provider slash skill for Claude Code
-$installProvider = Join-Path $here 'install-provider-command.ps1'
-if (Test-Path $installProvider) {
-  & $installProvider
+# Remove unsafe /provider chat skill if a previous install left it behind
+$uninstallSkill = Join-Path $here 'uninstall-provider-skill.js'
+if (Test-Path $uninstallSkill) {
+  node $uninstallSkill
 }

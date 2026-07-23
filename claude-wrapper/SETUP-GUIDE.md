@@ -145,19 +145,24 @@ node sync-catalog.js show groq
 - Cache: `~/.claude-native/catalog.json` (do not commit secrets — catalog has none).
 - To enable another provider: copy `baseUrl` / `apiKeyEnv` / `models` from `show <id>` into `providers.json` and set `apiKey` or the env var. Only `dialect=openai-chat` with a `baseUrl` is bridge-ready (`*` in `list`).
 
-### `/provider` (list → API key → models)
+### Provider UI (list → API key → models)
+
+Use the **terminal wizard** (hidden key input — never paste keys into Claude chat):
 
 ```powershell
 cd claude-wrapper
-powershell -ExecutionPolicy Bypass -File .\install-provider-command.ps1
-# Restart Claude Code, then type: /provider
-
-# Or terminal wizard (no TUI):
 node enable-provider.js
+# or
 node enable-provider.js opencode --prompt-key
 ```
 
 This writes `~/.claude-native/providers.json`, syncs the `/model` picker, and never requires editing JSON by hand.
+
+Do **not** install a Claude `/provider` skill for this: API keys in the transcript are unsafe. If an old skill is present:
+
+```powershell
+node uninstall-provider-skill.js
+```
 
 ### Change the default model (CLI ↔ extension)
 
