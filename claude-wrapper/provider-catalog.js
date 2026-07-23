@@ -266,6 +266,78 @@ function syncOpencodeModelsIntoProviders(catalog, providersPath) {
   return { changed: true, path: target, modelCount: ordered.length }
 }
 
+/**
+ * Enable a catalog provider in providers.json (API key + models + optional active).
+ * @param {object} catalog
+ * @param {string} providerId
+ * @param {{ apiKey?: string, model?: string, setActive?: boolean, providersPath?: string|null }} [opts]
+ */
+function enableProvider(catalog, providerId, opts = {}) {
+  const { loadProvidersConfig, syncDefaultModel, modelId } = require('./provider-config')
+  const meta = getProvider(catalog, providerId)
+  if (!meta) {
+    throw new Error(`Unknown provider "${providerId}". Run: node sync-catalog.js sync`)
+  }
+  if (!meta.bridge || !meta.baseUrl) {
+    throw new Error(
+      `Provider "${providerId}" is not bridge-ready (dialect=${meta.dialect}, baseUrl=${meta.baseUrl || 'missing'}). Pick one from: node sync-catalog.js list --bridge`,
+    )
+  }
+
+  const loaded = loadProvidersConfig()
+  const data = loaded.data || { active: providerId, providers: {} }
+  if (!data.providers) data.providers = {}
+  const target =
+    opts.providersPath ||
+    loaded.path ||
+    path.join(os.homedir(), '.claude-native', 'providers.json')
+
+  const existing = data.providers[meta.id] || {}
+  let models =
+    meta.id === 'opencode'
+      ? meta.models.filter((m) => m.live).map((m) => m.id)
+      : meta.models.map((m) => m.id)
+  if (!models.length) models = meta.models.map((m) => m.id)
+
+  const apiKey =
+    opts.apiKey != null && String(opts.apiKey).length
+      ? String(opts.apiKey).trim()
+      : existing.apiKey || ''
+
+  let model = opts.model || existing.model || models[0]
+  if (model && models.length && !models.includes(model)) {
+    models = [model, ...models]
+  }
+  if (!model) model = models[0]
+
+  data.providers[meta.id] = {
+    ...existing,
+    baseUrl: meta.baseUrl,
+    apiKeyEnv: meta.apiKeyEnv || existing.apiKeyEnv || '',
+    tools: true,
+    model,
+    models,
+  }
+  if (apiKey) data.providers[meta.id].apiKey = apiKey
+  if (opts.setActive !== false) data.active = meta.id
+
+  fs.mkdirSync(path.dirname(target), { recursive: true })
+  fs.writeFileSync(target, JSON.stringify(data, null, 2) + '\n', { encoding: 'utf8', mode: 0o600 })
+
+  const synced = syncDefaultModel(data)
+  return {
+    provider: meta.id,
+    name: meta.name,
+    model,
+    modelCount: models.length,
+    pickerId: modelId(meta.id, model),
+    hasKey: Boolean(apiKey || (meta.apiKeyEnv && process.env[meta.apiKeyEnv])),
+    apiKeyEnv: meta.apiKeyEnv || '',
+    path: target,
+    sync: synced,
+  }
+}
+
 module.exports = {
   CATALOG_PATH,
   MODELS_DEV_URL,
@@ -278,5 +350,6 @@ module.exports = {
   listProviders,
   getProvider,
   syncOpencodeModelsIntoProviders,
+  enableProvider,
   buildProvidersFromModelsDev,
 }
