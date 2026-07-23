@@ -11,8 +11,9 @@ This guide is the **detailed reference** for humans and agents.
 ```
 Cursor Claude Code extension
   → spawns claudio-wrapper-nativeN.exe  (claudeCode.claudeProcessWrapper)
+    → syncs ~/.claude/settings.json availableModels + default model from providers.json
+    → aligns Cursor claudeCode.model with the same default
     → starts local Anthropic Messages bridge on 127.0.0.1
-    → syncs ~/.claude/settings.json availableModels from providers.json
     → spawns official claude.exe with ANTHROPIC_BASE_URL=http://127.0.0.1:PORT
          ↓
     Claude Code harness (unchanged)
@@ -61,7 +62,7 @@ Example:
 
 ```json
 {
-  "claudeCode.claudeProcessWrapper": "C:\\Users\\<you>\\claudio\\claude-wrapper\\claudio-wrapper-native14.exe",
+  "claudeCode.claudeProcessWrapper": "C:\\Users\\<you>\\claudio\\claude-wrapper\\claudio-wrapper-native18.exe",
   "claudeCode.skipApiCheck": true,
   "claudeCode.model": "anthropic.deepseek-v4-flash-free"
 }
@@ -110,9 +111,25 @@ Create `~/.claude-native/providers.json` (fallback: `~/.codius/providers.json`):
 Notes for the agent:
 
 - Prefer `apiKeyEnv` + OS user env over hardcoding keys. Never commit keys to git.
-- On spawn, the wrapper syncs `availableModels` + `enforceAvailableModels` into `~/.claude/settings.json` so the picker lists catalog ids.
+- On spawn, the wrapper syncs `availableModels` + `enforceAvailableModels` + default `model` into `~/.claude/settings.json`, and aligns Cursor `claudeCode.model`, so the picker lists catalog ids.
 - Do **not** set `CLAUDE_CODE_USE_OPENAI` / `OPENAI_BASE_URL` in `~/.claude/settings.json` — that bypasses the Anthropic bridge. The wrapper strips those on sync/spawn.
 - Short-lived `auth status` spawns must **not** rewrite settings (already handled in code).
+
+### Change the default model (CLI ↔ extension)
+
+Source of truth: `~/.claude-native/providers.json` → `providers.<active>.model`.
+
+```bash
+cd claude-wrapper
+node set-default-model.js --list
+node set-default-model.js deepseek-v4-flash-free
+# or Windows:
+set-default-model.cmd north-mini-code-1-0
+```
+
+This updates `providers.json`, `~/.claude/settings.json` (`model`), and Cursor `claudeCode.model` (só-se-mudou). Reload the Claude Code window if the picker still shows the previous default.
+
+Changing the model in the Claude Code / Agents Window picker also remembers it: the bridge writes only `providers.json` mid-turn (never rewrites `~/.claude/settings.json` during a stream). Full Claude/Cursor sync happens on the next wrapper spawn or CLI call.
 
 ### Picker ids
 
@@ -207,6 +224,7 @@ Then the wrapper spawns Claudio (`@gaburieuru/claudio`) instead of `claude.exe`.
 | `claude-wrapper/claudio-wrapper.js` | Process wrapper (native + legacy) |
 | `claude-wrapper/native-bridge.js` | Anthropic ↔ Chat Completions (+ tools/stream) |
 | `claude-wrapper/provider-config.js` | Catalog, picker ids, settings sync |
+| `claude-wrapper/set-default-model.js` | CLI to set default model + sync Claude/Cursor |
 | `claude-wrapper/vision-route.js` | Groq image → text before upstream |
 | `claudio-wrapper-nativeN.exe` | Bun-compiled binary for Cursor |
 | `~/.claude-native/providers.json` | Providers + models catalog |

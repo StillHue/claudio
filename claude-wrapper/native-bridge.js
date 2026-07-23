@@ -187,7 +187,7 @@ function joinChatUrl(baseUrl) {
 function mapModel(requested, provider) {
   // resolveProvider already picked the upstream model id
   if (provider?.model) return provider.model
-  return requested || 'big-pickle'
+  return requested || 'deepseek-v4-flash-free'
 }
 
 function extractReasoning(msgOrDelta) {
@@ -248,8 +248,20 @@ async function readOpenAIStream(body, handlers) {
       if (!choice) continue
       const delta = choice.delta || {}
       if (delta.content) {
-        fullText += delta.content
-        handlers.onText?.(delta.content)
+        const chunk = delta.content
+        // Cumulative streams only: each event is the full text so far.
+        // Do NOT use endsWith() — overlapping legitimate suffixes get dropped
+        // and Claude Code can stall waiting for content that never arrives.
+        if (chunk.length > fullText.length && chunk.startsWith(fullText)) {
+          const inc = chunk.slice(fullText.length)
+          fullText = chunk
+          if (inc) handlers.onText?.(inc)
+        } else if (chunk === fullText && chunk.length >= 16) {
+          /* exact full-buffer re-emit */
+        } else {
+          fullText += chunk
+          handlers.onText?.(chunk)
+        }
       }
       const reasoningDelta = extractReasoning(delta)
       if (reasoningDelta) {
@@ -317,6 +329,23 @@ async function handleMessages(req, res, ctx) {
 
   const provider = ctx.getProvider(body.model)
   const upstreamModel = mapModel(body.model, provider)
+
+  // Remember picker selection as providers.json default (no Claude/Cursor
+  // rewrite mid-turn — that reloads the official harness session).
+  try {
+    const data = typeof ctx.getProvidersData === 'function' ? ctx.getProvidersData() : null
+    if (data && provider?.name && upstreamModel) {
+      const { persistProvidersDefault } = require('./provider-config')
+      const cfgPath =
+        typeof ctx.getProvidersPath === 'function' ? ctx.getProvidersPath() : undefined
+      const saved = persistProvidersDefault(data, provider.name, upstreamModel, cfgPath)
+      if (saved.changed) {
+        ctx.log?.(`persisted default model → ${provider.name}/${upstreamModel}`)
+      }
+    }
+  } catch (err) {
+    ctx.log?.(`persist default model skipped: ${err.message}`)
+  }
 
   // Text-only providers (OpenCode/Cohere) reject image_url → describe via Groq first
   if (bodyHasImages(body)) {
@@ -388,16 +417,25 @@ async function handleMessages(req, res, ctx) {
   if (provider.apiKey) headers.Authorization = `Bearer ${provider.apiKey}`
 
   let upstream
+  const upstreamTimeoutMs = Number(process.env.CLAUDE_NATIVE_UPSTREAM_TIMEOUT_MS || 180000)
   try {
     upstream = await fetch(joinChatUrl(provider.baseUrl), {
       method: 'POST',
       headers,
       body: JSON.stringify(chatBody),
+      signal: AbortSignal.timeout(upstreamTimeoutMs),
     })
   } catch (err) {
-    return json(res, 502, {
+    const timedOut = err?.name === 'TimeoutError' || /aborted|timeout/i.test(String(err?.message || err))
+    ctx.log(`upstream fetch ${timedOut ? 'timeout' : 'failed'}: ${err.message}`)
+    return json(res, timedOut ? 504 : 502, {
       type: 'error',
-      error: { type: 'api_error', message: `upstream fetch failed: ${err.message}` },
+      error: {
+        type: 'api_error',
+        message: timedOut
+          ? `upstream timed out after ${upstreamTimeoutMs}ms`
+          : `upstream fetch failed: ${err.message}`,
+      },
     })
   }
 
@@ -611,6 +649,9 @@ async function handleMessages(req, res, ctx) {
     })
     writeSse(res, 'message_stop', { type: 'message_stop' })
     res.end()
+    ctx.log(
+      `stream done model=${upstreamModel} text=${result.text?.length || 0} reasoning=${result.reasoning?.length || 0} tools=${result.toolCalls?.length || 0}`,
+    )
   } catch (err) {
     ctx.log(`stream error: ${err.message}`)
     try {
@@ -721,7 +762,12 @@ function startNativeBridge(opts) {
     }
 
     if (req.method === 'POST' && (path === '/v1/messages' || path === '/messages')) {
-      return handleMessages(req, res, { getProvider: opts.getProvider, log })
+      return handleMessages(req, res, {
+        getProvider: opts.getProvider,
+        getProvidersData: opts.getProvidersData,
+        getProvidersPath: opts.getProvidersPath,
+        log,
+      })
     }
 
     if (req.method === 'POST' && (path === '/v1/messages/count_tokens' || path === '/messages/count_tokens')) {

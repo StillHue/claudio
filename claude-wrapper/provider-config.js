@@ -124,9 +124,9 @@ function loadProvidersConfig() {
       providers: {
         opencode: {
           baseUrl: 'https://opencode.ai/zen/v1',
-          model: 'big-pickle',
+          model: 'deepseek-v4-flash-free',
           apiKeyEnv: 'OPENAI_API_KEY',
-          models: ['big-pickle'],
+          models: ['deepseek-v4-flash-free', 'big-pickle'],
         },
       },
     },
@@ -298,12 +298,26 @@ function buildAnthropicModelsList(providersData) {
 }
 
 /**
- * Keep Claude Code availableModels in sync so gateway discovery is not filtered out.
- * Docs: discovered models are still filtered by availableModels.
+ * Cursor User settings.json candidates (Windows + Linux/macOS).
+ * @returns {string[]}
+ */
+function cursorUserSettingsPaths() {
+  const paths = []
+  if (process.env.APPDATA) {
+    paths.push(path.join(process.env.APPDATA, 'Cursor', 'User', 'settings.json'))
+  }
+  paths.push(path.join(os.homedir(), '.config', 'Cursor', 'User', 'settings.json'))
+  return paths
+}
+
+/**
+ * Write Claude Code `model` + catalog into ~/.claude/settings.json.
+ * Always aligns `settings.model` with providers.json active default.
+ * Only rewrites when content changes (Claude watches this file mid-session).
  */
 function syncClaudeAvailableModels(providersData) {
   const ids = listCatalogEntries(providersData).map((e) => e.id)
-  if (!ids.length) return { path: null, ids: [] }
+  if (!ids.length) return { path: null, ids: [], model: null, changed: false }
 
   const settingsPath = path.join(os.homedir(), '.claude', 'settings.json')
   let settings = {}
@@ -324,21 +338,11 @@ function syncClaudeAvailableModels(providersData) {
   settings.availableModels = ids
   // Constrain Default: without this, Claude Code keeps showing
   // "Default (recommended) · Opus …" even when settings.model is a gateway id.
-  // With enforce=true, Default resolves to the first availableModels entry
-  // when Opus isn't in the list.
   settings.enforceAvailableModels = true
-  const needsDefault =
-    !settings.model ||
-    String(settings.model).startsWith('claude-') ||
-    /opus|sonnet|haiku/i.test(String(settings.model)) ||
-    settings.model === 'composer-2.5' ||
-    !ids.includes(settings.model) ||
-    String(settings.model).includes('/')
-  if (needsDefault) {
-    settings.model = defaultId
-  }
+  // Always align default with providers.json (source of truth).
+  settings.model = defaultId
 
-  // Strip Claudio leftovers that force OpenAI chat routing and bypass our
+  // Strip leftovers that force OpenAI chat routing and bypass our
   // Anthropic Messages bridge (ANTHROPIC_BASE_URL). Keep COHERE_API_KEY etc.
   if (settings.env && typeof settings.env === 'object') {
     for (const k of [
@@ -372,6 +376,158 @@ function syncClaudeAvailableModels(providersData) {
   return { path: settingsPath, ids, model: settings.model, changed: true }
 }
 
+/**
+ * Merge only `claudeCode.model` into Cursor User settings.json (só-se-mudou).
+ * @returns {{ path: string|null, changed: boolean, model: string|null }}
+ */
+function syncCursorClaudeModel(defaultId) {
+  if (!defaultId) return { path: null, changed: false, model: null }
+  for (const settingsPath of cursorUserSettingsPaths()) {
+    if (!fs.existsSync(settingsPath)) continue
+    let settings = {}
+    try {
+      settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'))
+    } catch {
+      continue
+    }
+    if (settings['claudeCode.model'] === defaultId) {
+      return { path: settingsPath, changed: false, model: defaultId }
+    }
+    settings['claudeCode.model'] = defaultId
+    const next = JSON.stringify(settings, null, 2) + '\n'
+    fs.writeFileSync(settingsPath, next, 'utf8')
+    return { path: settingsPath, changed: true, model: defaultId }
+  }
+  return { path: null, changed: false, model: defaultId }
+}
+
+/**
+ * Full default-model sync: Claude settings + Cursor claudeCode.model.
+ * Call from CLI / wrapper spawn only — never from mid-stream.
+ */
+function syncDefaultModel(providersData) {
+  const claude = syncClaudeAvailableModels(providersData)
+  const active = providersData.active || 'opencode'
+  const activeProvider = providersData.providers?.[active]
+  const defaultId =
+    claude.model ||
+    (activeProvider
+      ? modelId(active, activeProvider.model || (activeProvider.models || [])[0])
+      : null)
+  const cursor = syncCursorClaudeModel(defaultId)
+  return {
+    model: defaultId,
+    ids: claude.ids || [],
+    claude,
+    cursor,
+    changed: !!(claude.changed || cursor.changed),
+    path: claude.path,
+  }
+}
+
+/**
+ * Persist active provider + model into providers.json (no Claude/Cursor rewrite).
+ * Safe to call from POST /v1/messages hot path.
+ * @returns {{ changed: boolean, path: string|null, provider: string|null, model: string|null }}
+ */
+function persistProvidersDefault(providersData, providerName, upstreamModel, configPath) {
+  if (!providerName || !upstreamModel || !providersData?.providers?.[providerName]) {
+    return { changed: false, path: configPath || null, provider: null, model: null }
+  }
+  const p = providersData.providers[providerName]
+  const models = Array.isArray(p.models) && p.models.length ? p.models : p.model ? [p.model] : []
+  // Only persist catalog models (avoid writing ephemeral Claude aliases).
+  if (models.length && !models.includes(upstreamModel)) {
+    return { changed: false, path: configPath || null, provider: providerName, model: upstreamModel }
+  }
+
+  const needActive = providersData.active !== providerName
+  const needModel = p.model !== upstreamModel
+  if (!needActive && !needModel) {
+    return { changed: false, path: configPath || null, provider: providerName, model: upstreamModel }
+  }
+
+  providersData.active = providerName
+  p.model = upstreamModel
+
+  let target = configPath
+  if (!target) {
+    target = path.join(os.homedir(), '.claude-native', 'providers.json')
+  }
+  try {
+    fs.mkdirSync(path.dirname(target), { recursive: true })
+    fs.writeFileSync(target, JSON.stringify(providersData, null, 2) + '\n', 'utf8')
+    return { changed: true, path: target, provider: providerName, model: upstreamModel }
+  } catch (err) {
+    console.error(
+      `[claude-native] failed to write providers.json (${target}): ${err.message}`,
+    )
+    return { changed: false, path: target, provider: providerName, model: upstreamModel, error: err.message }
+  }
+}
+
+/**
+ * Set default model from CLI arg (bare id or anthropic.<id>).
+ * Updates providers.json then runs syncDefaultModel.
+ */
+function setDefaultModel(requestedId) {
+  const loaded = loadProvidersConfig()
+  const data = loaded.data
+  if (!data.providers || !Object.keys(data.providers).length) {
+    throw new Error('No providers configured in ~/.claude-native/providers.json')
+  }
+
+  let providerName = null
+  let upstreamModel = null
+  const parsed = parseModelId(requestedId, data)
+  if (parsed && data.providers[parsed.provider]) {
+    providerName = parsed.provider
+    upstreamModel = parsed.model
+  } else {
+    const bare = String(requestedId || '')
+      .replace(/^anthropic\./i, '')
+      .trim()
+    for (const [n, cand] of Object.entries(data.providers)) {
+      const models = Array.isArray(cand.models) && cand.models.length ? cand.models : [cand.model]
+      if (models.includes(bare) || cand.model === bare) {
+        providerName = n
+        upstreamModel = bare
+        break
+      }
+    }
+  }
+
+  if (!providerName || !upstreamModel) {
+    throw new Error(`Unknown model: ${requestedId}`)
+  }
+
+  const models =
+    Array.isArray(data.providers[providerName].models) && data.providers[providerName].models.length
+      ? data.providers[providerName].models
+      : [data.providers[providerName].model]
+  if (!models.includes(upstreamModel)) {
+    // Allow setting as default even if not listed — append for catalog sync.
+    if (!Array.isArray(data.providers[providerName].models)) {
+      data.providers[providerName].models = models.filter(Boolean)
+    }
+    if (!data.providers[providerName].models.includes(upstreamModel)) {
+      data.providers[providerName].models.unshift(upstreamModel)
+    }
+  }
+
+  const configPath = loaded.path || path.join(os.homedir(), '.claude-native', 'providers.json')
+  const persisted = persistProvidersDefault(data, providerName, upstreamModel, configPath)
+  const synced = syncDefaultModel(data)
+  return {
+    provider: providerName,
+    model: upstreamModel,
+    pickerId: modelId(providerName, upstreamModel),
+    providersPath: persisted.path,
+    providersChanged: persisted.changed,
+    sync: synced,
+  }
+}
+
 module.exports = {
   DISPLAY,
   loadProvidersConfig,
@@ -381,4 +537,9 @@ module.exports = {
   resolveProvider,
   buildAnthropicModelsList,
   syncClaudeAvailableModels,
+  syncCursorClaudeModel,
+  syncDefaultModel,
+  persistProvidersDefault,
+  setDefaultModel,
+  cursorUserSettingsPaths,
 }

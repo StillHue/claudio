@@ -24,7 +24,7 @@ const { startNativeBridge } = require('./native-bridge')
 const {
   loadProvidersConfig,
   resolveProvider,
-  syncClaudeAvailableModels,
+  syncDefaultModel,
 } = require('./provider-config')
 
 const VISION_ENV_KEYS = [
@@ -338,9 +338,11 @@ async function runNative(rawArgs) {
     userArgs.some((a) => a === '--version' || a === '-v' || a === 'version')
   const synced = isEphemeral
     ? { path: null, ids: [], changed: false }
-    : syncClaudeAvailableModels(providersCfg.data)
+    : syncDefaultModel(providersCfg.data)
   if (synced.changed) {
-    debugLog(`synced Claude settings (${synced.ids?.length || 0} models) → ${synced.path}`)
+    debugLog(
+      `synced default model ${synced.model} → claude=${synced.claude?.path || 'n/a'} cursor=${synced.cursor?.path || 'n/a'}`,
+    )
   }
   const provider = resolveProvider(providersCfg.data)
   if (!provider.apiKey) {
@@ -356,6 +358,7 @@ async function runNative(rawArgs) {
     log: (...a) => debugLog(...a),
     getProvider: (requested) => resolveProvider(providersCfg.data, requested),
     getProvidersData: () => providersCfg.data,
+    getProvidersPath: () => providersCfg.path,
   })
 
   debugLog(
