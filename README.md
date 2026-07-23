@@ -98,7 +98,7 @@ claudio
 - **Vision routing**: Images described via Groq for text-only models, so you can paste images with any provider
 - **Background sessions**: Run long tasks detached (`claudio --bg "fix failing tests"`)
 - **Resume/fork conversations**: `claudio --resume <id>` or `claudio --continue`
-- **Cursor extension**: Use as a drop-in Claude Code replacement in Cursor
+- **Cursor + official Claude Code**: Thin process wrapper keeps Anthropic’s harness; only inference is redirected (OpenCode Zen, Cohere, …). See [claude-wrapper/SETUP-GUIDE.md](./claude-wrapper/SETUP-GUIDE.md)
 - **VS Code extension**: Launch integration, provider-aware Control Center, in-editor chat
 
 ## Supported Providers
@@ -130,12 +130,29 @@ npm link
 
 Requires Bun >= 1.3.13 for source builds.
 
+## Cursor (official Claude Code panel)
+
+Recommended path: keep the **official Claude Code** extension and point
+`claudeCode.claudeProcessWrapper` at the native wrapper. Inference goes to
+OpenCode Zen / Cohere / etc.; tools, permissions, and Thoughts UI stay native.
+
+Full agent/human setup: **[claude-wrapper/SETUP-GUIDE.md](./claude-wrapper/SETUP-GUIDE.md)**.
+
+Legacy: `CLAUDE_WRAPPER_MODE=claudio` still swaps in the Claudio CLI instead of
+`claude.exe` — prefer native mode.
+
 ## Browser Proxy
 
 Official Claude Edge/Chrome extension -> Fly MITM -> your Zen/OpenAI provider. See [browser-proxy/README.md](./browser-proxy/README.md).
 
+## Cursor Agent provider
+
+Use Cursor subscription models (Composer, Grok, …) as Claudio’s LLM via a local OpenAI-compatible proxy. See [docs/cursor-agent-provider.md](./docs/cursor-agent-provider.md) and [cursor-provider/start-proxy.cmd](./cursor-provider/start-proxy.cmd).
+
 ## Docs
 
+- [Claude Code native wrapper (Cursor)](./claude-wrapper/SETUP-GUIDE.md)
+- [Cursor Agent provider](./docs/cursor-agent-provider.md)
 - [Non-Technical Setup](./cli/docs/non-technical-setup.md)
 - [Windows Quick Start](./cli/docs/quick-start-windows.md)
 - [macOS / Linux Quick Start](./cli/docs/quick-start-mac-linux.md)

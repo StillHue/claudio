@@ -46,7 +46,6 @@ const DISPLAY = {
     description: 'Cohere',
     slug: 'command-r-plus-08-2024',
   },
-  auto: { name: 'auto', description: 'OpenRouter', slug: 'auto' },
 }
 
 /** Legacy picker ids → upstream model */
@@ -73,7 +72,6 @@ const LEGACY_SLUGS = {
 const PROVIDER_LABEL = {
   opencode: 'OpenCode Zen',
   cohere: 'Cohere',
-  openrouter: 'OpenRouter',
 }
 
 /** Reverse: slug → { provider, model } */

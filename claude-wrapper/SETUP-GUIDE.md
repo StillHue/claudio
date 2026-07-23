@@ -18,7 +18,7 @@ Cursor Claude Code extension
     native-bridge.js
          ├─ optional: Groq vision describe (images → text)
          └─ translate → POST {provider}/chat/completions
-              (OpenCode Zen, Cohere, OpenRouter, …)
+              (OpenCode Zen, Cohere, …)
 ```
 
 Picker model ids **must** look like `anthropic.<upstream-model-id>` (no slashes), e.g. `anthropic.deepseek-v4-flash-free`, `anthropic.north-mini-code-1-0`.
