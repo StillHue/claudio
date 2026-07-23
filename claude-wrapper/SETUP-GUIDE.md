@@ -1,199 +1,224 @@
-# How to Configure the Claudio Wrapper for Cursor
+# How to Configure the Claude Native Wrapper for Cursor
 
-This guide walks an AI agent (or a human) through setting up the Claudio process wrapper so the **official Claude Code Cursor extension** runs Claudio instead of Claude Code.
+This guide walks an **AI agent** (or a human) through setting up the process wrapper so the **official Claude Code** Cursor extension keeps its native harness (tools, permissions, Thoughts UI) while inference goes to OpenCode / Cohere / other OpenAI-compatible providers.
+
+> **Default mode is `native`.** The old “replace Claude with Claudio CLI” path still exists (`CLAUDE_WRAPPER_MODE=claudio`) but is legacy — prefer native.
 
 ## What the Wrapper Does
 
-The Claude Code Cursor extension launches a Claude Code process via a configurable executable path. The wrapper intercepts that launch, strips the extension's bundled launcher, and runs the local Claudio CLI instead — giving you access to any LLM provider (OpenAI, Ollama, OpenCode Zen, DeepSeek, etc.) from inside Cursor's Claude Code panel.
-
 ```
 Cursor Claude Code extension
-  → spawns claudio-wrapper.exe (instead of Claude Code)
-    → wrapper strips extension launcher args
-    → wrapper spawns: node <claudio-entry> [...userArgs]
-      → Claudio runs with your provider config
+  → spawns claudio-wrapper-nativeN.exe  (claudeCode.claudeProcessWrapper)
+    → starts local Anthropic Messages bridge on 127.0.0.1
+    → syncs ~/.claude/settings.json availableModels from providers.json
+    → spawns official claude.exe with ANTHROPIC_BASE_URL=http://127.0.0.1:PORT
+         ↓
+    Claude Code harness (unchanged)
+         ↓  POST /v1/messages
+    native-bridge.js
+         ├─ optional: Groq vision describe (images → text)
+         └─ translate → POST {provider}/chat/completions
+              (OpenCode Zen, Cohere, OpenRouter, …)
 ```
+
+Picker model ids **must** look like `anthropic.<upstream-model-id>` (no slashes), e.g. `anthropic.deepseek-v4-flash-free`, `anthropic.north-mini-code-1-0`.
 
 ## Prerequisites
 
-1. **Node.js >= 22** installed and on PATH
-2. **Claudio installed globally**:
-   ```bash
-   npm install -g @gaburieuru/claudio@latest
-   ```
-3. **Claudio working from terminal** — verify with `claudio --version`
-4. **The official Claude Code extension installed in Cursor** (publisher: `anthropic.claude-code`)
+1. **Bun** (to compile the wrapper) and/or a prebuilt `claudio-wrapper-native*.exe`
+2. **Official Claude Code extension** in Cursor (`anthropic.claude-code`)
+3. At least one provider API key (OpenCode and/or Cohere)
+4. For images: **Groq** key (vision routing)
 
-## Step 1 — Build or Locate the Wrapper
+Node.js is only needed if you run the `.js` sources directly; the compiled `.exe` embeds the runtime.
 
-### Option A: Use the pre-built executable (recommended)
-
-The wrapper ships as a compiled Bun executable at:
-
-```
-claudio/claude-wrapper/claudio-wrapper.exe
-```
-
-If you installed from npm globally, check:
-
-```
-C:\Users\<you>\AppData\Roaming\npm\node_modules\@gaburieuru\claudio\claude-wrapper\claudio-wrapper.exe
-```
-
-### Option B: Build from source
+## Step 1 — Build the Wrapper
 
 ```bash
 cd claudio/claude-wrapper
-bun build claudio-wrapper.js --compile --outfile claudio-wrapper.exe
+bun build --compile ./claudio-wrapper.js --outfile claudio-wrapper-native14.exe
 ```
 
-> **Windows note**: Use the `.exe`, not `.cmd`. Node's `spawn()` without `shell:true` on a `.cmd` file yields `EINVAL`.
+Use the **`.exe`**, never `.cmd` (Windows `spawn` without shell → `EINVAL`).
 
-## Step 2 — Configure Cursor
+Point Cursor at the **latest** `claudio-wrapper-nativeN.exe` you just built (increment `N` when shipping fixes so old Cursor sessions don’t keep a stale binary locked).
 
-Open Cursor Settings (`Ctrl+,`) and search for `claudeCode`. You need to set **three** things:
+## Step 2 — Cursor Settings
 
-### 2a. Process Wrapper Path
+Open Cursor Settings JSON (`Ctrl+Shift+P` → “Preferences: Open User Settings (JSON)”) and set:
 
-Setting: `claudeCode.claudeProcessWrapper`
+| Setting | Value |
+|---------|--------|
+| `claudeCode.claudeProcessWrapper` | Absolute path to `claudio-wrapper-nativeN.exe` |
+| `claudeCode.skipApiCheck` | `true` (recommended) |
+| `claudeCode.model` | e.g. `anthropic.deepseek-v4-flash-free` |
+| `CLAUDE_WRAPPER_MODE` (env, optional) | `native` (default when extension passes bundled `claude.exe`) |
+| `CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY` | `1` (wrapper sets this if missing) |
 
-Set this to the **absolute path** of `claudio-wrapper.exe`:
+Example:
 
+```json
+{
+  "claudeCode.claudeProcessWrapper": "C:\\Users\\<you>\\claudio\\claude-wrapper\\claudio-wrapper-native14.exe",
+  "claudeCode.skipApiCheck": true,
+  "claudeCode.model": "anthropic.deepseek-v4-flash-free"
+}
 ```
-C:\Users\<you>\claudio\claude-wrapper\claudio-wrapper.exe
+
+Then **Developer: Reload Window**.
+
+## Step 3 — Providers Catalog
+
+Create `~/.claude-native/providers.json` (fallback: `~/.codius/providers.json`):
+
+```json
+{
+  "active": "opencode",
+  "providers": {
+    "opencode": {
+      "baseUrl": "https://opencode.ai/zen/v1",
+      "model": "deepseek-v4-flash-free",
+      "apiKeyEnv": "OPENAI_API_KEY",
+      "apiKey": "<opencode-key-or-omit-if-env-set>",
+      "tools": true,
+      "models": [
+        "deepseek-v4-flash-free",
+        "big-pickle",
+        "mimo-v2.5-free",
+        "north-mini-code-free",
+        "laguna-s-2.1-free",
+        "nemotron-3-ultra-free"
+      ]
+    },
+    "cohere": {
+      "baseUrl": "https://api.cohere.com/compatibility/v1",
+      "model": "north-mini-code-1-0",
+      "apiKeyEnv": "COHERE_API_KEY",
+      "tools": true,
+      "models": [
+        "north-mini-code-1-0",
+        "command-a-03-2025",
+        "command-r-plus-08-2024"
+      ]
+    }
+  }
+}
 ```
 
-Or if installed globally via npm:
+Notes for the agent:
 
-```
-C:\Users\<you>\AppData\Roaming\npm\node_modules\@gaburieuru\claudio\claude-wrapper\claudio-wrapper.exe
-```
+- Prefer `apiKeyEnv` + OS user env over hardcoding keys. Never commit keys to git.
+- On spawn, the wrapper syncs `availableModels` + `enforceAvailableModels` into `~/.claude/settings.json` so the picker lists catalog ids.
+- Do **not** set `CLAUDE_CODE_USE_OPENAI` / `OPENAI_BASE_URL` in `~/.claude/settings.json` — that bypasses the Anthropic bridge. The wrapper strips those on sync/spawn.
+- Short-lived `auth status` spawns must **not** rewrite settings (already handled in code).
 
-### 2b. Skip API Check (recommended)
+### Picker ids
 
-Setting: `claudeCode.skipApiCheck`
+| Catalog model | Claude Code picker id |
+|---------------|------------------------|
+| `deepseek-v4-flash-free` | `anthropic.deepseek-v4-flash-free` |
+| `big-pickle` | `anthropic.big-pickle` |
+| `north-mini-code-1-0` (Cohere) | `anthropic.north-mini-code-1-0` |
+| `command-a-03-2025` | `anthropic.command-a-03-2025` |
 
-Set to `true` so the extension doesn't reject Claudio's provider setup.
+## Step 4 — Vision Routing (images)
 
-### 2c. Model (optional)
+OpenCode / Cohere are text-only. The bridge describes images via Groq **before** calling the main model.
 
-Setting: `claudeCode.model`
-
-Override the model the extension sends to Claudio. You can also let Claudio handle model selection via its own config.
-
-## Step 3 — Configure Claudio Provider
-
-The wrapper passes your environment to Claudio. Configure your provider via one of these methods:
-
-### Method A: Claudio profile (recommended)
-
-Run `claudio` in a terminal and use `/provider` for guided setup. This saves credentials to `~/.openclaude/settings.json`.
-
-### Method B: Environment variables
-
-Create `~/.openclaude/.env` with your provider config:
+Create `~/.claude-native/.env` (also loads `~/.openclaude/.env` or `~/maniac-agent/.env` if present):
 
 ```bash
-# Example: OpenCode Zen (48 models, pay-as-you-go)
-CLAUDE_CODE_USE_OPENAI=1
-OPENAI_BASE_URL=https://opencode.ai/zen/v1
-OPENAI_MODEL=deepseek-v4-flash-free
-OPENCODE_API_KEY=your-key-here
-
-# Example: OpenAI direct
-# CLAUDE_CODE_USE_OPENAI=1
-# OPENAI_API_KEY=sk-your-key-here
-# OPENAI_MODEL=gpt-4o
-
-# Example: Ollama local
-# CLAUDE_CODE_USE_OPENAI=1
-# OPENAI_BASE_URL=http://localhost:11434/v1
-# OPENAI_MODEL=qwen2.5-coder:7b
-```
-
-### Method C: Vision routing (for image support on text-only models)
-
-If your model doesn't support vision (e.g., DeepSeek, GLM), add Groq vision routing:
-
-```bash
-# In ~/.openclaude/.env
-GROQ_API_KEY=gsk_your-groq-key-here
+GROQ_API_KEY=gsk_...
+CLAUDE_CODE_VISION_API_KEY=gsk_...
+CLAUDE_CODE_VISION_BASE_URL=https://api.groq.com/openai/v1
+CLAUDE_CODE_VISION_MODEL=qwen/qwen3.6-27b
 CLAUDE_CODE_VISION_ROUTE=1
 ```
 
-This describes images via Groq's `qwen/qwen3.6-27b` before sending text to your main model.
+- Disable: `CLAUDE_CODE_DISABLE_VISION_ROUTE=1` or `CLAUDE_CODE_VISION_ROUTE=0`
+- Without a Groq key, attaching an image returns a clear 400 from the bridge (do not forward raw `image_url` to text-only providers).
 
-To use a different vision model:
+## Step 5 — Verify
 
-```bash
-CLAUDE_CODE_VISION_MODEL=qwen/qwen3.6-27b
-```
+1. Reload Window
+2. Open **Claude Code** panel (not Codex)
+3. Confirm model picker lists `anthropic.*` ids from the catalog
+4. Send a short text prompt → expect a reply
+5. Optional: attach an image → expect a short delay (Groq describe) then a reply about the image
+6. Debug log: `~/claude-native-debug.log` — look for `POST /v1/messages` and `vision route: described N image(s)`
 
-## Step 4 — Verify
-
-1. Open Cursor
-2. Open the Claude Code panel (Activity Bar icon or `Ctrl+Shift+P` → "Claude: Open")
-3. Type a message — it should reach your configured provider
-4. Check the terminal output for `[claudio-wrapper] using ...` if you set `CLAUDIO_WRAPPER_DEBUG=1`
-
-### Debug mode
+Enable verbose wrapper stderr:
 
 ```bash
-# In ~/.openclaude/.env
-CLAUDIO_WRAPPER_DEBUG=1
+# User env or session
+CLAUDE_WRAPPER_DEBUG=1
 ```
 
-This prints the resolved Claudio entry path to stderr on every launch.
+### Smoke (optional, agent)
+
+```bash
+# Text-only path through the bridge (requires providers.json + keys)
+cd claudio/claude-wrapper
+# Run a small node script that startNativeBridge + POST /v1/messages
+# Expect HTTP 200 and non-empty text content
+```
 
 ## Troubleshooting
 
-### "could not find Claudio binary"
+| Symptom | Fix |
+|---------|-----|
+| Panel still hits Anthropic / asks for Claude login | Wrapper path wrong, or Reload not done; confirm `claudeProcessWrapper` → `.exe` |
+| Empty replies / hung chat | Reasoning models need high `max_tokens` (bridge floors at 8192). Check log for upstream errors |
+| `invalid bridge token` / silent 401 | Old bug with dual processes; use current native build (localhost does not enforce bridge token) |
+| Settings rewrite mid-chat / reload loop | Don’t manually thrash `~/.claude/settings.json`; wrapper only writes when content changes |
+| Picker shows Opus “Default (recommended)” | `enforceAvailableModels: true` + catalog ids; subtitle may still say Opus but Default resolves to first available |
+| Images → upstream 400 | Set Groq vision env (Step 4); confirm log shows `vision route` |
+| Vision HTTP 429 | Groq rate limit — retry; bridge retries 429/503 a few times |
+| Cohere / OpenCode 401 | Fix `apiKey` / `apiKeyEnv` in `providers.json` |
+| Duplicate assistant lines | OpenCode may echo reasoning into content; newer bridge maps reasoning → Anthropic `thinking` and dedupes when possible — rebuild latest exe |
+| Thoughts / thinking not shown | Need build that maps OpenAI `reasoning` → Anthropic `thinking` / `thinking_delta` |
 
-The wrapper can't find the Claudio CLI. Fix:
+## Architecture Notes (for agents)
+
+- **Harness stays official** — only inference is redirected.
+- Bridge speaks Anthropic `/v1/messages` (+ SSE) to Claude Code and OpenAI `/v1/chat/completions` upstream.
+- Tool use is translated both ways (`tool_use` ↔ `tool_calls`).
+- Reasoning → `thinking` blocks for Claude Code Thoughts UI.
+- Binding is `127.0.0.1` only. Requests must present the shared bridge token (`~/.claude-native/bridge.token`, injected as `ANTHROPIC_API_KEY`). Escape hatch (discouraged): `CLAUDE_NATIVE_BRIDGE_OPEN_LOCAL=1`.
+- Browser `Origin` / CORS preflight are rejected. Vision accepts **base64** image sources only (no URL fetch / SSRF).
+- Debug file `~/claude-native-debug.log` only when `CLAUDE_WRAPPER_DEBUG=1`.
+
+## Legacy Mode (`claudio`)
+
+Only if the user explicitly wants the old Claudio CLI instead of official Claude Code:
 
 ```bash
-npm install -g @gaburieuru/claudio@latest
-claudio --version  # verify it works
+CLAUDE_WRAPPER_MODE=claudio
 ```
 
-### "could not find node.exe"
-
-Node.js isn't on PATH for the wrapper's environment. Fix:
-
-- Ensure Node.js >= 22 is installed
-- Set `NODE_BINARY` env var to the absolute path of `node.exe`
-- Or reinstall Node.js and check "Add to PATH"
-
-### Extension still launches Claude Code
-
-- Confirm `claudeCode.claudeProcessWrapper` points to the `.exe` (not `.cmd`)
-- Restart Cursor after changing settings
-- Check Cursor's output panel for errors
-
-### Provider errors / 401 / 403
-
-- Verify your API key in `~/.openclaude/.env` or via `/provider`
-- Check that `OPENAI_BASE_URL` matches your provider's endpoint
-- Run `claudio` directly in terminal to isolate whether it's a wrapper or provider issue
-
-### Images not working (400 error from provider)
-
-If you see `unknown variant image_url` or similar, your model doesn't support vision. Add Groq vision routing (see Step 3, Method C).
-
-## Architecture Notes
-
-- The wrapper is a **process-level interceptor** — it replaces the executable the extension spawns
-- It does **not** modify Claudio's source code or config
-- Environment variables flow: Cursor → wrapper → Claudio → `.env` file load
-- The wrapper uses `stdio: 'inherit'` — all input/output passes through transparently
-- On Windows, always use the `.exe` compiled with `bun --compile`, not the `.cmd` shim
+Then the wrapper spawns Claudio (`@gaburieuru/claudio`) instead of `claude.exe`. Provider config then lives under `~/.openclaude/` as in older docs. Prefer `native` for Cursor’s Claude Code panel.
 
 ## Files Reference
 
-| File | Purpose |
+| Path | Purpose |
 |------|---------|
-| `claude-wrapper/claudio-wrapper.js` | Wrapper source (Node.js) |
-| `claude-wrapper/claudio-wrapper.exe` | Compiled wrapper (Bun) |
-| `claude-wrapper/_wire-vision-env.mjs` | Helper to write Groq keys to settings.json |
-| `~/.openclaude/.env` | Claudio provider config + vision routing |
-| `~/.openclaude/settings.json` | Claudio persistent settings |
+| `claude-wrapper/claudio-wrapper.js` | Process wrapper (native + legacy) |
+| `claude-wrapper/native-bridge.js` | Anthropic ↔ Chat Completions (+ tools/stream) |
+| `claude-wrapper/provider-config.js` | Catalog, picker ids, settings sync |
+| `claude-wrapper/vision-route.js` | Groq image → text before upstream |
+| `claudio-wrapper-nativeN.exe` | Bun-compiled binary for Cursor |
+| `~/.claude-native/providers.json` | Providers + models catalog |
+| `~/.claude-native/.env` | Groq / vision env (preferred) |
+| `~/.claude/settings.json` | Synced `availableModels` / default model |
+| `~/claude-native-debug.log` | Wrapper/bridge debug log |
+
+## Agent Checklist (copy this)
+
+1. [ ] Build/point `claudeProcessWrapper` at latest `claudio-wrapper-nativeN.exe`
+2. [ ] Write `~/.claude-native/providers.json` with user’s keys (env preferred)
+3. [ ] Set `claudeCode.model` to an `anthropic.<id>` from the catalog
+4. [ ] If user pastes images: write `~/.claude-native/.env` with Groq + `qwen/qwen3.6-27b`
+5. [ ] Ensure `~/.claude/settings.json` does **not** force `CLAUDE_CODE_USE_OPENAI`
+6. [ ] Reload Window → smoke text → smoke image
+7. [ ] Confirm `~/claude-native-debug.log` shows `/v1/messages` (and vision when images)
+8. [ ] Never commit API keys; warn user if they pasted keys in chat

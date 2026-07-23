@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
  * Process wrapper for the official Claude Code VS Code / Cursor extension.
- * The extension sets pathToClaudeCodeExecutable to this wrapper and passes
- * its bundled launcher as executableArgs, typically:
- *   [node.exe, .../resources/claude-code/cli.js, ...userArgs]
- * or a single native binary path.
  *
- * We drop that launcher and run the local Claudio CLI instead.
+ * Modes (CLAUDE_WRAPPER_MODE):
+ *   native  — keep official Claude Code harness; only swap inference via local
+ *             Anthropic Messages → Chat Completions bridge (default when the
+ *             extension passes its bundled claude.exe / cli.js).
+ *   claudio — replace Claude Code with the Claudio CLI (legacy).
  *
  * Configured via: claudeCode.claudeProcessWrapper
  *
@@ -18,10 +18,68 @@
 const { spawn, execFileSync } = require('child_process')
 const fs = require('fs')
 const path = require('path')
+const os = require('os')
+const { randomUUID } = require('crypto')
+const { startNativeBridge } = require('./native-bridge')
+const {
+  loadProvidersConfig,
+  resolveProvider,
+  syncClaudeAvailableModels,
+} = require('./provider-config')
+
+const VISION_ENV_KEYS = [
+  'GROQ_API_KEY',
+  'CLAUDE_CODE_VISION_API_KEY',
+  'MANIAC_VISION_API_KEY',
+  'CLAUDE_CODE_VISION_BASE_URL',
+  'MANIAC_VISION_BASE_URL',
+  'CLAUDE_CODE_VISION_MODEL',
+  'MANIAC_VISION_MODEL',
+  'CLAUDE_CODE_VISION_ROUTE',
+  'CLAUDE_CODE_DISABLE_VISION_ROUTE',
+]
+
+/** Load vision keys from .env files into process.env (do not override existing). */
+function loadVisionEnvFiles() {
+  const candidates = [
+    path.join(os.homedir(), '.claude-native', '.env'),
+    path.join(os.homedir(), '.openclaude', '.env'),
+    path.join(os.homedir(), 'maniac-agent', '.env'),
+    path.join('C:', 'Users', os.userInfo().username, 'maniac-agent', '.env'),
+  ]
+  let loaded = 0
+  for (const file of candidates) {
+    try {
+      if (!fs.existsSync(file)) continue
+      const text = fs.readFileSync(file, 'utf8')
+      for (const line of text.split(/\r?\n/)) {
+        const t = line.trim()
+        if (!t || t.startsWith('#')) continue
+        const i = t.indexOf('=')
+        if (i < 0) continue
+        const key = t.slice(0, i).trim()
+        if (!VISION_ENV_KEYS.includes(key)) continue
+        if (process.env[key]) continue
+        let val = t.slice(i + 1).trim()
+        if (
+          (val.startsWith('"') && val.endsWith('"')) ||
+          (val.startsWith("'") && val.endsWith("'"))
+        ) {
+          val = val.slice(1, -1)
+        }
+        process.env[key] = val
+        loaded += 1
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+  return loaded
+}
 
 /**
  * Bun --compile embeds scripts under a virtual __dirname. Prefer the
- * directory of the running .exe so sibling ../cli resolves.
+ * directory of the running .exe so sibling files resolve.
  */
 function wrapperBaseDir() {
   const execDir = path.dirname(process.execPath)
@@ -35,10 +93,46 @@ function wrapperBaseDir() {
   return execDir
 }
 
+function debugLog(...args) {
+  const debug =
+    process.env.CLAUDE_WRAPPER_DEBUG === '1' || process.env.CLAUDIO_WRAPPER_DEBUG === '1'
+  if (debug) {
+    console.error('[claude-wrapper]', ...args)
+  }
+  // Only persist logs when debug is on — avoids writing provider errors every turn
+  if (!debug) return
+  try {
+    const logPath = process.env.CLAUDE_NATIVE_LOG || path.join(os.homedir(), 'claude-native-debug.log')
+    fs.appendFileSync(
+      logPath,
+      `[${new Date().toISOString()}] ${args.map((a) => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ')}\n`,
+    )
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Stable token shared by sibling wrapper processes (auth status + stream-json). */
+function getSharedBridgeToken() {
+  const dir = path.join(os.homedir(), '.claude-native')
+  const file = path.join(dir, 'bridge.token')
+  try {
+    fs.mkdirSync(dir, { recursive: true })
+    if (fs.existsSync(file)) {
+      const existing = fs.readFileSync(file, 'utf8').trim()
+      if (existing.length >= 32) return existing
+    }
+    const token = randomUUID().replace(/-/g, '') + randomUUID().replace(/-/g, '')
+    fs.writeFileSync(file, token, { mode: 0o600 })
+    return token
+  } catch {
+    return randomUUID().replace(/-/g, '') + randomUUID().replace(/-/g, '')
+  }
+}
+
 function resolveClaudioEntry() {
   const baseDir = wrapperBaseDir()
 
-  // Prefer sibling checkout — return immediately (no npm spawn / PATH scan).
   const local = path.join(baseDir, '..', 'cli', 'bin', 'claudio')
   if (path.isAbsolute(local) && fs.existsSync(local)) return local
 
@@ -53,7 +147,6 @@ function resolveClaudioEntry() {
     globalBins(path.join(process.env.APPDATA, 'npm'))
   }
 
-  // Only ask npm when local checkout + APPDATA miss (slow on Windows).
   try {
     const prefix = execFileSync('npm', ['prefix', '-g'], {
       encoding: 'utf8',
@@ -81,9 +174,7 @@ function isExtensionClaudeLauncher(filePath) {
   if (!filePath || typeof filePath !== 'string') return false
   if (!path.isAbsolute(filePath)) return false
   const normalized = filePath.replace(/\\/g, '/').toLowerCase()
-  // Extension-bundled JS entry: .../claude-code/.../cli.js (or similar).
   if (normalized.endsWith('/cli.js') && normalized.includes('claude')) return true
-  // Extension native binary / helper paths.
   if (/claude-code|native-binary/i.test(normalized)) return true
   const base = path.basename(normalized)
   if (base === 'claude' || base === 'claude.exe') return true
@@ -106,8 +197,57 @@ function stripExtensionLauncher(argv) {
   return args
 }
 
+/** Keep official Claude binary + user args. */
+function parseOfficialLaunch(argv) {
+  const args = argv.slice()
+  if (args.length === 0) return null
+
+  if (isNodeBinary(args[0]) && args.length >= 2 && isExtensionClaudeLauncher(args[1])) {
+    return { command: args[0], args: args.slice(1) }
+  }
+
+  if (isExtensionClaudeLauncher(args[0])) {
+    return { command: args[0], args: args.slice(1) }
+  }
+
+  return null
+}
+
+function findBundledClaudeExe() {
+  const home = os.homedir()
+  const extensionsRoot = path.join(home, '.cursor', 'extensions')
+  if (!fs.existsSync(extensionsRoot)) return null
+  let dirs = []
+  try {
+    dirs = fs
+      .readdirSync(extensionsRoot)
+      .filter((d) => d.startsWith('anthropic.claude-code-'))
+      .sort()
+      .reverse()
+  } catch {
+    return null
+  }
+  for (const d of dirs) {
+    const candidates = [
+      path.join(extensionsRoot, d, 'resources', 'native-binary', 'claude.exe'),
+      path.join(extensionsRoot, d, 'resources', 'native-binaries', `win32-${process.arch}`, 'claude.exe'),
+      path.join(extensionsRoot, d, 'resources', 'claude-code', 'cli.js'),
+    ]
+    for (const c of candidates) {
+      if (fs.existsSync(c)) {
+        if (c.endsWith('cli.js')) {
+          const node = resolveNodeBinary()
+          if (!node) continue
+          return { command: node, args: [c] }
+        }
+        return { command: c, args: [] }
+      }
+    }
+  }
+  return null
+}
+
 function resolveNodeBinary() {
-  // Prefer a real Node when this file is bun-compiled (execPath is the .exe).
   if (isNodeBinary(process.execPath)) {
     return process.execPath
   }
@@ -117,7 +257,6 @@ function resolveNodeBinary() {
     return fromEnv
   }
 
-  // Fast path: common Windows installs (skip `where` — often 1–3s cold).
   if (process.platform === 'win32') {
     const guesses = [
       path.join(process.env.ProgramFiles || 'C:\\Program Files', 'nodejs', 'node.exe'),
@@ -146,47 +285,176 @@ function resolveNodeBinary() {
   return null
 }
 
-let args = stripExtensionLauncher(process.argv.slice(2))
+function detectMode(rawArgs) {
+  const forced = (process.env.CLAUDE_WRAPPER_MODE || process.env.CLAUDIO_MODE || '').toLowerCase()
+  if (forced === 'native' || forced === 'proxy') return 'native'
+  if (forced === 'claudio' || forced === 'legacy') return 'claudio'
+  // Auto: official launcher in argv → native; otherwise Claudio
+  if (parseOfficialLaunch(rawArgs) || findBundledClaudeExe()) return 'native'
+  return 'claudio'
+}
 
-const entry = resolveClaudioEntry()
-if (!entry) {
-  console.error(
-    '[claudio-wrapper] could not find Claudio binary.\n' +
-      'Install globally: npm install -g @gaburieuru/claudio@latest',
+function attachChild(child) {
+  child.on('exit', (code, signal) => {
+    if (signal) {
+      try {
+        process.kill(process.pid, signal)
+      } catch {
+        process.exit(1)
+      }
+    }
+    process.exit(code ?? 0)
+  })
+  child.on('error', (err) => {
+    console.error('[claude-wrapper] failed to start child:', err.message)
+    process.exit(1)
+  })
+}
+
+async function runNative(rawArgs) {
+  loadVisionEnvFiles()
+  const parsed = parseOfficialLaunch(rawArgs) || findBundledClaudeExe()
+  if (!parsed) {
+    console.error(
+      '[claude-wrapper] native mode: Claude Code binary not found.\n' +
+        'Install the official Claude Code Cursor extension, or set CLAUDE_WRAPPER_MODE=claudio.',
+    )
+    process.exit(1)
+  }
+
+  // When we found bundled binary ourselves, remaining argv are user args
+  let userArgs = []
+  if (parseOfficialLaunch(rawArgs)) {
+    userArgs = parsed.args
+  } else {
+    userArgs = stripExtensionLauncher(rawArgs)
+  }
+
+  const providersCfg = loadProvidersConfig()
+  // Short-lived `auth status` (and similar) must not touch settings.json —
+  // Cursor spawns it beside the stream-json session; a rewrite reloads Claude.
+  const isEphemeral =
+    userArgs.includes('auth') ||
+    userArgs.some((a) => a === '--version' || a === '-v' || a === 'version')
+  const synced = isEphemeral
+    ? { path: null, ids: [], changed: false }
+    : syncClaudeAvailableModels(providersCfg.data)
+  if (synced.changed) {
+    debugLog(`synced Claude settings (${synced.ids?.length || 0} models) → ${synced.path}`)
+  }
+  const provider = resolveProvider(providersCfg.data)
+  if (!provider.apiKey) {
+    console.error(
+      `[claude-wrapper] native mode: missing API key (set ${provider.apiKeyEnv || 'OPENAI_API_KEY'} or CLAUDE_NATIVE_API_KEY).`,
+    )
+    process.exit(1)
+  }
+
+  const bridgeToken = getSharedBridgeToken()
+  const bridge = await startNativeBridge({
+    token: bridgeToken,
+    log: (...a) => debugLog(...a),
+    getProvider: (requested) => resolveProvider(providersCfg.data, requested),
+    getProvidersData: () => providersCfg.data,
+  })
+
+  debugLog(
+    `native mode — provider=${provider.name} model=${provider.model} bridge=${bridge.url} config=${providersCfg.path || 'builtin'} settings=${synced.path || 'n/a'} models=${synced.ids?.length || 0} vision=${process.env.GROQ_API_KEY || process.env.CLAUDE_CODE_VISION_API_KEY ? 'on' : 'off'}`,
   )
-  process.exit(1)
-}
+  debugLog(`spawn ${parsed.command} ${userArgs.join(' ')}`)
 
-if (process.env.CLAUDIO_WRAPPER_DEBUG === '1') {
-  console.error(`[claudio-wrapper] using ${entry}`)
-}
+  const env = {
+    ...process.env,
+    ANTHROPIC_BASE_URL: bridge.url,
+    CLAUDE_CODE_SKIP_API_KEY_CHECK: process.env.CLAUDE_CODE_SKIP_API_KEY_CHECK || '1',
+    CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY:
+      process.env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY || '1',
+  }
+  // Force shared bridge key (must match native-bridge token check)
+  env.ANTHROPIC_API_KEY = bridgeToken
+  env.ANTHROPIC_AUTH_TOKEN = bridgeToken
+  // Don't leak Claudio/OpenAI routing into official Claude Code (it must use Anthropic bridge)
+  delete env.OPENAI_BASE_URL
+  delete env.OPENAI_API_BASE
+  delete env.OPENAI_MODEL
+  delete env.CLAUDE_CODE_USE_OPENAI
+  delete env.CLAUDE_CODE_USE_BEDROCK
+  delete env.CLAUDE_CODE_USE_VERTEX
+  delete env.CLAUDE_CODE_OAUTH_TOKEN
+  delete env.ANTHROPIC_LOG
 
-const nodeBinary = resolveNodeBinary()
-if (!nodeBinary) {
-  console.error(
-    '[claudio-wrapper] could not find node.exe to launch Claudio.\n' +
-      'Ensure Node.js is on PATH, or set NODE_BINARY to an absolute node path.',
-  )
-  process.exit(1)
-}
+  const child = spawn(parsed.command, userArgs, {
+    stdio: 'inherit',
+    env,
+    windowsHide: true,
+  })
 
-const child = spawn(nodeBinary, [entry, ...args], {
-  stdio: 'inherit',
-  env: process.env,
-  windowsHide: true,
-})
-
-child.on('exit', (code, signal) => {
-  if (signal) {
+  const shutdown = async () => {
     try {
-      process.kill(process.pid, signal)
+      await bridge.close()
     } catch {
-      process.exit(1)
+      /* ignore */
     }
   }
-  process.exit(code ?? 0)
-})
-child.on('error', (err) => {
-  console.error('[claudio-wrapper] failed to start Claudio:', err.message)
-  process.exit(1)
-})
+  child.on('exit', async (code, signal) => {
+    await shutdown()
+    if (signal) {
+      try {
+        process.kill(process.pid, signal)
+      } catch {
+        process.exit(1)
+      }
+    }
+    process.exit(code ?? 0)
+  })
+  child.on('error', async (err) => {
+    await shutdown()
+    console.error('[claude-wrapper] failed to start Claude Code:', err.message)
+    process.exit(1)
+  })
+}
+
+function runClaudio(rawArgs) {
+  const args = stripExtensionLauncher(rawArgs)
+  const entry = resolveClaudioEntry()
+  if (!entry) {
+    console.error(
+      '[claudio-wrapper] could not find Claudio binary.\n' +
+        'Install globally: npm install -g @gaburieuru/claudio@latest',
+    )
+    process.exit(1)
+  }
+
+  if (process.env.CLAUDIO_WRAPPER_DEBUG === '1') {
+    console.error(`[claudio-wrapper] using ${entry}`)
+  }
+
+  const nodeBinary = resolveNodeBinary()
+  if (!nodeBinary) {
+    console.error(
+      '[claudio-wrapper] could not find node.exe to launch Claudio.\n' +
+        'Ensure Node.js is on PATH, or set NODE_BINARY to an absolute node path.',
+    )
+    process.exit(1)
+  }
+
+  const child = spawn(nodeBinary, [entry, ...args], {
+    stdio: 'inherit',
+    env: process.env,
+    windowsHide: true,
+  })
+  attachChild(child)
+}
+
+const rawArgs = process.argv.slice(2)
+const mode = detectMode(rawArgs)
+debugLog(`mode=${mode} argv0=${rawArgs[0] || ''}`)
+
+if (mode === 'native') {
+  runNative(rawArgs).catch((err) => {
+    console.error('[claude-wrapper] native failed:', err.message)
+    process.exit(1)
+  })
+} else {
+  runClaudio(rawArgs)
+}
