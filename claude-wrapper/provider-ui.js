@@ -35,26 +35,119 @@ function htmlPage() {
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Provider setup</title>
+<title>Connect a provider · Claude</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
-  :root { color-scheme: dark; --bg:#0d0f12; --card:#161a20; --text:#e8eaed; --muted:#9aa0a6; --accent:#7aa2ff; --ok:#3dd68c; --err:#ff7b72; }
+  :root {
+    color-scheme: light;
+    --bg: #faf9f5;
+    --card: #ffffff;
+    --text: #141413;
+    --muted: #73726c;
+    --border: #e8e6dc;
+    --accent: #d97757;
+    --accent-hover: #c46648;
+    --ok: #788c5d;
+    --err: #c45c4a;
+    --focus: #6a9bcc;
+    --input-bg: #faf9f5;
+  }
   * { box-sizing: border-box; }
-  body { margin:0; font:15px/1.45 system-ui,Segoe UI,sans-serif; background:var(--bg); color:var(--text); }
-  main { max-width:520px; margin:48px auto; padding:0 20px; }
-  h1 { font-size:1.35rem; font-weight:650; margin:0 0 6px; }
-  p.sub { color:var(--muted); margin:0 0 24px; }
-  .card { background:var(--card); border:1px solid #2a3038; border-radius:12px; padding:20px; }
-  label { display:block; font-size:12px; color:var(--muted); margin:14px 0 6px; }
-  select, input { width:100%; padding:10px 12px; border-radius:8px; border:1px solid #2a3038; background:#0d0f12; color:var(--text); }
-  button { margin-top:18px; width:100%; padding:12px; border:0; border-radius:8px; background:var(--accent); color:#0b1020; font-weight:650; cursor:pointer; }
-  button:disabled { opacity:.5; cursor:wait; }
-  .msg { margin-top:14px; font-size:13px; }
-  .ok { color:var(--ok); } .err { color:var(--err); }
-  .meta { margin-top:8px; color:var(--muted); font-size:12px; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: Lora, Georgia, "Times New Roman", serif;
+    font-size: 15px;
+    line-height: 1.5;
+    background: var(--bg);
+    color: var(--text);
+  }
+  main { max-width: 440px; margin: 56px auto; padding: 0 20px; }
+  .mark {
+    font-family: Poppins, Arial, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--accent);
+    margin: 0 0 18px;
+  }
+  h1 {
+    font-family: Poppins, Arial, sans-serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin: 0 0 8px;
+    color: var(--text);
+  }
+  p.sub {
+    font-family: Lora, Georgia, serif;
+    color: var(--muted);
+    margin: 0 0 28px;
+    font-size: 14px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 1px 2px rgba(20, 20, 19, 0.04);
+  }
+  label {
+    display: block;
+    font-family: Poppins, Arial, sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--muted);
+    margin: 16px 0 8px;
+  }
+  label:first-of-type { margin-top: 0; }
+  select, input {
+    width: 100%;
+    padding: 11px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--input-bg);
+    color: var(--text);
+    font-family: Poppins, Arial, sans-serif;
+    font-size: 14px;
+  }
+  select:focus, input:focus {
+    outline: 2px solid color-mix(in srgb, var(--focus) 55%, transparent);
+    outline-offset: 1px;
+    border-color: var(--focus);
+  }
+  button {
+    margin-top: 22px;
+    width: 100%;
+    padding: 12px 16px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--accent);
+    color: #faf9f5;
+    font-family: Poppins, Arial, sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  button:hover:not(:disabled) { background: var(--accent-hover); }
+  button:disabled { opacity: 0.55; cursor: wait; }
+  .msg { margin-top: 16px; font-size: 13px; font-family: Lora, Georgia, serif; }
+  .ok { color: var(--ok); }
+  .err { color: var(--err); }
+  .meta {
+    margin-top: 8px;
+    color: var(--muted);
+    font-family: Poppins, Arial, sans-serif;
+    font-size: 11px;
+    word-break: break-all;
+  }
 </style>
 </head>
 <body>
 <main>
+  <p class="mark">Claude</p>
   <h1>Connect a provider</h1>
   <p class="sub">Local only (127.0.0.1). Key is saved to ~/.claude-native/providers.json — not to Claude chat.</p>
   <div class="card">
