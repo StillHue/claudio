@@ -702,10 +702,11 @@ function startNativeBridge(opts) {
   const host = opts.host || '127.0.0.1'
   const port = opts.port || 0
 
-  // Shared-token gate ON by default. Escape hatch: CLAUDE_NATIVE_BRIDGE_OPEN_LOCAL=1.
-  // Accept if *either* x-api-key or Bearer matches — Claude may send OAuth Bearer
-  // alongside our injected x-api-key; requiring only the first presented value 401s.
-  const openLocal = process.env.CLAUDE_NATIVE_BRIDGE_OPEN_LOCAL === '1'
+  // Shared-token gate: on when STRICT=1 and OPEN_LOCAL is not set.
+  // Default (OPEN_LOCAL from wrapper): skip token check — loopback + Origin only.
+  const openLocal =
+    process.env.CLAUDE_NATIVE_BRIDGE_OPEN_LOCAL === '1' ||
+    process.env.CLAUDE_NATIVE_BRIDGE_STRICT !== '1'
   const maxBodyBytes = Number(process.env.CLAUDE_NATIVE_MAX_BODY_BYTES || 20 * 1024 * 1024)
 
   const server = http.createServer(async (req, res) => {

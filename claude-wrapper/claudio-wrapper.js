@@ -508,6 +508,16 @@ async function runNative(rawArgs) {
     // presents a matching x-api-key and/or Bearer to the local bridge.
     env.ANTHROPIC_API_KEY = bridgeToken
     env.ANTHROPIC_AUTH_TOKEN = bridgeToken
+    // Default open on loopback: Claude often presents /login OAuth instead of
+    // our token → 401 and every slash (including /provider) looks "dead".
+    // Opt into strict shared-token auth with CLAUDE_NATIVE_BRIDGE_STRICT=1
+    // (and unset CLAUDE_NATIVE_BRIDGE_OPEN_LOCAL).
+    if (process.env.CLAUDE_NATIVE_BRIDGE_STRICT === '1') {
+      delete env.CLAUDE_NATIVE_BRIDGE_OPEN_LOCAL
+    } else {
+      env.CLAUDE_NATIVE_BRIDGE_OPEN_LOCAL =
+        process.env.CLAUDE_NATIVE_BRIDGE_OPEN_LOCAL || '1'
+    }
     delete env.OPENAI_BASE_URL
     delete env.OPENAI_API_BASE
     delete env.OPENAI_MODEL
