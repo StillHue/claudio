@@ -136,7 +136,8 @@ Recommended path: keep the **official Claude Code** extension and point
 `claudeCode.claudeProcessWrapper` at the native wrapper. Inference goes to
 OpenCode Zen / Cohere / etc.; tools, permissions, and Thoughts UI stay native.
 
-Full agent/human setup: **[claude-wrapper/SETUP-GUIDE.md](./claude-wrapper/SETUP-GUIDE.md)**.
+Full agent/human setup: **[claude-wrapper/SETUP-GUIDE.md](./claude-wrapper/SETUP-GUIDE.md)**.  
+**Paste-into-Cursor prompt:** **[claude-wrapper/AGENT-PROMPT.md](./claude-wrapper/AGENT-PROMPT.md)**.
 
 Legacy: `CLAUDE_WRAPPER_MODE=claudio` still swaps in the Claudio CLI instead of
 `claude.exe` — prefer native mode.
@@ -152,6 +153,7 @@ Use Cursor subscription models (Composer, Grok, …) as Claudio’s LLM via a lo
 ## Docs
 
 - [Claude Code native wrapper (Cursor)](./claude-wrapper/SETUP-GUIDE.md)
+- [Agent prompt (paste into Cursor)](./claude-wrapper/AGENT-PROMPT.md)
 - [Cursor Agent provider](./docs/cursor-agent-provider.md)
 - [Non-Technical Setup](./cli/docs/non-technical-setup.md)
 - [Windows Quick Start](./cli/docs/quick-start-windows.md)

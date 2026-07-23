@@ -1,6 +1,8 @@
 # How to Configure the Claude Native Wrapper for Cursor
 
-This guide walks an **AI agent** (or a human) through setting up the process wrapper so the **official Claude Code** Cursor extension keeps its native harness (tools, permissions, Thoughts UI) while inference goes to OpenCode / Cohere / other OpenAI-compatible providers.
+This guide is the **detailed reference** for humans and agents.
+
+**Users who just want Cursor to do the work:** open [AGENT-PROMPT.md](./AGENT-PROMPT.md), copy everything below the line, paste into a new Cursor chat, and answer with your API keys when asked.
 
 > **Default mode is `native`.** The old “replace Claude with Claudio CLI” path still exists (`CLAUDE_WRAPPER_MODE=claudio`) but is legacy — prefer native.
 
