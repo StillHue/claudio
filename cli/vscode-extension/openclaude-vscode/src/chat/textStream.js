@@ -16,7 +16,8 @@ const REPEAT_CHUNK_MIN = 16
 function appendTextDelta(acc, delta) {
   if (!delta) return acc || ''
   if (!acc) return delta
-  if (delta === acc) return acc
+  // Same buffer re-sent as a whole (only for non-trivial payloads)
+  if (delta === acc && delta.length >= REPEAT_CHUNK_MIN) return acc
 
   // Cumulative stream: each event is the full text so far (strictly grows).
   if (delta.length > acc.length && delta.startsWith(acc)) {
