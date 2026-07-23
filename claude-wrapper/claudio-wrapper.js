@@ -502,15 +502,12 @@ async function runNative(rawArgs) {
     env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY =
       process.env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY || '1'
     const bridgeToken = getSharedBridgeToken()
-    // Only x-api-key — setting ANTHROPIC_AUTH_TOKEN triggers Claude's
-    // "/login managed key" conflict and it may send the OAuth bearer instead.
-    // Bridge accepts matching x-api-key even if a stale Bearer is also sent.
+    // Quarantine BEFORE injecting tokens so /login cannot win the race.
+    quarantineClaudeLoginCredentials()
+    // With login aside, set both headers to the bridge token so Claude
+    // presents a matching x-api-key and/or Bearer to the local bridge.
     env.ANTHROPIC_API_KEY = bridgeToken
-    delete env.ANTHROPIC_AUTH_TOKEN
-    // Optional escape hatch if login key still wins on some builds:
-    if (process.env.CLAUDE_NATIVE_BRIDGE_OPEN_LOCAL === '1') {
-      env.CLAUDE_NATIVE_BRIDGE_OPEN_LOCAL = '1'
-    }
+    env.ANTHROPIC_AUTH_TOKEN = bridgeToken
     delete env.OPENAI_BASE_URL
     delete env.OPENAI_API_BASE
     delete env.OPENAI_MODEL
@@ -519,7 +516,6 @@ async function runNative(rawArgs) {
     delete env.CLAUDE_CODE_USE_VERTEX
     delete env.CLAUDE_CODE_OAUTH_TOKEN
     delete env.ANTHROPIC_LOG
-    quarantineClaudeLoginCredentials()
   }
 
   const child = spawn(command, userArgs, {
