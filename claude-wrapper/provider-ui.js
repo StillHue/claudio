@@ -41,18 +41,18 @@ function htmlPage() {
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
   :root {
-    color-scheme: light;
-    --bg: #faf9f5;
-    --card: #ffffff;
-    --text: #141413;
-    --muted: #73726c;
-    --border: #e8e6dc;
+    color-scheme: dark;
+    --bg: #141413;
+    --card: #1c1c1a;
+    --text: #faf9f5;
+    --muted: #b0aea5;
+    --border: #2e2e2b;
     --accent: #d97757;
-    --accent-hover: #c46648;
-    --ok: #788c5d;
-    --err: #c45c4a;
+    --accent-hover: #e0896a;
+    --ok: #9aaf7a;
+    --err: #e08a7c;
     --focus: #6a9bcc;
-    --input-bg: #faf9f5;
+    --input-bg: #141413;
   }
   * { box-sizing: border-box; }
   body {
@@ -125,7 +125,7 @@ function htmlPage() {
     border: 0;
     border-radius: 999px;
     background: var(--accent);
-    color: #faf9f5;
+    color: #141413;
     font-family: Poppins, Arial, sans-serif;
     font-size: 15px;
     font-weight: 500;
