@@ -88,6 +88,10 @@ export const PROVIDER_PRESET_MANIFEST = [
     "description": "Alibaba DashScope International endpoint",
     "apiKeyEnvVars": [
       "DASHSCOPE_API_KEY"
+    ],
+    "baseUrlEnvVars": [
+      "DASHSCOPE_BASE_URL",
+      "OPENAI_BASE_URL"
     ]
   },
   {
@@ -162,6 +166,17 @@ export const PROVIDER_PRESET_MANIFEST = [
     ]
   },
   {
+    "preset": "cohere",
+    "routeKind": "gateway",
+    "routeId": "cohere",
+    "vendorId": "openai",
+    "gatewayId": "cohere",
+    "description": "Cohere OpenAI-compatible endpoint",
+    "apiKeyEnvVars": [
+      "COHERE_API_KEY"
+    ]
+  },
+  {
     "preset": "deepseek",
     "routeKind": "vendor",
     "routeId": "deepseek",
@@ -217,6 +232,24 @@ export const PROVIDER_PRESET_MANIFEST = [
     ],
     "modelEnvVars": [
       "OPENAI_MODEL"
+    ]
+  },
+  {
+    "preset": "kilo",
+    "routeKind": "gateway",
+    "routeId": "kilo",
+    "vendorId": "openai",
+    "gatewayId": "kilo",
+    "description": "Kilo Gateway OpenAI-compatible endpoint",
+    "apiKeyEnvVars": [
+      "KILO_API_KEY"
+    ],
+    "baseUrlEnvVars": [
+      "KILO_BASE_URL",
+      "OPENAI_BASE_URL"
+    ],
+    "modelEnvVars": [
+      "KILO_MODEL"
     ]
   },
   {
@@ -517,11 +550,13 @@ export const ORDERED_PROVIDER_PRESETS = [
   "bankr",
   "clinepass",
   "cloudflare",
+  "cohere",
   "deepseek",
   "fireworks",
   "gemini",
   "groq",
   "hicap",
+  "kilo",
   "lmstudio",
   "atomic-chat",
   "ollama",

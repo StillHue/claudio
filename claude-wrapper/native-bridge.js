@@ -6,6 +6,9 @@
  * Claude Code harness stays intact — only inference is redirected.
  */
 const http = require('http')
+const fs = require('fs')
+const path = require('path')
+const os = require('os')
 const { randomUUID } = require('crypto')
 const { buildAnthropicModelsList } = require('./provider-config')
 const {
@@ -14,6 +17,21 @@ const {
   visionEnabled,
   visionAvailable,
 } = require('./vision-route')
+
+const BRIDGE_TOKEN_FILE = path.join(os.homedir(), '.claude-native', 'bridge.token')
+
+/** Prefer on-disk shared token so sibling wrappers never disagree with in-memory start token. */
+function expectedBridgeToken(fallback) {
+  try {
+    if (fs.existsSync(BRIDGE_TOKEN_FILE)) {
+      const t = fs.readFileSync(BRIDGE_TOKEN_FILE, 'utf8').trim()
+      if (t.length >= 32) return t
+    }
+  } catch {
+    /* ignore */
+  }
+  return fallback || ''
+}
 
 function json(res, status, body) {
   const payload = JSON.stringify(body)
@@ -684,6 +702,9 @@ function startNativeBridge(opts) {
   const host = opts.host || '127.0.0.1'
   const port = opts.port || 0
 
+  // Shared-token gate ON by default. Escape hatch: CLAUDE_NATIVE_BRIDGE_OPEN_LOCAL=1.
+  // Accept if *either* x-api-key or Bearer matches — Claude may send OAuth Bearer
+  // alongside our injected x-api-key; requiring only the first presented value 401s.
   const openLocal = process.env.CLAUDE_NATIVE_BRIDGE_OPEN_LOCAL === '1'
   const maxBodyBytes = Number(process.env.CLAUDE_NATIVE_MAX_BODY_BYTES || 20 * 1024 * 1024)
 
@@ -705,14 +726,17 @@ function startNativeBridge(opts) {
       })
     }
 
-    // Enforce shared bridge token (sibling wrapper processes share ~/.claude-native/bridge.token).
-    // Escape hatch: CLAUDE_NATIVE_BRIDGE_OPEN_LOCAL=1 (discouraged).
     if (token && !openLocal) {
       const auth = req.headers.authorization || ''
       const xKey = String(req.headers['x-api-key'] || '')
       const bearer = auth.startsWith('Bearer ') ? auth.slice(7).trim() : ''
-      const presented = xKey || bearer
-      if (presented !== token) {
+      const expected = expectedBridgeToken(token)
+      const ok =
+        (xKey && xKey === expected) || (bearer && bearer === expected)
+      if (!ok) {
+        log(
+          `401 bridge auth: xApiKeyLen=${xKey.length} bearerLen=${bearer.length} expectedLen=${expected.length}`,
+        )
         return json(res, 401, {
           type: 'error',
           error: { type: 'authentication_error', message: 'invalid bridge token' },

@@ -151,7 +151,8 @@ Give the user a short summary:
 | Empty / hung replies | Check log; raise isn’t needed (bridge floors `max_tokens`); try another model |
 | Images → 400 | Configure Groq `.env` (step 3) |
 | OpenCode 500 on `big-pickle` | Provider/upstream flake (often internal); retry or switch model — not a local misconfig if `/chat/completions` is `opencode.ai/zen/v1` |
-| `invalid bridge token` | Rebuild from latest `claude-wrapper` (shared `~/.claude-native/bridge.token`) |
+| `invalid bridge token` + `/login` warning | `/logout` or rebuild wrapper (quarantines `.credentials.json` while bridged); shared `~/.claude-native/bridge.token` |
+| Need provider/model catalog | `node sync-catalog.js sync` then `list --bridge` / `list --models opencode` |
 
 ## Out of scope
 

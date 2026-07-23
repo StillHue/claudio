@@ -145,6 +145,7 @@ export type ProviderProfile =
   | 'xai'
   | 'opencode'
   | 'clinepass'
+  | 'cohere'
 
 export type ProfileEnv = {
   ANTHROPIC_BASE_URL?: string
@@ -196,6 +197,9 @@ export type ProfileEnv = {
   CLINE_API_KEY?: string
   NEARAI_API_KEY?: string
   FIREWORKS_API_KEY?: string
+  COHERE_API_KEY?: string
+  COHERE_BASE_URL?: string
+  COHERE_MODEL?: string
   OPENCODE_API_KEY?: string
   CLOUDFLARE_API_TOKEN?: string
   CLAUDE_CODE_OPENAI_CONTEXT_WINDOWS?: string
@@ -325,7 +329,8 @@ export function isProviderProfile(value: unknown): value is ProviderProfile {
     value === 'bedrock' ||
     value === 'vertex' ||
     value === 'xai' ||
-    value === 'opencode'
+    value === 'opencode' ||
+    value === 'cohere'
   )
 }
 

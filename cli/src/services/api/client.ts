@@ -346,6 +346,25 @@ function applyAimlapiEnvOnlyDefaults(): void {
   delete process.env.OPENAI_AUTH_HEADER_VALUE
 }
 
+function applyDashscopeIntlEnvOnlyDefaults(): void {
+  const baseUrlOverride =
+    process.env.OPENAI_BASE_URL?.trim() ||
+    process.env.OPENAI_API_BASE?.trim() ||
+    undefined
+  const modelOverride = process.env.OPENAI_MODEL?.trim() || undefined
+
+  process.env.CLAUDE_CODE_USE_OPENAI = '1'
+  process.env.OPENAI_BASE_URL =
+    baseUrlOverride ?? getRouteDefaultBaseUrl('dashscope-intl')
+  process.env.OPENAI_MODEL = modelOverride ?? getRouteDefaultModel('dashscope-intl')
+  process.env.OPENAI_API_KEY = process.env.DASHSCOPE_API_KEY
+  delete process.env.OPENAI_API_FORMAT
+  delete process.env.OPENAI_AZURE_STYLE
+  delete process.env.OPENAI_AUTH_HEADER
+  delete process.env.OPENAI_AUTH_SCHEME
+  delete process.env.OPENAI_AUTH_HEADER_VALUE
+}
+
 export async function getAnthropicClient({
   apiKey,
   maxRetries,
@@ -463,6 +482,8 @@ export async function getAnthropicClient({
     envOnlyProviderRouteId === 'fireworks' && !useMiniMaxEnvOnlyProvider
   const useAimlapiEnvOnlyProvider =
     envOnlyProviderRouteId === 'aimlapi' && !useMiniMaxEnvOnlyProvider
+  const useDashscopeIntlEnvOnlyProvider =
+    envOnlyProviderRouteId === 'dashscope-intl' && !useMiniMaxEnvOnlyProvider
   if (useMiniMaxEnvOnlyProvider) {
     applyMiniMaxEnvOnlyDefaults(model)
   }
@@ -480,6 +501,9 @@ export async function getAnthropicClient({
   }
   if (useAimlapiEnvOnlyProvider) {
     applyAimlapiEnvOnlyDefaults()
+  }
+  if (useDashscopeIntlEnvOnlyProvider) {
+    applyDashscopeIntlEnvOnlyDefaults()
   }
 
   const apiProvider = getAPIProvider()

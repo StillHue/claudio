@@ -438,13 +438,16 @@ export function shouldAutoRefreshRouteCatalog(options: {
 async function loadDescriptorDiscoveryContext(
   routeId: string,
 ): Promise<ModelDiscoveryContext | null> {
+  console.error(`[DEBUG model.tsx] loadDescriptorDiscoveryContext called for routeId: ${routeId}`)
   const descriptor = getRouteDescriptor(routeId)
   const catalog = descriptor?.catalog
   if (!descriptor || !catalog) {
+    console.error(`[DEBUG model.tsx] No descriptor or catalog found for routeId: ${routeId}`)
     return null
   }
 
   if (routeId === 'custom') {
+    console.error(`[DEBUG model.tsx] routeId is 'custom', returning null`)
     return null
   }
 
@@ -463,8 +466,11 @@ async function loadDescriptorDiscoveryContext(
     catalog.discovery && catalog.allowManualRefresh && !trafficRestricted,
   )
 
+  console.error(`[DEBUG model.tsx] routeId: ${routeId}, catalog.source: ${catalog.source}, hasDiscovery: ${Boolean(catalog.discovery)}, staticEntries: ${staticEntries.length}, canRefresh: ${canRefresh}`)
+
   if (!catalog.discovery) {
     if (staticEntries.length === 0) {
+      console.error(`[DEBUG model.tsx] No discovery and no static entries, returning null`)
       return null
     }
 
@@ -504,6 +510,8 @@ async function loadDescriptorDiscoveryContext(
     cached?.models ?? [],
   )
 
+  console.error(`[DEBUG model.tsx] Discovery enabled. cached: ${cached ? 'yes' : 'no'}, cachedModels: ${cached?.models?.length ?? 0}, autoRefresh: ${autoRefresh}, mergedEntries: ${mergedEntries.length}`)
+
   let discoveryState: ModelPickerDiscoveryState | undefined
 
   if (cached?.error && mergedEntries.length > 0) {
@@ -541,9 +549,14 @@ async function loadDescriptorDiscoveryContext(
 
 async function loadModelDiscoveryContext(): Promise<ModelDiscoveryContext | null> {
   const routeId = getActiveRouteId()
+  console.error(`[DEBUG model.tsx] loadModelDiscoveryContext: routeId=${routeId}`)
   if (routeId && routeId !== 'anthropic') {
     const descriptorContext = await loadDescriptorDiscoveryContext(routeId)
+    console.error(`[DEBUG model.tsx] descriptorContext:`, descriptorContext ? 'found' : 'null')
     if (descriptorContext) {
+      console.error(`[DEBUG model.tsx] descriptorContext.kind:`, descriptorContext.kind)
+      console.error(`[DEBUG model.tsx] descriptorContext.autoRefresh:`, descriptorContext.autoRefresh)
+      console.error(`[DEBUG model.tsx] descriptorContext.optionsOverride.length:`, descriptorContext.optionsOverride?.length ?? 0)
       return descriptorContext
     }
   }

@@ -272,13 +272,25 @@ async function runDiscovery(
     }
 
     case 'openai-compatible': {
+      const discoveryBaseUrl = getRouteBaseUrl(routeId, options)
+      const discoveryApiKey = getRouteDiscoveryApiKey(routeId, options)
+      const discoveryHeaders = getRouteDiscoveryHeaders(routeId, options)
+
+      // Debug log for dashscope-intl discovery
+      if (routeId === 'dashscope-intl') {
+        console.error(`[DEBUG] dashscope-intl discovery: baseUrl=${discoveryBaseUrl}, hasApiKey=${Boolean(discoveryApiKey)}`)
+      }
+
       if (discovery.mapModel) {
         const rawModels = await fetchOpenAICompatibleModelsRaw({
-          baseUrl: getRouteBaseUrl(routeId, options),
-          apiKey: getRouteDiscoveryApiKey(routeId, options),
-          headers: getRouteDiscoveryHeaders(routeId, options),
+          baseUrl: discoveryBaseUrl,
+          apiKey: discoveryApiKey,
+          headers: discoveryHeaders,
         })
         if (rawModels === null) {
+          if (routeId === 'dashscope-intl') {
+            console.error(`[DEBUG] dashscope-intl discovery: fetchOpenAICompatibleModelsRaw returned null`)
+          }
           return null
         }
         const entries: ModelCatalogEntry[] = []
@@ -288,14 +300,20 @@ async function runDiscovery(
             entries.push(entry)
           }
         }
+        if (routeId === 'dashscope-intl') {
+          console.error(`[DEBUG] dashscope-intl discovery: found ${entries.length} models via mapModel`)
+        }
         return dedupeDiscoveredEntries(entries)
       }
 
       const models = await listOpenAICompatibleModels({
-        baseUrl: getRouteBaseUrl(routeId, options),
-        apiKey: getRouteDiscoveryApiKey(routeId, options),
-        headers: getRouteDiscoveryHeaders(routeId, options),
+        baseUrl: discoveryBaseUrl,
+        apiKey: discoveryApiKey,
+        headers: discoveryHeaders,
       })
+      if (routeId === 'dashscope-intl') {
+        console.error(`[DEBUG] dashscope-intl discovery: listOpenAICompatibleModels returned ${models?.length ?? 0} models`)
+      }
       return models?.map(model => toDiscoveredModelEntry(model)) ?? null
     }
 

@@ -4,6 +4,8 @@ import { logForDebugging } from '../debug.js'
 import { isEssentialTrafficOnly } from '../privacyLevel.js'
 import type { ModelOption } from './modelOptions.js'
 import { getAPIProvider } from './providers.js'
+import { resolveActiveRouteIdFromEnv } from '../../integrations/routeMetadata.js'
+import { getRouteDescriptor, resolveRouteCredentialValue } from '../../integrations/routeMetadata.js'
 
 const DISCOVERY_TIMEOUT_MS = 5000
 const DISCOVERED_MODEL_DESCRIPTION =
@@ -22,6 +24,15 @@ type OllamaTagsResponse = {
 }
 
 function getNormalizedOpenAIBaseUrl(): string {
+  // Check if there's an active route with discovery enabled
+  const activeRouteId = resolveActiveRouteIdFromEnv(process.env)
+  if (activeRouteId) {
+    const descriptor = getRouteDescriptor(activeRouteId)
+    if (descriptor?.catalog?.source === 'hybrid' && descriptor.defaultBaseUrl) {
+      return descriptor.defaultBaseUrl.replace(/\/+$/, '')
+    }
+  }
+
   return (
     process.env.OPENAI_BASE_URL ??
     process.env.OPENAI_API_BASE ??
@@ -50,6 +61,23 @@ function isBankrBaseUrl(baseUrl: string): boolean {
 }
 
 function getOpenAIAuthHeaders(baseUrl: string): Record<string, string> {
+  // Check if there's an active route with discovery enabled
+  const activeRouteId = resolveActiveRouteIdFromEnv(process.env)
+  if (activeRouteId) {
+    const descriptor = getRouteDescriptor(activeRouteId)
+    if (descriptor?.catalog?.source === 'hybrid') {
+      const apiKey = firstUsableCredential(
+        resolveRouteCredentialValue({
+          routeId: activeRouteId,
+          processEnv: process.env,
+        }),
+      )
+      if (apiKey) {
+        return { Authorization: `Bearer ${apiKey}` }
+      }
+    }
+  }
+
   const apiKey =
     firstUsableCredential(process.env.OPENAI_API_KEYS) ??
     firstUsableCredential(process.env.OPENAI_API_KEY)

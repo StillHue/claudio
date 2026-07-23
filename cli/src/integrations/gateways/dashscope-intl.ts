@@ -22,10 +22,17 @@ export default defineGateway({
     id: 'dashscope-intl',
     description: 'Alibaba DashScope International endpoint',
     apiKeyEnvVars: ['DASHSCOPE_API_KEY'],
+    baseUrlEnvVars: ['DASHSCOPE_BASE_URL', 'OPENAI_BASE_URL'],
     vendorId: 'openai',
   },
   catalog: {
-    source: 'static',
+    source: 'hybrid',
+    discovery: {
+      kind: 'openai-compatible',
+    },
+    discoveryCacheTtl: '1d',
+    discoveryRefreshMode: 'background-if-stale',
+    allowManualRefresh: true,
     models: [
       { id: 'qwen-intl-3.6-plus', apiName: 'qwen3.6-plus', label: 'Qwen 3.6 Plus', modelDescriptorId: 'qwen3.6-plus' },
     ],

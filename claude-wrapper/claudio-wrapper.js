@@ -26,6 +26,10 @@ const {
   resolveProvider,
   syncDefaultModel,
 } = require('./provider-config')
+const {
+  resolveLatestOfficialClaude,
+  preferLatestOfficial,
+} = require('./resolve-official-claude')
 
 const VISION_ENV_KEYS = [
   'GROQ_API_KEY',
@@ -130,6 +134,121 @@ function getSharedBridgeToken() {
   }
 }
 
+/**
+ * Claude Code warns when both ANTHROPIC_AUTH_TOKEN and /login managed key exist,
+ * and often presents the login key to ANTHROPIC_BASE_URL → bridge 401.
+ *
+ * While bridged: always move ~/.claude/.credentials.json aside (every spawn).
+ * Keep the backup outside ~/.claude so Claude Code cannot still "see" a login.
+ * Restore is opt-in (CLAUDE_NATIVE_RESTORE_LOGIN=1).
+ */
+const CLAUDE_CREDENTIALS = path.join(os.homedir(), '.claude', '.credentials.json')
+const CLAUDE_CREDENTIALS_BAK = path.join(
+  os.homedir(),
+  '.claude-native',
+  'login-credentials.bak.json',
+)
+/** Legacy bak path (same folder as credentials) — migrate away so Claude stops detecting login. */
+const CLAUDE_CREDENTIALS_BAK_LEGACY = path.join(
+  os.homedir(),
+  '.claude',
+  '.credentials.json.claudio-bridge',
+)
+const CRED_QUARANTINE_REF = path.join(os.homedir(), '.claude-native', 'credentials-quarantine.ref')
+
+function quarantineClaudeLoginCredentials() {
+  const dir = path.join(os.homedir(), '.claude-native')
+  try {
+    fs.mkdirSync(dir, { recursive: true })
+  } catch {
+    /* ignore */
+  }
+  // Migrate legacy bak out of ~/.claude/
+  try {
+    if (fs.existsSync(CLAUDE_CREDENTIALS_BAK_LEGACY)) {
+      if (!fs.existsSync(CLAUDE_CREDENTIALS_BAK)) {
+        fs.renameSync(CLAUDE_CREDENTIALS_BAK_LEGACY, CLAUDE_CREDENTIALS_BAK)
+      } else {
+        fs.unlinkSync(CLAUDE_CREDENTIALS_BAK_LEGACY)
+      }
+      debugLog('migrated legacy credentials bak out of ~/.claude')
+    }
+  } catch (err) {
+    debugLog(`legacy bak migrate failed: ${err.message}`)
+  }
+  // Always remove live login creds when present (do not gate on refcount).
+  // Safe order: move live → tmp, then replace bak (never delete bak before live is safe).
+  if (fs.existsSync(CLAUDE_CREDENTIALS)) {
+    const tmp = CLAUDE_CREDENTIALS_BAK + '.tmp'
+    try {
+      if (fs.existsSync(tmp)) fs.unlinkSync(tmp)
+      fs.renameSync(CLAUDE_CREDENTIALS, tmp)
+      try {
+        if (fs.existsSync(CLAUDE_CREDENTIALS_BAK)) fs.unlinkSync(CLAUDE_CREDENTIALS_BAK)
+      } catch {
+        /* keep tmp as bak below */
+      }
+      fs.renameSync(tmp, CLAUDE_CREDENTIALS_BAK)
+      debugLog('quarantined ~/.claude/.credentials.json → ~/.claude-native/')
+    } catch (err) {
+      // Never delete the only remaining copy. Try to put live creds back.
+      try {
+        if (fs.existsSync(tmp) && !fs.existsSync(CLAUDE_CREDENTIALS)) {
+          fs.renameSync(tmp, CLAUDE_CREDENTIALS)
+        }
+      } catch {
+        /* ignore */
+      }
+      debugLog(`credentials quarantine failed (live preserved if possible): ${err.message}`)
+    }
+  }
+  let n = 0
+  try {
+    n = parseInt(fs.readFileSync(CRED_QUARANTINE_REF, 'utf8').trim(), 10) || 0
+  } catch {
+    n = 0
+  }
+  try {
+    fs.writeFileSync(CRED_QUARANTINE_REF, String(n + 1), { mode: 0o600 })
+  } catch {
+    /* ignore */
+  }
+}
+
+function restoreClaudeLoginCredentials() {
+  let n = 1
+  try {
+    n = parseInt(fs.readFileSync(CRED_QUARANTINE_REF, 'utf8').trim(), 10) || 1
+  } catch {
+    n = 1
+  }
+  n = Math.max(0, n - 1)
+  if (n === 0) {
+    try {
+      fs.unlinkSync(CRED_QUARANTINE_REF)
+    } catch {
+      /* ignore */
+    }
+  } else {
+    try {
+      fs.writeFileSync(CRED_QUARANTINE_REF, String(n), { mode: 0o600 })
+    } catch {
+      /* ignore */
+    }
+  }
+  // Default: keep /login quarantined while using custom providers.
+  if (process.env.CLAUDE_NATIVE_RESTORE_LOGIN !== '1') return
+  if (n !== 0) return
+  try {
+    if (fs.existsSync(CLAUDE_CREDENTIALS_BAK) && !fs.existsSync(CLAUDE_CREDENTIALS)) {
+      fs.renameSync(CLAUDE_CREDENTIALS_BAK, CLAUDE_CREDENTIALS)
+      debugLog('restored ~/.claude/.credentials.json')
+    }
+  } catch (err) {
+    debugLog(`credentials restore failed: ${err.message}`)
+  }
+}
+
 function resolveClaudioEntry() {
   const baseDir = wrapperBaseDir()
 
@@ -214,37 +333,9 @@ function parseOfficialLaunch(argv) {
 }
 
 function findBundledClaudeExe() {
-  const home = os.homedir()
-  const extensionsRoot = path.join(home, '.cursor', 'extensions')
-  if (!fs.existsSync(extensionsRoot)) return null
-  let dirs = []
-  try {
-    dirs = fs
-      .readdirSync(extensionsRoot)
-      .filter((d) => d.startsWith('anthropic.claude-code-'))
-      .sort()
-      .reverse()
-  } catch {
-    return null
-  }
-  for (const d of dirs) {
-    const candidates = [
-      path.join(extensionsRoot, d, 'resources', 'native-binary', 'claude.exe'),
-      path.join(extensionsRoot, d, 'resources', 'native-binaries', `win32-${process.arch}`, 'claude.exe'),
-      path.join(extensionsRoot, d, 'resources', 'claude-code', 'cli.js'),
-    ]
-    for (const c of candidates) {
-      if (fs.existsSync(c)) {
-        if (c.endsWith('cli.js')) {
-          const node = resolveNodeBinary()
-          if (!node) continue
-          return { command: node, args: [c] }
-        }
-        return { command: c, args: [] }
-      }
-    }
-  }
-  return null
+  const latest = resolveLatestOfficialClaude()
+  if (!latest) return null
+  return { command: latest.path, args: [], version: latest.version }
 }
 
 function resolveNodeBinary() {
@@ -289,8 +380,8 @@ function detectMode(rawArgs) {
   const forced = (process.env.CLAUDE_WRAPPER_MODE || process.env.CLAUDIO_MODE || '').toLowerCase()
   if (forced === 'native' || forced === 'proxy') return 'native'
   if (forced === 'claudio' || forced === 'legacy') return 'claudio'
-  // Auto: official launcher in argv → native; otherwise Claudio
-  if (parseOfficialLaunch(rawArgs) || findBundledClaudeExe()) return 'native'
+  // Default: official Claude Code harness whenever a binary exists.
+  if (parseOfficialLaunch(rawArgs) || resolveLatestOfficialClaude()) return 'native'
   return 'claudio'
 }
 
@@ -313,93 +404,155 @@ function attachChild(child) {
 
 async function runNative(rawArgs) {
   loadVisionEnvFiles()
-  const parsed = parseOfficialLaunch(rawArgs) || findBundledClaudeExe()
-  if (!parsed) {
+  const fromExt = parseOfficialLaunch(rawArgs)
+  const offeredPath =
+    fromExt && !isNodeBinary(fromExt.command) ? fromExt.command : fromExt?.args?.[0]
+  const preferred = preferLatestOfficial(
+    offeredPath && String(offeredPath).endsWith('.exe')
+      ? offeredPath
+      : offeredPath && !String(offeredPath).endsWith('cli.js')
+        ? offeredPath
+        : null,
+  )
+  const bundled = findBundledClaudeExe()
+
+  let command = preferred?.path || bundled?.command || null
+  let userArgs = []
+  if (fromExt) {
+    // Extension may pass [claude.exe, ...args] or [node, cli.js, ...args]
+    if (isNodeBinary(fromExt.command)) {
+      // Prefer native binary over node+cli.js when we have one
+      userArgs = fromExt.args.slice(1) // drop cli.js
+      if (!command) {
+        command = fromExt.command
+        userArgs = fromExt.args
+      }
+    } else {
+      userArgs = fromExt.args
+      if (!command) command = fromExt.command
+    }
+  } else {
+    userArgs = stripExtensionLauncher(rawArgs)
+    if (!command && bundled) command = bundled.command
+  }
+
+  if (!command) {
     console.error(
       '[claude-wrapper] native mode: Claude Code binary not found.\n' +
-        'Install the official Claude Code Cursor extension, or set CLAUDE_WRAPPER_MODE=claudio.',
+        'Install with: irm https://claude.ai/install.ps1 | iex\n' +
+        'Or install the Claude Code Cursor extension.\n' +
+        'Legacy fork: CLAUDE_WRAPPER_MODE=claudio',
     )
     process.exit(1)
   }
 
-  // When we found bundled binary ourselves, remaining argv are user args
-  let userArgs = []
-  if (parseOfficialLaunch(rawArgs)) {
-    userArgs = parsed.args
-  } else {
-    userArgs = stripExtensionLauncher(rawArgs)
+  if (preferred?.replaced) {
+    debugLog(
+      `using official claude ${preferred.version?.raw || '?'} from ${preferred.path}` +
+        (offeredPath ? ` (extension offered ${offeredPath})` : ''),
+    )
   }
 
   const providersCfg = loadProvidersConfig()
-  // Short-lived `auth status` (and similar) must not touch settings.json —
-  // Cursor spawns it beside the stream-json session; a rewrite reloads Claude.
   const isEphemeral =
     userArgs.includes('auth') ||
     userArgs.some((a) => a === '--version' || a === '-v' || a === 'version')
-  const synced = isEphemeral
-    ? { path: null, ids: [], changed: false }
-    : syncDefaultModel(providersCfg.data)
-  if (synced.changed) {
+
+  let provider = null
+  try {
+    provider = resolveProvider(providersCfg.data)
+  } catch {
+    provider = null
+  }
+  // --version / auth: never start bridge (fast, no settings rewrite)
+  const useBridge = !isEphemeral && !!(provider && provider.apiKey)
+
+  let bridge = null
+  let synced = { path: null, ids: [], changed: false }
+  if (useBridge) {
+    if (!isEphemeral) {
+      synced = syncDefaultModel(providersCfg.data)
+      if (synced.changed) {
+        debugLog(
+          `synced default model ${synced.model} → claude=${synced.claude?.path || 'n/a'} cursor=${synced.cursor?.path || 'n/a'}`,
+        )
+      }
+    }
+    const bridgeToken = getSharedBridgeToken()
+    bridge = await startNativeBridge({
+      token: bridgeToken,
+      log: (...a) => debugLog(...a),
+      getProvider: (requested) => resolveProvider(providersCfg.data, requested),
+      getProvidersData: () => providersCfg.data,
+      getProvidersPath: () => providersCfg.path,
+    })
     debugLog(
-      `synced default model ${synced.model} → claude=${synced.claude?.path || 'n/a'} cursor=${synced.cursor?.path || 'n/a'}`,
+      `native mode — provider=${provider.name} model=${provider.model} bridge=${bridge.url} binary=${command}`,
     )
-  }
-  const provider = resolveProvider(providersCfg.data)
-  if (!provider.apiKey) {
-    console.error(
-      `[claude-wrapper] native mode: missing API key (set ${provider.apiKeyEnv || 'OPENAI_API_KEY'} or CLAUDE_NATIVE_API_KEY).`,
-    )
-    process.exit(1)
+  } else {
+    debugLog(`native mode — passthrough (no provider API key) binary=${command}`)
   }
 
-  const bridgeToken = getSharedBridgeToken()
-  const bridge = await startNativeBridge({
-    token: bridgeToken,
-    log: (...a) => debugLog(...a),
-    getProvider: (requested) => resolveProvider(providersCfg.data, requested),
-    getProvidersData: () => providersCfg.data,
-    getProvidersPath: () => providersCfg.path,
-  })
+  debugLog(`spawn ${command} ${userArgs.join(' ')}`)
 
-  debugLog(
-    `native mode — provider=${provider.name} model=${provider.model} bridge=${bridge.url} config=${providersCfg.path || 'builtin'} settings=${synced.path || 'n/a'} models=${synced.ids?.length || 0} vision=${process.env.GROQ_API_KEY || process.env.CLAUDE_CODE_VISION_API_KEY ? 'on' : 'off'}`,
-  )
-  debugLog(`spawn ${parsed.command} ${userArgs.join(' ')}`)
-
-  const env = {
-    ...process.env,
-    ANTHROPIC_BASE_URL: bridge.url,
-    CLAUDE_CODE_SKIP_API_KEY_CHECK: process.env.CLAUDE_CODE_SKIP_API_KEY_CHECK || '1',
-    CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY:
-      process.env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY || '1',
+  const env = { ...process.env }
+  if (useBridge && bridge) {
+    env.ANTHROPIC_BASE_URL = bridge.url
+    env.CLAUDE_CODE_SKIP_API_KEY_CHECK = process.env.CLAUDE_CODE_SKIP_API_KEY_CHECK || '1'
+    env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY =
+      process.env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY || '1'
+    const bridgeToken = getSharedBridgeToken()
+    // Only x-api-key — setting ANTHROPIC_AUTH_TOKEN triggers Claude's
+    // "/login managed key" conflict and it may send the OAuth bearer instead.
+    // Bridge accepts matching x-api-key even if a stale Bearer is also sent.
+    env.ANTHROPIC_API_KEY = bridgeToken
+    delete env.ANTHROPIC_AUTH_TOKEN
+    // Optional escape hatch if login key still wins on some builds:
+    if (process.env.CLAUDE_NATIVE_BRIDGE_OPEN_LOCAL === '1') {
+      env.CLAUDE_NATIVE_BRIDGE_OPEN_LOCAL = '1'
+    }
+    delete env.OPENAI_BASE_URL
+    delete env.OPENAI_API_BASE
+    delete env.OPENAI_MODEL
+    delete env.CLAUDE_CODE_USE_OPENAI
+    delete env.CLAUDE_CODE_USE_BEDROCK
+    delete env.CLAUDE_CODE_USE_VERTEX
+    delete env.CLAUDE_CODE_OAUTH_TOKEN
+    delete env.ANTHROPIC_LOG
+    quarantineClaudeLoginCredentials()
   }
-  // Force shared bridge key (must match native-bridge token check)
-  env.ANTHROPIC_API_KEY = bridgeToken
-  env.ANTHROPIC_AUTH_TOKEN = bridgeToken
-  // Don't leak Claudio/OpenAI routing into official Claude Code (it must use Anthropic bridge)
-  delete env.OPENAI_BASE_URL
-  delete env.OPENAI_API_BASE
-  delete env.OPENAI_MODEL
-  delete env.CLAUDE_CODE_USE_OPENAI
-  delete env.CLAUDE_CODE_USE_BEDROCK
-  delete env.CLAUDE_CODE_USE_VERTEX
-  delete env.CLAUDE_CODE_OAUTH_TOKEN
-  delete env.ANTHROPIC_LOG
 
-  const child = spawn(parsed.command, userArgs, {
+  const child = spawn(command, userArgs, {
     stdio: 'inherit',
     env,
     windowsHide: true,
   })
 
   const shutdown = async () => {
+    if (useBridge) restoreClaudeLoginCredentials()
+    if (!bridge) return
     try {
       await bridge.close()
     } catch {
       /* ignore */
     }
   }
+
+  const onSignal = async () => {
+    try {
+      child.kill()
+    } catch {
+      /* ignore */
+    }
+    await shutdown()
+    process.exit(1)
+  }
+  process.once('SIGINT', onSignal)
+  process.once('SIGTERM', onSignal)
+
   child.on('exit', async (code, signal) => {
+    process.removeListener('SIGINT', onSignal)
+    process.removeListener('SIGTERM', onSignal)
     await shutdown()
     if (signal) {
       try {
@@ -411,6 +564,8 @@ async function runNative(rawArgs) {
     process.exit(code ?? 0)
   })
   child.on('error', async (err) => {
+    process.removeListener('SIGINT', onSignal)
+    process.removeListener('SIGTERM', onSignal)
     await shutdown()
     console.error('[claude-wrapper] failed to start Claude Code:', err.message)
     process.exit(1)

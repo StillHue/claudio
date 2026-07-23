@@ -288,6 +288,21 @@ export function isXiaomiMimoBaseUrl(value: string | undefined): boolean {
   }
 }
 
+export function isDashscopeIntlBaseUrl(value: string | undefined): boolean {
+  const trimmed = value?.trim()
+  if (!trimmed) {
+    return false
+  }
+
+  try {
+    const hostname = new URL(trimmed).hostname.toLowerCase()
+    // Aceita qualquer endpoint da Alibaba Cloud (dashscope ou maas)
+    return hostname.endsWith('.aliyuncs.com')
+  } catch {
+    return false
+  }
+}
+
 export function normalizeXiaomiMimoBaseUrl(
   value: string | undefined,
 ): string | undefined {
@@ -654,6 +669,23 @@ export function hasXiaomiMimoEnvOnlyProviderIntent(
   )
 }
 
+export function hasDashscopeIntlEnvOnlyProviderIntent(
+  processEnv: NodeJS.ProcessEnv = process.env,
+): boolean {
+  return (
+    hasNonEmptyEnvValue(processEnv.DASHSCOPE_API_KEY) &&
+    !hasNonEmptyEnvValue(processEnv.XAI_API_KEY) &&
+    !hasNonEmptyEnvValue(processEnv.MINIMAX_API_KEY) &&
+    !hasNonEmptyEnvValue(processEnv.VENICE_API_KEY) &&
+    !hasNonEmptyEnvValue(processEnv.MIMO_API_KEY) &&
+    !hasNonEmptyEnvValue(processEnv.NEARAI_API_KEY) &&
+    !hasNonEmptyEnvValue(processEnv.FIREWORKS_API_KEY) &&
+    !hasNonEmptyEnvValue(processEnv.CLINE_API_KEY) &&
+    !hasConflictingOpenAIBaseUrlForRoute(processEnv, isDashscopeIntlBaseUrl) &&
+    hasNoExplicitNonOpenAICompatibleProvider(processEnv)
+  )
+}
+
 export function hasNearaiEnvOnlyProviderIntent(
   processEnv: NodeJS.ProcessEnv = process.env,
 ): boolean {
@@ -717,6 +749,7 @@ export function resolveEnvOnlyProviderRouteId(
   | 'nearai'
   | 'fireworks'
   | 'clinepass'
+  | 'dashscope-intl'
   | null {
   if (
     hasMiniMaxRouteIntent(processEnv) &&
@@ -743,6 +776,10 @@ export function resolveEnvOnlyProviderRouteId(
 
   if (hasXiaomiMimoEnvOnlyProviderIntent(processEnv)) {
     return 'xiaomi-mimo'
+  }
+
+  if (hasDashscopeIntlEnvOnlyProviderIntent(processEnv)) {
+    return 'dashscope-intl'
   }
 
   if (hasNearaiEnvOnlyProviderIntent(processEnv)) {
