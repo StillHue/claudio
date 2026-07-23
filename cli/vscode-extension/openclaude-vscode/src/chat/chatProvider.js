@@ -9,6 +9,7 @@ const { ProcessManager } = require('./processManager');
 const { buildPermissionControlResult } = require('./permissionResponse');
 const { toViewModel } = require('./messageParser');
 const { renderChatHtml } = require('./chatRenderer');
+const { appendTextDelta, collapseRepeatedLines } = require('./textStream');
 const { isAssistantMessage, isPartialMessage, isStreamEvent,
         isContentBlockDelta, isContentBlockStart, isMessageStart,
         isResultMessage, isControlRequest, isToolProgressMessage,
@@ -264,7 +265,7 @@ class ChatController {
     // Assistant message — always mid-turn; true completion comes from 'result'
     if (isAssistantMessage(msg)) {
       const inner = msg.message || msg;
-      const text = getTextContent(inner);
+      const text = collapseRepeatedLines(getTextContent(inner));
       const toolBlocks = getToolUseBlocks(inner);
       const { toolDisplayName, toolIcon } = require('./messageParser');
       const toolUseVms = toolBlocks.map(tu => ({
@@ -298,6 +299,28 @@ class ChatController {
       return;
     }
 
+    // Partial snapshots: use only when we have no stream_event text yet,
+    // or when the snapshot is a cumulative extension of what we already have.
+    if (isPartialMessage(msg)) {
+      const snap = collapseRepeatedLines(getTextContent(msg.message || msg));
+      if (!snap) return;
+      if (!this._accumulatedText) {
+        this._accumulatedText = snap;
+        if (!this._streaming) {
+          this._streaming = true;
+          this._broadcast({ type: 'stream_start' });
+        }
+        this._broadcast({ type: 'stream_delta', text: this._accumulatedText });
+      } else if (
+        snap.length > this._accumulatedText.length &&
+        snap.startsWith(this._accumulatedText)
+      ) {
+        this._accumulatedText = snap;
+        this._broadcast({ type: 'stream_delta', text: this._accumulatedText });
+      }
+      return;
+    }
+
     // User message with tool_use_result — this is the tool output
     if (msg.type === 'user' && msg.message) {
       const content = msg.message.content;
@@ -327,12 +350,11 @@ class ChatController {
     if (msg.type === 'result' && msg.subtype) {
       this._lastResult = msg;
       // Only use result text if nothing was shown via streaming yet
-      const text = this._accumulatedText || '';
+      const text = collapseRepeatedLines(this._accumulatedText || '');
       this._broadcast({ type: 'stream_end', text, usage: msg.usage || null, final: true });
       // Show turn info: if the model stopped without using tools (num_turns=1),
       // the user knows the model chose not to edit
       if (msg.num_turns !== undefined) {
-        const reason = msg.stop_reason || 'done';
         this._broadcast({
           type: 'status',
           content: msg.num_turns > 1
@@ -366,6 +388,19 @@ class ChatController {
     if (isRateLimitEvent(msg)) {
       const vm = toViewModel(msg)[0];
       this._broadcast({ type: 'rate_limit', message: vm.message });
+      return;
+    }
+
+    // Known noise / already handled via stream_event — ignore silently
+    if (
+      msg.type === 'partial' ||
+      msg.type === 'streamlined_text' ||
+      msg.type === 'post_turn_summary' ||
+      msg.type === 'tool_use_summary' ||
+      msg.type === 'streamlined_tool_use_summary' ||
+      msg.type === 'user_replay' ||
+      msg.type === 'prompt_suggestion'
+    ) {
       return;
     }
 
@@ -422,7 +457,10 @@ class ChatController {
       case 'content_block_delta':
         if (event.delta) {
           if (event.delta.type === 'text_delta' && event.delta.text) {
-            this._accumulatedText += event.delta.text;
+            this._accumulatedText = appendTextDelta(
+              this._accumulatedText,
+              event.delta.text,
+            );
             this._broadcast({ type: 'stream_delta', text: this._accumulatedText });
           } else if (event.delta.type === 'thinking_delta') {
             this._thinkingTokens += (event.delta.thinking || '').length;
