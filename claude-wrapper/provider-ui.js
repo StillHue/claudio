@@ -7,6 +7,8 @@
  *   node provider-ui.js --no-open
  */
 const http = require('http')
+const fs = require('fs')
+const path = require('path')
 const { randomBytes } = require('crypto')
 const { exec } = require('child_process')
 const {
@@ -18,6 +20,13 @@ const {
 
 const sessionToken = randomBytes(24).toString('hex')
 const noOpen = process.argv.includes('--no-open')
+const FAVICON_PATH = path.join(__dirname, 'provider-ui-favicon.png')
+let faviconBuf = null
+try {
+  faviconBuf = fs.readFileSync(FAVICON_PATH)
+} catch {
+  faviconBuf = null
+}
 
 function json(res, status, body) {
   const payload = JSON.stringify(body)
@@ -36,6 +45,9 @@ function htmlPage() {
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Connect a provider · Claude</title>
+<link rel="icon" type="image/png" href="/favicon.png"/>
+<link rel="shortcut icon" type="image/png" href="/favicon.png"/>
+<link rel="apple-touch-icon" href="/favicon.png"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=Poppins:wght@400;500;600&display=swap" rel="stylesheet"/>
@@ -254,6 +266,22 @@ async function main() {
     }
 
     const url = new URL(req.url || '/', 'http://127.0.0.1')
+
+    if (
+      req.method === 'GET' &&
+      (url.pathname === '/favicon.png' || url.pathname === '/favicon.ico')
+    ) {
+      if (!faviconBuf) {
+        res.writeHead(404)
+        return res.end()
+      }
+      res.writeHead(200, {
+        'Content-Type': 'image/png',
+        'Content-Length': faviconBuf.length,
+        'Cache-Control': 'public, max-age=86400',
+      })
+      return res.end(faviconBuf)
+    }
 
     if (req.method === 'GET' && url.pathname === '/') {
       const body = htmlPage()
