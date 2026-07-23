@@ -1,6 +1,6 @@
 # Agent prompt — configure Claude Code native wrapper
 
-**Para o humano:** abra o Cursor (ou outra IA com acesso ao disco), cole **tudo abaixo da linha** num chat novo, e responda com suas API keys quando a IA pedir. Não precisa entender o resto.
+**For the human:** open Cursor (or another AI with filesystem access), paste **everything below the line** into a new chat, and provide your API keys when asked. You don’t need to understand the rest.
 
 **For the agent:** follow every step. Do the work yourself — don’t dump commands for the user unless a secret must be typed by them.
 
@@ -140,7 +140,7 @@ Give the user a short summary:
 - Default model id
 - Providers enabled
 - Vision on/off
-- What to click (Reload → Claude Code → send “oi”)
+- What to click (Reload → Claude Code → send “hi”)
 
 ## Troubleshooting (fix, don’t just list)
 
