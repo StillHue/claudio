@@ -126,7 +126,7 @@ Strip any leftover `env.CLAUDE_CODE_USE_OPENAI` / `OPENAI_*` routing keys if pre
 ### 6) Verify
 
 1. Tell user: **Reload Window**
-2. Open **Claude Code** panel (not Codex)
+2. Open the **Claude Code** panel
 3. Confirm picker lists `anthropic.*` ids from the catalog
 4. Smoke text: short prompt → non-empty reply
 5. Optional smoke image if Groq is configured
@@ -155,5 +155,5 @@ Give the user a short summary:
 
 ## Out of scope
 
-- Do not configure Codius / Codex (`chatgpt.cliExecutable`) unless the user asks.
 - Do not publish keys to git or chat logs in full when summarizing.
+- Stay focused on the Claude Code native wrapper; ignore unrelated extensions unless the user asks.
