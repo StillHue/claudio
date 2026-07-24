@@ -77,13 +77,37 @@ function htmlPage() {
     color: var(--text);
   }
   main { max-width: 440px; margin: 56px auto; padding: 0 20px; }
+  .clawd-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 0 0 22px;
+  }
+  .clawd {
+    margin: 0;
+    padding: 2px 0 6px;
+    font-family: "Cascadia Mono", "Consolas", "Courier New", monospace;
+    font-size: 20px;
+    line-height: 1.35;
+    letter-spacing: 0;
+    color: var(--accent);
+    user-select: none;
+    white-space: pre;
+    overflow: visible;
+  }
+  .clawd .clawd-row {
+    display: block;
+    min-height: 1.35em;
+    line-height: 1.35;
+  }
   .mark {
     font-family: Poppins, Arial, sans-serif;
     font-size: 13px;
     font-weight: 500;
     letter-spacing: 0.02em;
     color: var(--accent);
-    margin: 0 0 18px;
+    margin: 0;
   }
   h1 {
     font-family: Poppins, Arial, sans-serif;
@@ -159,7 +183,11 @@ function htmlPage() {
 </head>
 <body>
 <main>
-  <p class="mark">Claude</p>
+  <div class="clawd-wrap">
+    <pre class="clawd" id="clawd" aria-label="Clawd"><span class="clawd-row"> ▐▛███▜▌</span>
+<span class="clawd-row">▝▜█████▛▘</span></pre>
+    <p class="mark">Claude</p>
+  </div>
   <h1>Connect a provider</h1>
   <p class="sub">Local only (127.0.0.1). Key is saved to ~/.claude-native/providers.json — not to Claude chat.</p>
   <div class="card">
@@ -182,7 +210,34 @@ const keyEl = document.getElementById('key');
 const modelEl = document.getElementById('model');
 const msg = document.getElementById('msg');
 const go = document.getElementById('go');
+const clawdEl = document.getElementById('clawd');
 let providers = [];
+
+// Clawd poses (from Claude Code LogoV2) — auto-cycle, no click needed
+const CLAWD_POSES = {
+  default:   { r1: ' ▐▛███▜▌', r2: '▝▜█████▛▘' },
+  'look-left':  { r1: ' ▐▟███▟▌', r2: '▝▜█████▛▘' },
+  'look-right': { r1: ' ▐▙███▙▌', r2: '▝▜█████▛▘' },
+  'arms-up': { r1: '▗▟▛███▜▙▖', r2: ' ▜█████▛ ' },
+};
+const CLAWD_ORDER = ['default', 'look-left', 'default', 'look-right', 'default', 'arms-up'];
+let clawdIdx = 0;
+function renderClawd(name) {
+  const p = CLAWD_POSES[name] || CLAWD_POSES.default;
+  clawdEl.replaceChildren();
+  const r1 = document.createElement('span');
+  r1.className = 'clawd-row';
+  r1.textContent = p.r1;
+  const r2 = document.createElement('span');
+  r2.className = 'clawd-row';
+  r2.textContent = p.r2;
+  clawdEl.append(r1, r2);
+}
+setInterval(() => {
+  clawdIdx = (clawdIdx + 1) % CLAWD_ORDER.length;
+  renderClawd(CLAWD_ORDER[clawdIdx]);
+}, 900);
+renderClawd('default');
 
 function setMsg(text, ok) {
   msg.textContent = text || '';

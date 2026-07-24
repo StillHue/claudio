@@ -38,18 +38,29 @@ Ask briefly for whatever you don’t already have:
 
 ## Do this (in order)
 
-### 1) Locate or clone + build wrapper
+### 1) Prefer one-click installer (Windows)
+
+If the checkout has `claude-wrapper/install.ps1`, run it first:
+
+```powershell
+cd <claudio>/claude-wrapper
+powershell -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+That builds the wrapper, patches Cursor settings, installs PATH shims + `/provider`, and opens the provider UI. Then skip to verifying keys / Reload Window.
+
+### 1b) Manual locate or clone + build wrapper
 
 ```bash
 cd <claudio>/claude-wrapper
-bun build --compile ./claudio-wrapper.js --outfile claudio-wrapper-native15.exe
+bun build --compile ./claudio-wrapper.js --outfile claudio-wrapper-native20.exe
 ```
 
 Use an incremented `nativeN` if an older `.exe` may be locked by Cursor.
 
 Absolute path example (Windows):
 
-`C:\Users\<user>\claudio\claude-wrapper\claudio-wrapper-native15.exe`
+`C:\Users\<user>\claudio\claude-wrapper\claudio-wrapper-native20.exe`
 
 ### 2) Write `~/.claude-native/providers.json`
 

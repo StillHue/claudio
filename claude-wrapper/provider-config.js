@@ -7,29 +7,36 @@ const path = require('path')
 const os = require('os')
 
 const DISPLAY = {
-  // Prefer exact OpenCode model ids in the picker (anthropic.<id>).
-  // Extra name/description only used as gateway hints.
-  'big-pickle': { name: 'big-pickle', description: 'OpenCode Zen', slug: 'big-pickle' },
-  'mimo-v2.5-free': { name: 'mimo-v2.5-free', description: 'OpenCode Zen', slug: 'mimo-v2.5-free' },
+  // Free OpenCode Zen models → Anthropic-looking picker ids (upstream id unchanged).
+  'mimo-v2.5-free': {
+    name: 'Claude Opus 4.8 (Free)',
+    description: 'OpenCode Zen free → mimo-v2.5-free',
+    slug: 'claude-opus-4-8-free',
+  },
+  'big-pickle': {
+    name: 'Claude Opus 4.8',
+    description: 'OpenCode Zen → big-pickle',
+    slug: 'claude-opus-4-8',
+  },
   'north-mini-code-free': {
-    name: 'north-mini-code-free',
-    description: 'OpenCode Zen',
-    slug: 'north-mini-code-free',
+    name: 'Claude Haiku 4.5 (Free)',
+    description: 'OpenCode Zen free → north-mini-code-free',
+    slug: 'claude-haiku-4-5-free',
   },
   'laguna-s-2.1-free': {
-    name: 'laguna-s-2.1-free',
-    description: 'OpenCode Zen',
-    slug: 'laguna-s-2.1-free',
+    name: 'Claude Haiku 4.5 (Free 2)',
+    description: 'OpenCode Zen free → laguna-s-2.1-free',
+    slug: 'claude-haiku-4-5-free-2',
   },
   'deepseek-v4-flash-free': {
-    name: 'deepseek-v4-flash-free',
-    description: 'OpenCode Zen',
-    slug: 'deepseek-v4-flash-free',
+    name: 'Claude Sonnet 5 (Free)',
+    description: 'OpenCode Zen free → deepseek-v4-flash-free',
+    slug: 'claude-sonnet-5-free',
   },
   'nemotron-3-ultra-free': {
-    name: 'nemotron-3-ultra-free',
-    description: 'OpenCode Zen',
-    slug: 'nemotron-3-ultra-free',
+    name: 'Claude Opus 4.7 (Free)',
+    description: 'OpenCode Zen free → nemotron-3-ultra-free',
+    slug: 'claude-opus-4-7-free',
   },
   'north-mini-code-1-0': {
     name: 'Cohere · north-mini-code',
@@ -48,7 +55,7 @@ const DISPLAY = {
   },
 }
 
-/** Legacy picker ids → upstream model */
+/** Picker / legacy ids → upstream Zen free (or Cohere) model */
 const LEGACY_SLUGS = {
   lite: 'big-pickle',
   fast: 'mimo-v2.5-free',
@@ -58,46 +65,119 @@ const LEGACY_SLUGS = {
   ultra: 'nemotron-3-ultra-free',
   'big-pickle': 'big-pickle',
   mimo: 'mimo-v2.5-free',
+  'mimo-v2.5-free': 'mimo-v2.5-free',
   'deepseek-v4': 'deepseek-v4-flash-free',
+  'deepseek-v4-flash-free': 'deepseek-v4-flash-free',
   laguna: 'laguna-s-2.1-free',
+  'laguna-s-2.1-free': 'laguna-s-2.1-free',
   nemotron: 'nemotron-3-ultra-free',
+  'nemotron-3-ultra-free': 'nemotron-3-ultra-free',
+  'north-mini-code-free': 'north-mini-code-free',
   'opencode-zen-lite': 'big-pickle',
   'opencode-zen-fast': 'mimo-v2.5-free',
   'opencode-zen-mini': 'north-mini-code-free',
   'opencode-zen-spark': 'laguna-s-2.1-free',
   'opencode-zen-max': 'deepseek-v4-flash-free',
   'opencode-zen-ultra': 'nemotron-3-ultra-free',
+  // Anthropic-equivalent picker slugs
+  'claude-opus-4-8-free': 'mimo-v2.5-free',
+  'claude-opus-4.8-free': 'mimo-v2.5-free',
+  'claude-opus-4-8': 'big-pickle',
+  'claude-opus-4.8': 'big-pickle',
+  'claude-haiku-4-5-free': 'north-mini-code-free',
+  'claude-haiku-4.5-free': 'north-mini-code-free',
+  'claude-haiku-4-5-free-2': 'laguna-s-2.1-free',
+  'claude-haiku-4.5-free-2': 'laguna-s-2.1-free',
+  'claude-sonnet-5-free': 'deepseek-v4-flash-free',
+  'claude-sonnet-5': 'deepseek-v4-flash-free',
+  sonnet: 'deepseek-v4-flash-free',
+  'claude-opus-4-7-free': 'nemotron-3-ultra-free',
+  'claude-opus-4.7-free': 'nemotron-3-ultra-free',
+  'claude-opus-4-7': 'nemotron-3-ultra-free',
+  'claude-opus-4.7': 'nemotron-3-ultra-free',
+  opus: 'nemotron-3-ultra-free',
+  'claude-fable-5': 'nemotron-3-ultra-free',
+  fable: 'nemotron-3-ultra-free',
 }
 
 const PROVIDER_LABEL = {
   opencode: 'OpenCode Zen',
   cohere: 'Cohere',
+  alibaba: 'Alibaba',
+  'alibaba-cn': 'Alibaba CN',
+  'alibaba-coding-plan': 'Alibaba Coding',
+  'alibaba-coding-plan-cn': 'Alibaba Coding CN',
+  'alibaba-token-plan': 'Alibaba Token',
+  'alibaba-token-plan-cn': 'Alibaba Token CN',
+  mistral: 'Mistral',
+}
+
+/** Short tag embedded in picker ids: anthropic.<tag>.<model> */
+const PROVIDER_TAG = {
+  opencode: 'opencode',
+  cohere: 'cohere',
+  alibaba: 'alibaba',
+  'alibaba-cn': 'alibaba-cn',
+  'alibaba-coding-plan': 'alibaba-coding',
+  'alibaba-coding-plan-cn': 'alibaba-coding-cn',
+  'alibaba-token-plan': 'alibaba-token',
+  'alibaba-token-plan-cn': 'alibaba-token-cn',
+  mistral: 'mistral',
+}
+
+function providerTag(providerName) {
+  if (PROVIDER_TAG[providerName]) return PROVIDER_TAG[providerName]
+  return String(providerName || 'provider').replace(/[^a-zA-Z0-9._-]/g, '-')
+}
+
+function modelSlug(model) {
+  return (
+    DISPLAY[model]?.slug ||
+    String(model || 'model').replace(/[^a-zA-Z0-9._-]/g, '-')
+  )
 }
 
 /** Reverse: slug → { provider, model } */
 function buildSlugIndex(providersData) {
   const index = new Map()
+  const set = (key, provider, model, slug) => {
+    if (!key) return
+    index.set(String(key).toLowerCase(), { provider, model, slug })
+  }
+
   for (const [name, p] of Object.entries(providersData.providers || {})) {
     const models = Array.isArray(p.models) && p.models.length ? p.models : p.model ? [p.model] : []
+    const tag = providerTag(name)
     for (const model of models) {
-      const slug = DISPLAY[model]?.slug || `${name}-${model}`.replace(/[^a-zA-Z0-9._-]/g, '-')
+      const slug = modelSlug(model)
+      const full = `anthropic.${tag}.${slug}`
+      set(full, name, model, slug)
+      set(`${tag}.${slug}`, name, model, slug)
+      set(slug, name, model, slug)
+      set(`anthropic.${slug}`, name, model, slug)
+      // bare upstream id
+      set(model, name, model, slug)
+      set(`anthropic.${model}`, name, model, slug)
       const shortName = DISPLAY[model]?.name
-      index.set(slug.toLowerCase(), { provider: name, model, slug })
-      index.set(`anthropic.${slug}`.toLowerCase(), { provider: name, model, slug })
       if (shortName) {
-        index.set(String(shortName).toLowerCase(), { provider: name, model, slug })
-        index.set(`anthropic.${shortName}`.toLowerCase(), { provider: name, model, slug })
+        set(shortName, name, model, slug)
+        set(`anthropic.${shortName}`, name, model, slug)
+        set(`${tag}.${shortName}`, name, model, slug)
+        set(`anthropic.${tag}.${shortName}`, name, model, slug)
       }
     }
   }
-  // Old OpenCode-Zen-* / Cohere-* ids still work
+  // Old OpenCode-Zen-* / Cohere-* / bare Anthropic-alias ids still work
   for (const [legacy, model] of Object.entries(LEGACY_SLUGS)) {
     for (const [name, p] of Object.entries(providersData.providers || {})) {
       const models = Array.isArray(p.models) && p.models.length ? p.models : p.model ? [p.model] : []
       if (!models.includes(model)) continue
-      const slug = DISPLAY[model]?.slug || legacy
-      index.set(legacy, { provider: name, model, slug })
-      index.set(`anthropic.${legacy}`, { provider: name, model, slug })
+      const slug = modelSlug(model)
+      const tag = providerTag(name)
+      set(legacy, name, model, slug)
+      set(`anthropic.${legacy}`, name, model, slug)
+      set(`${tag}.${legacy}`, name, model, slug)
+      set(`anthropic.${tag}.${legacy}`, name, model, slug)
     }
   }
   return index
@@ -136,13 +216,12 @@ function loadProvidersConfig() {
 /**
  * Picker id for Claude Code.
  * Must start with anthropic. (or claude) — no slashes.
- * Use the exact upstream model id after the prefix, e.g. anthropic.big-pickle
+ * Embeds real provider: anthropic.alibaba.qwen3.6-plus, anthropic.opencode.claude-sonnet-5
  */
 function modelId(providerName, model) {
-  const slug =
-    DISPLAY[model]?.slug ||
-    String(model || `${providerName}-model`).replace(/[^a-zA-Z0-9._-]/g, '-')
-  return `anthropic.${slug}`
+  const tag = providerTag(providerName)
+  const slug = modelSlug(model)
+  return `anthropic.${tag}.${slug}`
 }
 
 function parseModelId(id, providersData) {
@@ -153,12 +232,30 @@ function parseModelId(id, providersData) {
     if (hit) return { provider: hit.provider, model: hit.model }
   }
 
-  // anthropic.OpenCode-Zen-Lite / anthropic.opencode/big-pickle (legacy)
+  // anthropic.<providerTag>.<model…>
   if (id.startsWith('anthropic.')) {
     const rest = id.slice('anthropic.'.length)
     if (rest.includes('/')) {
       const [provider, ...modelParts] = rest.split('/')
       if (provider && modelParts.length) return { provider, model: modelParts.join('/') }
+    }
+    const dot = rest.indexOf('.')
+    if (dot > 0 && providersData?.providers) {
+      const tag = rest.slice(0, dot)
+      const slug = rest.slice(dot + 1)
+      for (const [name] of Object.entries(providersData.providers)) {
+        if (providerTag(name) === tag || name === tag) {
+          // Prefer DISPLAY reverse / exact model id
+          for (const [upstream, meta] of Object.entries(DISPLAY)) {
+            if (meta.slug === slug && providersData.providers[name]?.models?.includes(upstream)) {
+              return { provider: name, model: upstream }
+            }
+          }
+          const models = providersData.providers[name].models || []
+          if (models.includes(slug)) return { provider: name, model: slug }
+          return { provider: name, model: slug }
+        }
+      }
     }
   }
 
@@ -180,18 +277,16 @@ function listCatalogEntries(providersData) {
   const providers = providersData.providers || {}
   for (const [name, p] of Object.entries(providers)) {
     if (!p) continue
+    const label = PROVIDER_LABEL[name] || name
     const models = Array.isArray(p.models) && p.models.length ? p.models : p.model ? [p.model] : []
     for (const model of models) {
-      const meta = DISPLAY[model] || {
-        name: `${PROVIDER_LABEL[name] || name} · ${model}`,
-        description: `via ${PROVIDER_LABEL[name] || name}`,
-      }
+      const nice = DISPLAY[model]?.name || model
       out.push({
         id: modelId(name, model),
         provider: name,
         model,
-        display_name: meta.name,
-        description: meta.description,
+        display_name: `${label} · ${nice}`,
+        description: DISPLAY[model]?.description || `via ${label}`,
         baseUrl: p.baseUrl,
         apiKeyEnv: p.apiKeyEnv,
       })

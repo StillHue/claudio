@@ -28,6 +28,19 @@ Coding agent CLI — any LLM. Terminal or Cursor.
 
 ## Install
 
+### Cursor + official Claude Code (recommended)
+
+One-click on Windows (builds the native bridge, wires Cursor, opens provider UI):
+
+```powershell
+cd claude-wrapper
+powershell -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+Details: [claude-wrapper/SETUP-GUIDE.md](./claude-wrapper/SETUP-GUIDE.md).
+
+### Global CLI (Ink fork)
+
 Requires **Node.js >= 22**.
 
 ```bash

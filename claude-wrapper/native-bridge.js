@@ -202,6 +202,34 @@ function joinChatUrl(baseUrl) {
   return `${b}/chat/completions`
 }
 
+/**
+ * Max completion tokens the upstream will accept.
+ * Claude Code often asks for 32k; Mistral Medium/Devstral/Codestral hard-cap at 8192.
+ * OpenCode Zen and most OpenAI-compat hosts still allow much higher.
+ */
+function maxOutputTokensCap(provider, upstreamModel) {
+  const name = String(provider?.name || '').toLowerCase()
+  const base = String(provider?.baseUrl || '').toLowerCase()
+  const model = String(upstreamModel || '').toLowerCase()
+  const envCap = Number(process.env.CLAUDE_NATIVE_MAX_OUTPUT_TOKENS || 0)
+  if (envCap > 0) return envCap
+
+  if (
+    name === 'mistral' ||
+    name.startsWith('mistral') ||
+    base.includes('mistral.ai') ||
+    /^(mistral-|codestral|devstral|magistral|ministral)/.test(model)
+  ) {
+    return 8192
+  }
+  // Cohere compatibility endpoint is also conservative on several SKUs
+  if (name === 'cohere' || base.includes('cohere.com')) {
+    return 8192
+  }
+  // OpenCode Zen / Alibaba / Groq-style: keep room for reasoning + tools
+  return 32000
+}
+
 function mapModel(requested, provider) {
   // resolveProvider already picked the upstream model id
   if (provider?.model) return provider.model
@@ -417,8 +445,11 @@ async function handleMessages(req, res, ctx) {
   }
   // Reasoning models (e.g. OpenCode big-pickle) burn tokens on `reasoning`
   // before `content`. A low max_tokens yields empty replies / hung UI.
+  // But some hosts (Mistral Medium 3.5) hard-cap output at 8192.
   const requestedMax = body.max_tokens != null ? Number(body.max_tokens) : 0
-  chatBody.max_tokens = Math.max(requestedMax || 0, 8192)
+  const outputCap = maxOutputTokensCap(provider, upstreamModel)
+  const floor = Math.min(8192, outputCap)
+  chatBody.max_tokens = Math.min(outputCap, Math.max(requestedMax || 0, floor))
   if (body.temperature != null) chatBody.temperature = body.temperature
   if (body.top_p != null) chatBody.top_p = body.top_p
   if (body.stop_sequences) chatBody.stop = body.stop_sequences

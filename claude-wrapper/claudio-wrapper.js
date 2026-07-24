@@ -43,7 +43,7 @@ const VISION_ENV_KEYS = [
   'CLAUDE_CODE_DISABLE_VISION_ROUTE',
 ]
 
-/** Load vision keys from .env files into process.env (do not override existing). */
+/** Load vision keys from .env — ~/.claude-native/.env wins over inherited process.env. */
 function loadVisionEnvFiles() {
   const candidates = [
     path.join(os.homedir(), '.claude-native', '.env'),
@@ -52,9 +52,11 @@ function loadVisionEnvFiles() {
     path.join('C:', 'Users', os.userInfo().username, 'maniac-agent', '.env'),
   ]
   let loaded = 0
+  const primaryKeys = new Set()
   for (const file of candidates) {
     try {
       if (!fs.existsSync(file)) continue
+      const isPrimary = file === candidates[0]
       const text = fs.readFileSync(file, 'utf8')
       for (const line of text.split(/\r?\n/)) {
         const t = line.trim()
@@ -63,7 +65,8 @@ function loadVisionEnvFiles() {
         if (i < 0) continue
         const key = t.slice(0, i).trim()
         if (!VISION_ENV_KEYS.includes(key)) continue
-        if (process.env[key]) continue
+        // Primary (~/.claude-native/.env) overrides per-key; fallbacks only fill unset keys.
+        if (!isPrimary && (process.env[key] || primaryKeys.has(key))) continue
         let val = t.slice(i + 1).trim()
         if (
           (val.startsWith('"') && val.endsWith('"')) ||
@@ -73,6 +76,7 @@ function loadVisionEnvFiles() {
         }
         process.env[key] = val
         loaded += 1
+        if (isPrimary) primaryKeys.add(key)
       }
     } catch {
       /* ignore */

@@ -102,31 +102,36 @@ async function describeBase64Image(data, mediaType, userText) {
 
   let lastErr
   for (let attempt = 0; attempt < 3; attempt++) {
+    const body = {
+      model: visionModel(),
+      temperature: 0.2,
+      max_tokens: 4096,
+      messages: [
+        { role: 'system', content: DESCRIBE_PROMPT },
+        {
+          role: 'user',
+          content: [
+            { type: 'text', text: userContext },
+            {
+              type: 'image_url',
+              image_url: { url: `data:${mime};base64,${data}` },
+            },
+          ],
+        },
+      ],
+    }
+    // Groq-only: hide chain-of-thought in content. Mistral rejects unknown fields.
+    if (/groq\.com/i.test(visionBaseUrl())) {
+      body.reasoning_format = 'hidden'
+    }
+
     const res = await fetch(`${visionBaseUrl()}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${visionKey()}`,
       },
-      body: JSON.stringify({
-        model: visionModel(),
-        temperature: 0.2,
-        max_tokens: 4096,
-        reasoning_format: 'hidden',
-        messages: [
-          { role: 'system', content: DESCRIBE_PROMPT },
-          {
-            role: 'user',
-            content: [
-              { type: 'text', text: userContext },
-              {
-                type: 'image_url',
-                image_url: { url: `data:${mime};base64,${data}` },
-              },
-            ],
-          },
-        ],
-      }),
+      body: JSON.stringify(body),
       signal: AbortSignal.timeout(90_000),
     })
 
@@ -135,7 +140,12 @@ async function describeBase64Image(data, mediaType, userText) {
       await new Promise((r) => setTimeout(r, 800 * (attempt + 1)))
       continue
     }
-    if (!res.ok) throw new Error(`Vision model HTTP ${res.status}`)
+    if (!res.ok) {
+      const errText = await res.text().catch(() => '')
+      throw new Error(
+        `Vision model HTTP ${res.status}${errText ? `: ${errText.slice(0, 240)}` : ''}`,
+      )
+    }
 
     const json = await res.json()
     const raw = json.choices?.[0]?.message?.content || ''

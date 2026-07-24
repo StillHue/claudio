@@ -236,9 +236,19 @@ function syncOpencodeModelsIntoProviders(catalog, providersPath) {
   }
 
   const p = data.providers.opencode
+  // Picker aliases Anthropic names onto free Zen models only — keep catalog sync
+  // aligned with that (live free → free → live → all).
+  const freeLive = oc.models.filter((m) => m.free && m.live).map((m) => m.id)
+  const free = oc.models.filter((m) => m.free).map((m) => m.id)
   const live = oc.models.filter((m) => m.live).map((m) => m.id)
   const all = oc.models.map((m) => m.id)
-  const nextModels = live.length ? live : all
+  const nextModels = freeLive.length
+    ? freeLive
+    : free.length
+      ? free
+      : live.length
+        ? live
+        : all
 
   // Keep current default first if still in list
   const current = p.model

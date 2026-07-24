@@ -2,6 +2,29 @@
 
 This guide is the **detailed reference** for humans and agents.
 
+## One-click (Windows)
+
+From the repo root (or `claude-wrapper/`):
+
+```powershell
+cd claude-wrapper
+powershell -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+That script:
+
+1. Ensures official Claude Code (runs Anthropic `install.ps1` if needed)
+2. Builds `claudio-wrapper-nativeN.exe` with Bun (or reuses latest with `-SkipBuild`)
+3. Sets Cursor `claudeCode.claudeProcessWrapper` + `skipApiCheck`
+4. Creates `~/.claude-native/providers.json` stub + PATH shims
+5. Installs `/provider` and opens the local provider UI
+
+Then: **Developer: Reload Window** → paste key in the UI → `/model`.
+
+Flags: `-SkipBuild`, `-SkipClaudeInstall`, `-SkipProviderUi`, `-WrapperNumber 21`.
+
+---
+
 **Users who just want Cursor to do the work:** open [AGENT-PROMPT.md](./AGENT-PROMPT.md), copy everything below the line, paste into a new Cursor chat, and answer with your API keys when asked.
 
 > **Default mode is `native`.** The harness is always the **official Anthropic Claude Code binary** (latest on disk). Custom providers (OpenCode/Cohere) go through the local bridge. The Ink fork (`CLAUDE_WRAPPER_MODE=claudio`, `@gaburieuru/claudio` 0.26) is **legacy** and is not feature-parity with Claude Code.
@@ -21,7 +44,7 @@ Cursor Agents Window / terminal `claude`
          ↓  POST /v1/messages  (bridge or real Anthropic)
 ```
 
-Picker model ids **must** look like `anthropic.<upstream-model-id>` (no slashes), e.g. `anthropic.deepseek-v4-flash-free`, `anthropic.north-mini-code-1-0`.
+Picker model ids **must** look like `anthropic.<slug>` (no slashes). Free OpenCode Zen models use Anthropic-equivalent slugs, e.g. `anthropic.claude-sonnet-5` → upstream `deepseek-v4-flash-free`.
 
 ## Prerequisites
 
@@ -181,8 +204,12 @@ Changing the model in the Claude Code / Agents Window picker also remembers it: 
 
 | Catalog model | Claude Code picker id |
 |---------------|------------------------|
-| `deepseek-v4-flash-free` | `anthropic.deepseek-v4-flash-free` |
-| `big-pickle` | `anthropic.big-pickle` |
+| `deepseek-v4-flash-free` | `anthropic.claude-sonnet-5` |
+| `mimo-v2.5-free` | `anthropic.claude-haiku-4-5` |
+| `big-pickle` | `anthropic.claude-sonnet-4` |
+| `north-mini-code-free` | `anthropic.claude-sonnet-4-5` |
+| `laguna-s-2.1-free` | `anthropic.claude-sonnet-4-6` |
+| `nemotron-3-ultra-free` | `anthropic.claude-opus-4-6` |
 | `north-mini-code-1-0` (Cohere) | `anthropic.north-mini-code-1-0` |
 | `command-a-03-2025` | `anthropic.command-a-03-2025` |
 
