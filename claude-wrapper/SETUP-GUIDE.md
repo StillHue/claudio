@@ -44,7 +44,8 @@ Cursor Agents Window / terminal `claude`
          ↓  POST /v1/messages  (bridge or real Anthropic)
 ```
 
-Picker model ids **must** look like `anthropic.<slug>` (no slashes). Free OpenCode Zen models use Anthropic-equivalent slugs, e.g. `anthropic.claude-sonnet-5` → upstream `deepseek-v4-flash-free`.
+Picker model ids look like `anthropic.<provider>.claude-sonnet-…` (no slashes). Upstream OpenCode ids stay unchanged behind the Sonnet mask.
+
 
 ## Prerequisites
 
@@ -202,33 +203,35 @@ Changing the model in the Claude Code / Agents Window picker also remembers it: 
 
 ### Picker ids
 
-| Catalog model | Claude Code picker id |
-|---------------|------------------------|
-| `deepseek-v4-flash-free` | `anthropic.claude-sonnet-5` |
-| `mimo-v2.5-free` | `anthropic.claude-haiku-4-5` |
-| `big-pickle` | `anthropic.claude-sonnet-4` |
-| `north-mini-code-free` | `anthropic.claude-sonnet-4-5` |
-| `laguna-s-2.1-free` | `anthropic.claude-sonnet-4-6` |
-| `nemotron-3-ultra-free` | `anthropic.claude-opus-4-6` |
-| `north-mini-code-1-0` (Cohere) | `anthropic.north-mini-code-1-0` |
-| `command-a-03-2025` | `anthropic.command-a-03-2025` |
+| Catalog model (real) | Claude Code picker id | Label no picker |
+|---------------|------------------------|-----------------|
+| `mimo-v2.5-free` | `anthropic.opencode.claude-sonnet-4-8` | Sonnet 4.8 |
+| `big-pickle` | `anthropic.opencode.claude-sonnet-4-8-max` | Sonnet 4.8 Max |
+| `north-mini-code-free` | `anthropic.opencode.claude-sonnet-4-5` | Sonnet 4.5 |
+| `laguna-s-2.1-free` | `anthropic.opencode.claude-sonnet-4-5-fast` | Sonnet 4.5 Fast |
+| `deepseek-v4-flash-free` | `anthropic.opencode.claude-sonnet-5` | Sonnet 5 |
+| `nemotron-3-ultra-free` | `anthropic.opencode.claude-sonnet-4-7` | Sonnet 4.7 |
+| `north-mini-code-1-0` (Cohere) | `anthropic.cohere.north-mini-code-1-0` | Cohere · north-mini-code |
+| `command-a-03-2025` | `anthropic.cohere.command-a-03-2025` | Cohere · command-a |
+
+Legacy Opus/Haiku/Free ids still resolve to the same upstream models.
 
 ## Step 4 — Vision Routing (images)
 
-OpenCode / Cohere are text-only. The bridge describes images via Groq **before** calling the main model.
+OpenCode / Cohere are text-only. The bridge describes images via Mistral **before** calling the main model.
 
 Create `~/.claude-native/.env` (also loads `~/.openclaude/.env` or `~/maniac-agent/.env` if present):
 
 ```bash
-GROQ_API_KEY=gsk_...
-CLAUDE_CODE_VISION_API_KEY=gsk_...
-CLAUDE_CODE_VISION_BASE_URL=https://api.groq.com/openai/v1
-CLAUDE_CODE_VISION_MODEL=qwen/qwen3.6-27b
+CLAUDE_CODE_VISION_API_KEY=...
+MISTRAL_API_KEY=...
+CLAUDE_CODE_VISION_BASE_URL=https://api.mistral.ai/v1
+CLAUDE_CODE_VISION_MODEL=mistral-small-latest
 CLAUDE_CODE_VISION_ROUTE=1
 ```
 
 - Disable: `CLAUDE_CODE_DISABLE_VISION_ROUTE=1` or `CLAUDE_CODE_VISION_ROUTE=0`
-- Without a Groq key, attaching an image returns a clear 400 from the bridge (do not forward raw `image_url` to text-only providers).
+- Without a Mistral vision key, attaching an image returns a clear 400 from the bridge (do not forward raw `image_url` to text-only providers).
 
 ## Step 5 — Verify
 
@@ -236,7 +239,7 @@ CLAUDE_CODE_VISION_ROUTE=1
 2. Open **Claude Code** panel (not Codex)
 3. Confirm model picker lists `anthropic.*` ids from the catalog
 4. Send a short text prompt → expect a reply
-5. Optional: attach an image → expect a short delay (Groq describe) then a reply about the image
+5. Optional: attach an image → expect a short delay (Mistral describe) then a reply about the image
 6. Debug log: `~/claude-native-debug.log` — look for `POST /v1/messages` and `vision route: described N image(s)`
 
 Enable verbose wrapper stderr:

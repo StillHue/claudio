@@ -4,7 +4,7 @@
  *
  *   node enable-provider.js                  # interactive wizard
  *   node enable-provider.js opencode --prompt-key
- *   node enable-provider.js groq --key=gsk_...
+ *   node enable-provider.js cohere --key=...
  *   node enable-provider.js opencode --model=deepseek-v4-flash-free
  */
 const readline = require('readline')

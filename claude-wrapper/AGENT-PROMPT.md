@@ -33,7 +33,7 @@ Ask briefly for whatever you don’t already have:
 - Path to the Claudio checkout (or clone `https://github.com/StillHue/claudio`)
 - OpenCode Zen API key (optional if only Cohere)
 - Cohere API key (optional if only OpenCode)
-- Groq API key (optional; required for pasted images on text-only models)
+- Mistral API key (optional; required for pasted images on text-only models)
 - Preferred default model (suggest `big-pickle` on OpenCode, or `north-mini-code-1-0` / `command-a-03-2025` on Cohere)
 
 ## Do this (in order)
@@ -106,17 +106,17 @@ Create/update with the user’s providers. Example shape:
 
 ### 3) Vision (images) — `~/.claude-native/.env`
 
-If the user has a Groq key:
+If the user has a Mistral key:
 
 ```bash
-GROQ_API_KEY=gsk_...
-CLAUDE_CODE_VISION_API_KEY=gsk_...
-CLAUDE_CODE_VISION_BASE_URL=https://api.groq.com/openai/v1
-CLAUDE_CODE_VISION_MODEL=qwen/qwen3.6-27b
+CLAUDE_CODE_VISION_API_KEY=...
+MISTRAL_API_KEY=...
+CLAUDE_CODE_VISION_BASE_URL=https://api.mistral.ai/v1
+CLAUDE_CODE_VISION_MODEL=mistral-small-latest
 CLAUDE_CODE_VISION_ROUTE=1
 ```
 
-Without Groq, say clearly that pasting images will fail on text-only models.
+Without Mistral, say clearly that pasting images will fail on text-only models.
 
 ### 4) Cursor User Settings JSON
 
@@ -140,7 +140,7 @@ Strip any leftover `env.CLAUDE_CODE_USE_OPENAI` / `OPENAI_*` routing keys if pre
 2. Open the **Claude Code** panel
 3. Confirm picker lists `anthropic.*` ids from the catalog
 4. Smoke text: short prompt → non-empty reply
-5. Optional smoke image if Groq is configured
+5. Optional smoke image if Mistral vision is configured
 6. If debug needed: `CLAUDE_WRAPPER_DEBUG=1` and check `~/claude-native-debug.log` for `POST /v1/messages`
 
 ### 7) Report back
@@ -160,7 +160,7 @@ Give the user a short summary:
 | Still hits Anthropic / login wall | Fix `claudeProcessWrapper` → `.exe`, Reload |
 | `EINVAL` on Windows | Wrong path to `.cmd` — use compiled `.exe` |
 | Empty / hung replies | Check log; raise isn’t needed (bridge floors `max_tokens`); try another model |
-| Images → 400 | Configure Groq `.env` (step 3) |
+| Images → 400 | Configure Mistral vision `.env` (step 3) |
 | OpenCode 500 on `big-pickle` | Provider/upstream flake (often internal); retry or switch model — not a local misconfig if `/chat/completions` is `opencode.ai/zen/v1` |
 | `invalid bridge token` + `/login` warning | `/logout` or rebuild wrapper (quarantines `.credentials.json` while bridged); shared `~/.claude-native/bridge.token` |
 | Need provider/model catalog | `node sync-catalog.js sync` then `list --bridge` / `list --models opencode` |

@@ -18,8 +18,6 @@
 const { spawn, execFileSync } = require('child_process')
 const fs = require('fs')
 const path = require('path')
-const os = require('os')
-const { randomUUID } = require('crypto')
 const { startNativeBridge } = require('./native-bridge')
 const {
   loadProvidersConfig,
@@ -30,228 +28,16 @@ const {
   resolveLatestOfficialClaude,
   preferLatestOfficial,
 } = require('./resolve-official-claude')
-
-const VISION_ENV_KEYS = [
-  'GROQ_API_KEY',
-  'CLAUDE_CODE_VISION_API_KEY',
-  'MANIAC_VISION_API_KEY',
-  'CLAUDE_CODE_VISION_BASE_URL',
-  'MANIAC_VISION_BASE_URL',
-  'CLAUDE_CODE_VISION_MODEL',
-  'MANIAC_VISION_MODEL',
-  'CLAUDE_CODE_VISION_ROUTE',
-  'CLAUDE_CODE_DISABLE_VISION_ROUTE',
-]
-
-/** Load vision keys from .env — ~/.claude-native/.env wins over inherited process.env. */
-function loadVisionEnvFiles() {
-  const candidates = [
-    path.join(os.homedir(), '.claude-native', '.env'),
-    path.join(os.homedir(), '.openclaude', '.env'),
-    path.join(os.homedir(), 'maniac-agent', '.env'),
-    path.join('C:', 'Users', os.userInfo().username, 'maniac-agent', '.env'),
-  ]
-  let loaded = 0
-  const primaryKeys = new Set()
-  for (const file of candidates) {
-    try {
-      if (!fs.existsSync(file)) continue
-      const isPrimary = file === candidates[0]
-      const text = fs.readFileSync(file, 'utf8')
-      for (const line of text.split(/\r?\n/)) {
-        const t = line.trim()
-        if (!t || t.startsWith('#')) continue
-        const i = t.indexOf('=')
-        if (i < 0) continue
-        const key = t.slice(0, i).trim()
-        if (!VISION_ENV_KEYS.includes(key)) continue
-        // Primary (~/.claude-native/.env) overrides per-key; fallbacks only fill unset keys.
-        if (!isPrimary && (process.env[key] || primaryKeys.has(key))) continue
-        let val = t.slice(i + 1).trim()
-        if (
-          (val.startsWith('"') && val.endsWith('"')) ||
-          (val.startsWith("'") && val.endsWith("'"))
-        ) {
-          val = val.slice(1, -1)
-        }
-        process.env[key] = val
-        loaded += 1
-        if (isPrimary) primaryKeys.add(key)
-      }
-    } catch {
-      /* ignore */
-    }
-  }
-  return loaded
-}
-
-/**
- * Bun --compile embeds scripts under a virtual __dirname. Prefer the
- * directory of the running .exe so sibling files resolve.
- */
-function wrapperBaseDir() {
-  const execDir = path.dirname(process.execPath)
-  const base = path.basename(process.execPath).toLowerCase()
-  if (base.startsWith('claudio-wrapper') && base.endsWith('.exe')) {
-    return execDir
-  }
-  if (typeof __dirname === 'string' && __dirname.length > 0) {
-    return __dirname
-  }
-  return execDir
-}
-
-function debugLog(...args) {
-  const debug =
-    process.env.CLAUDE_WRAPPER_DEBUG === '1' || process.env.CLAUDIO_WRAPPER_DEBUG === '1'
-  if (debug) {
-    console.error('[claude-wrapper]', ...args)
-  }
-  // Only persist logs when debug is on — avoids writing provider errors every turn
-  if (!debug) return
-  try {
-    const logPath = process.env.CLAUDE_NATIVE_LOG || path.join(os.homedir(), 'claude-native-debug.log')
-    fs.appendFileSync(
-      logPath,
-      `[${new Date().toISOString()}] ${args.map((a) => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ')}\n`,
-    )
-  } catch {
-    /* ignore */
-  }
-}
-
-/** Stable token shared by sibling wrapper processes (auth status + stream-json). */
-function getSharedBridgeToken() {
-  const dir = path.join(os.homedir(), '.claude-native')
-  const file = path.join(dir, 'bridge.token')
-  try {
-    fs.mkdirSync(dir, { recursive: true })
-    if (fs.existsSync(file)) {
-      const existing = fs.readFileSync(file, 'utf8').trim()
-      if (existing.length >= 32) return existing
-    }
-    const token = randomUUID().replace(/-/g, '') + randomUUID().replace(/-/g, '')
-    fs.writeFileSync(file, token, { mode: 0o600 })
-    return token
-  } catch {
-    return randomUUID().replace(/-/g, '') + randomUUID().replace(/-/g, '')
-  }
-}
-
-/**
- * Claude Code warns when both ANTHROPIC_AUTH_TOKEN and /login managed key exist,
- * and often presents the login key to ANTHROPIC_BASE_URL → bridge 401.
- *
- * While bridged: always move ~/.claude/.credentials.json aside (every spawn).
- * Keep the backup outside ~/.claude so Claude Code cannot still "see" a login.
- * Restore is opt-in (CLAUDE_NATIVE_RESTORE_LOGIN=1).
- */
-const CLAUDE_CREDENTIALS = path.join(os.homedir(), '.claude', '.credentials.json')
-const CLAUDE_CREDENTIALS_BAK = path.join(
-  os.homedir(),
-  '.claude-native',
-  'login-credentials.bak.json',
-)
-/** Legacy bak path (same folder as credentials) — migrate away so Claude stops detecting login. */
-const CLAUDE_CREDENTIALS_BAK_LEGACY = path.join(
-  os.homedir(),
-  '.claude',
-  '.credentials.json.claudio-bridge',
-)
-const CRED_QUARANTINE_REF = path.join(os.homedir(), '.claude-native', 'credentials-quarantine.ref')
-
-function quarantineClaudeLoginCredentials() {
-  const dir = path.join(os.homedir(), '.claude-native')
-  try {
-    fs.mkdirSync(dir, { recursive: true })
-  } catch {
-    /* ignore */
-  }
-  // Migrate legacy bak out of ~/.claude/
-  try {
-    if (fs.existsSync(CLAUDE_CREDENTIALS_BAK_LEGACY)) {
-      if (!fs.existsSync(CLAUDE_CREDENTIALS_BAK)) {
-        fs.renameSync(CLAUDE_CREDENTIALS_BAK_LEGACY, CLAUDE_CREDENTIALS_BAK)
-      } else {
-        fs.unlinkSync(CLAUDE_CREDENTIALS_BAK_LEGACY)
-      }
-      debugLog('migrated legacy credentials bak out of ~/.claude')
-    }
-  } catch (err) {
-    debugLog(`legacy bak migrate failed: ${err.message}`)
-  }
-  // Always remove live login creds when present (do not gate on refcount).
-  // Safe order: move live → tmp, then replace bak (never delete bak before live is safe).
-  if (fs.existsSync(CLAUDE_CREDENTIALS)) {
-    const tmp = CLAUDE_CREDENTIALS_BAK + '.tmp'
-    try {
-      if (fs.existsSync(tmp)) fs.unlinkSync(tmp)
-      fs.renameSync(CLAUDE_CREDENTIALS, tmp)
-      try {
-        if (fs.existsSync(CLAUDE_CREDENTIALS_BAK)) fs.unlinkSync(CLAUDE_CREDENTIALS_BAK)
-      } catch {
-        /* keep tmp as bak below */
-      }
-      fs.renameSync(tmp, CLAUDE_CREDENTIALS_BAK)
-      debugLog('quarantined ~/.claude/.credentials.json → ~/.claude-native/')
-    } catch (err) {
-      // Never delete the only remaining copy. Try to put live creds back.
-      try {
-        if (fs.existsSync(tmp) && !fs.existsSync(CLAUDE_CREDENTIALS)) {
-          fs.renameSync(tmp, CLAUDE_CREDENTIALS)
-        }
-      } catch {
-        /* ignore */
-      }
-      debugLog(`credentials quarantine failed (live preserved if possible): ${err.message}`)
-    }
-  }
-  let n = 0
-  try {
-    n = parseInt(fs.readFileSync(CRED_QUARANTINE_REF, 'utf8').trim(), 10) || 0
-  } catch {
-    n = 0
-  }
-  try {
-    fs.writeFileSync(CRED_QUARANTINE_REF, String(n + 1), { mode: 0o600 })
-  } catch {
-    /* ignore */
-  }
-}
-
-function restoreClaudeLoginCredentials() {
-  let n = 1
-  try {
-    n = parseInt(fs.readFileSync(CRED_QUARANTINE_REF, 'utf8').trim(), 10) || 1
-  } catch {
-    n = 1
-  }
-  n = Math.max(0, n - 1)
-  if (n === 0) {
-    try {
-      fs.unlinkSync(CRED_QUARANTINE_REF)
-    } catch {
-      /* ignore */
-    }
-  } else {
-    try {
-      fs.writeFileSync(CRED_QUARANTINE_REF, String(n), { mode: 0o600 })
-    } catch {
-      /* ignore */
-    }
-  }
-  // Default: keep /login quarantined while using custom providers.
-  if (process.env.CLAUDE_NATIVE_RESTORE_LOGIN !== '1') return
-  if (n !== 0) return
-  try {
-    if (fs.existsSync(CLAUDE_CREDENTIALS_BAK) && !fs.existsSync(CLAUDE_CREDENTIALS)) {
-      fs.renameSync(CLAUDE_CREDENTIALS_BAK, CLAUDE_CREDENTIALS)
-      debugLog('restored ~/.claude/.credentials.json')
-    }
-  } catch (err) {
-    debugLog(`credentials restore failed: ${err.message}`)
-  }
-}
+const { debugLog } = require('./lib/wrapper/log')
+const {
+  loadVisionEnvFiles,
+  wrapperBaseDir,
+  getSharedBridgeToken,
+} = require('./lib/wrapper/env')
+const {
+  quarantineClaudeLoginCredentials,
+  restoreClaudeLoginCredentials,
+} = require('./lib/wrapper/credentials')
 
 function resolveClaudioEntry() {
   const baseDir = wrapperBaseDir()
@@ -538,14 +324,37 @@ async function runNative(rawArgs) {
     windowsHide: true,
   })
 
+  let shutdownPromise = null
   const shutdown = async () => {
-    if (useBridge) restoreClaudeLoginCredentials()
-    if (!bridge) return
-    try {
-      await bridge.close()
-    } catch {
-      /* ignore */
-    }
+    if (shutdownPromise) return shutdownPromise
+    shutdownPromise = (async () => {
+      // Wait for child to exit first (with timeout)
+      if (child && !child.exitCode) {
+        try {
+          child.kill('SIGTERM')
+          await new Promise((resolve) => {
+            const timeout = setTimeout(() => {
+              try { child.kill('SIGKILL') } catch {}
+              resolve()
+            }, 5000)
+            child.once('exit', () => {
+              clearTimeout(timeout)
+              resolve()
+            })
+          })
+        } catch {
+          /* ignore */
+        }
+      }
+      if (useBridge) restoreClaudeLoginCredentials()
+      if (!bridge) return
+      try {
+        await bridge.close()
+      } catch {
+        /* ignore */
+      }
+    })()
+    return shutdownPromise
   }
 
   const onSignal = async () => {

@@ -59,6 +59,11 @@ function probeCandidate(filePath) {
     fromPath ||
     versionFromBinary(filePath) ||
     { major: 0, minor: 0, patch: 0, raw: '0.0.0' }
+  // Validate: version must be parseable (not 0.0.0 for extension bundles)
+  if (!fromPath && version.raw === '0.0.0') {
+    console.error(`[resolve-official-claude] WARNING: ${filePath} returned invalid version, skipping`)
+    return null
+  }
   return { path: filePath, version, mtime }
 }
 

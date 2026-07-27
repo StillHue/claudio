@@ -22,7 +22,6 @@ const FETCH_TIMEOUT_MS = Number(process.env.CLAUDE_NATIVE_CATALOG_TIMEOUT_MS || 
 const BASE_URL_FALLBACKS = {
   opencode: 'https://opencode.ai/zen/v1',
   openrouter: 'https://openrouter.ai/api/v1',
-  groq: 'https://api.groq.com/openai/v1',
   deepseek: 'https://api.deepseek.com',
   cohere: 'https://api.cohere.com/compatibility/v1',
   openai: 'https://api.openai.com/v1',
@@ -45,7 +44,6 @@ function dialectFromNpm(npm) {
     n.includes('openai-compatible') ||
     n === '@ai-sdk/openai' ||
     n.includes('openrouter') ||
-    n === '@ai-sdk/groq' ||
     n === '@ai-sdk/cerebras' ||
     n === '@ai-sdk/xai' ||
     n === '@ai-sdk/togetherai' ||
@@ -272,7 +270,7 @@ function syncOpencodeModelsIntoProviders(catalog, providersPath) {
   if (!p.apiKeyEnv) p.apiKeyEnv = oc.apiKeyEnv || 'OPENCODE_API_KEY'
 
   fs.mkdirSync(path.dirname(target), { recursive: true })
-  fs.writeFileSync(target, JSON.stringify(data, null, 2) + '\n', 'utf8')
+  fs.writeFileSync(target, JSON.stringify(data, null, 2) + '\n', { encoding: 'utf8', mode: 0o600 })
   return { changed: true, path: target, modelCount: ordered.length }
 }
 

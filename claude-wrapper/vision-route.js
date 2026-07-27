@@ -1,10 +1,11 @@
 /**
  * Vision routing for text-only upstream models (OpenCode, Cohere, …).
- * Describes Anthropic image blocks via Groq (or compatible) chat/completions,
- * then replaces them with text so the main model never receives image bytes.
+ * Describes Anthropic image blocks via Cohere/Mistral (OpenAI-compatible vision)
+ * chat/completions, then replaces them with text so the main model never
+ * receives image bytes.
  *
  * Env:
- *   GROQ_API_KEY | CLAUDE_CODE_VISION_API_KEY | MANIAC_VISION_API_KEY
+ *   CLAUDE_CODE_VISION_API_KEY | MANIAC_VISION_API_KEY | COHERE_API_KEY | MISTRAL_API_KEY
  *   CLAUDE_CODE_VISION_BASE_URL | MANIAC_VISION_BASE_URL
  *   CLAUDE_CODE_VISION_MODEL | MANIAC_VISION_MODEL
  *   CLAUDE_CODE_DISABLE_VISION_ROUTE=1 — skip routing
@@ -12,8 +13,8 @@
  */
 const path = require('path')
 
-const DEFAULT_BASE = 'https://api.groq.com/openai/v1'
-const DEFAULT_MODEL = 'qwen/qwen3.6-27b'
+const DEFAULT_BASE = 'https://api.cohere.com/compatibility/v1'
+const DEFAULT_MODEL = 'command-a-vision-07-2025'
 const MAX_IMAGE_BYTES = 4 * 1024 * 1024
 
 const DESCRIBE_PROMPT = `Voce eh um descritor de imagens para outro modelo de IA que NAO consegue ver imagens.
@@ -28,7 +29,8 @@ function visionKey() {
   return (
     process.env.CLAUDE_CODE_VISION_API_KEY ||
     process.env.MANIAC_VISION_API_KEY ||
-    process.env.GROQ_API_KEY ||
+    process.env.COHERE_API_KEY ||
+    process.env.MISTRAL_API_KEY ||
     ''
   )
 }
@@ -46,6 +48,9 @@ function visionEnabled() {
 }
 
 function visionBaseUrl() {
+  if (process.env.COHERE_API_KEY && !process.env.CLAUDE_CODE_VISION_BASE_URL && !process.env.MANIAC_VISION_BASE_URL) {
+    return 'https://api.cohere.com/compatibility/v1'
+  }
   return (
     process.env.CLAUDE_CODE_VISION_BASE_URL ||
     process.env.MANIAC_VISION_BASE_URL ||
@@ -54,6 +59,9 @@ function visionBaseUrl() {
 }
 
 function visionModel() {
+  if (process.env.COHERE_API_KEY && !process.env.CLAUDE_CODE_VISION_MODEL && !process.env.MANIAC_VISION_MODEL) {
+    return 'command-a-vision-07-2025'
+  }
   return (
     process.env.CLAUDE_CODE_VISION_MODEL ||
     process.env.MANIAC_VISION_MODEL ||
@@ -90,9 +98,11 @@ function bodyHasImages(body) {
 
 async function describeBase64Image(data, mediaType, userText) {
   const buf = Buffer.from(data, 'base64')
+  // Check decoded size (binary), not base64 size
+  // Base64 is ~33% larger than binary, so 4MB binary = ~5.3MB base64
   if (buf.byteLength > MAX_IMAGE_BYTES) {
     throw new Error(
-      `Image too large (${(buf.byteLength / 1024 / 1024).toFixed(1)}MB > 4MB)`,
+      `Image too large (${(buf.byteLength / 1024 / 1024).toFixed(1)}MB binary > ${MAX_IMAGE_BYTES / 1024 / 1024}MB limit)`,
     )
   }
   const mime = mediaType || 'image/png'
@@ -120,10 +130,6 @@ async function describeBase64Image(data, mediaType, userText) {
         },
       ],
     }
-    // Groq-only: hide chain-of-thought in content. Mistral rejects unknown fields.
-    if (/groq\.com/i.test(visionBaseUrl())) {
-      body.reasoning_format = 'hidden'
-    }
 
     const res = await fetch(`${visionBaseUrl()}/chat/completions`, {
       method: 'POST',
@@ -135,16 +141,25 @@ async function describeBase64Image(data, mediaType, userText) {
       signal: AbortSignal.timeout(90_000),
     })
 
-    if (res.status === 429 || res.status === 503) {
+    if (res.status === 429 || res.status === 503 || (res.status >= 500 && res.status < 600)) {
       lastErr = new Error(`Vision model HTTP ${res.status}`)
-      await new Promise((r) => setTimeout(r, 800 * (attempt + 1)))
+      // Exponential backoff with jitter for all retryable errors
+      const delay = Math.min(1000 * Math.pow(2, attempt) + Math.random() * 1000, 30000)
+      await new Promise((r) => setTimeout(r, delay))
       continue
     }
     if (!res.ok) {
       const errText = await res.text().catch(() => '')
-      throw new Error(
-        `Vision model HTTP ${res.status}${errText ? `: ${errText.slice(0, 240)}` : ''}`,
-      )
+      // Don't retry client errors (4xx) except 429
+      if (res.status >= 400 && res.status < 500 && res.status !== 429) {
+        throw new Error(
+          `Vision model HTTP ${res.status}${errText ? `: ${errText.slice(0, 240)}` : ''}`,
+        )
+      }
+      lastErr = new Error(`Vision model HTTP ${res.status}`)
+      const delay = Math.min(1000 * Math.pow(2, attempt) + Math.random() * 1000, 30000)
+      await new Promise((r) => setTimeout(r, delay))
+      continue
     }
 
     const json = await res.json()
