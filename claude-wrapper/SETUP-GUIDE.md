@@ -51,8 +51,8 @@ Picker model ids look like `anthropic.<provider>.claude-sonnet-…` (no slashes)
 
 1. **Official Claude Code** via `irm https://claude.ai/install.ps1 | iex` (recommended; auto-updates) **and/or** the Cursor extension `anthropic.claude-code`
 2. **Bun** (to compile the wrapper) and/or a prebuilt `claudio-wrapper-native*.exe`
-3. For OpenCode/Cohere: API key in `~/.claude-native/providers.json` (without a key, the wrapper is a pure passthrough to official Claude)
-4. For images on text-only providers: **Groq** key (vision routing)
+3. For OpenCode: API key in `~/.claude-native/providers.json` (without a key, the wrapper is a pure passthrough to official Claude)
+4. Current catalog uses **MiMo-V2.5 Free**, which accepts images directly (no external vision router)
 
 Node.js is only needed if you run the `.js` sources directly; the compiled `.exe` embeds the runtime.
 
@@ -110,7 +110,7 @@ Then **Developer: Reload Window**.
 
 ## Step 3 — Providers Catalog
 
-Create `~/.claude-native/providers.json` (fallback: `~/.codius/providers.json`):
+Create `~/.claude-native/providers.json`:
 
 ```json
 {
@@ -216,22 +216,11 @@ Changing the model in the Claude Code / Agents Window picker also remembers it: 
 
 Legacy Opus/Haiku/Free ids still resolve to the same upstream models.
 
-## Step 4 — Vision Routing (images)
+## Step 4 — Images (MiMo direct vision)
 
-OpenCode / Cohere are text-only. The bridge describes images via Mistral **before** calling the main model.
+**MiMo-V2.5 Free** accepts Anthropic image blocks converted to OpenAI `image_url` natively. There is no external vision router — images go straight to the upstream model.
 
-Create `~/.claude-native/.env` (also loads `~/.openclaude/.env` or `~/maniac-agent/.env` if present):
-
-```bash
-CLAUDE_CODE_VISION_API_KEY=...
-MISTRAL_API_KEY=...
-CLAUDE_CODE_VISION_BASE_URL=https://api.mistral.ai/v1
-CLAUDE_CODE_VISION_MODEL=mistral-small-latest
-CLAUDE_CODE_VISION_ROUTE=1
-```
-
-- Disable: `CLAUDE_CODE_DISABLE_VISION_ROUTE=1` or `CLAUDE_CODE_VISION_ROUTE=0`
-- Without a Mistral vision key, attaching an image returns a clear 400 from the bridge (do not forward raw `image_url` to text-only providers).
+No `CLAUDE_CODE_VISION_*` env vars are required.
 
 ## Step 5 — Verify
 
@@ -239,8 +228,8 @@ CLAUDE_CODE_VISION_ROUTE=1
 2. Open **Claude Code** panel (not Codex)
 3. Confirm model picker lists `anthropic.*` ids from the catalog
 4. Send a short text prompt → expect a reply
-5. Optional: attach an image → expect a short delay (Mistral describe) then a reply about the image
-6. Debug log: `~/claude-native-debug.log` — look for `POST /v1/messages` and `vision route: described N image(s)`
+5. Optional: attach an image → MiMo should describe / answer about it
+6. Debug log: `~/claude-native-debug.log` — look for `POST /v1/messages`
 
 Enable verbose wrapper stderr:
 
@@ -267,8 +256,7 @@ cd claudio/claude-wrapper
 | `invalid bridge token` / 401 + “Both ANTHROPIC_AUTH_TOKEN and /login…” | Quarantine login + only inject `ANTHROPIC_API_KEY` (not AUTH_TOKEN). Bridge accepts matching x-api-key even if Bearer is OAuth. Last resort: `CLAUDE_NATIVE_BRIDGE_OPEN_LOCAL=1`. Kill stale wrappers and relaunch. |
 | Settings rewrite mid-chat / reload loop | Don’t manually thrash `~/.claude/settings.json`; wrapper only writes when content changes |
 | Picker shows Opus “Default (recommended)” | `enforceAvailableModels: true` + catalog ids; subtitle may still say Opus but Default resolves to first available |
-| Images → upstream 400 | Set Groq vision env (Step 4); confirm log shows `vision route` |
-| Vision HTTP 429 | Groq rate limit — retry; bridge retries 429/503 a few times |
+| Images → upstream 400 | Confirm model is MiMo-V2.5 Free (`mimo-v2.5-free`); text-only models reject `image_url` |
 | Cohere / OpenCode 401 | Fix `apiKey` / `apiKeyEnv` in `providers.json` |
 | Duplicate assistant lines | OpenCode may echo reasoning into content; newer bridge maps reasoning → Anthropic `thinking` and dedupes when possible — rebuild latest exe |
 | Thoughts / thinking not shown | Need build that maps OpenAI `reasoning` → Anthropic `thinking` / `thinking_delta` |
@@ -306,11 +294,10 @@ Then the wrapper spawns Claudio (`@gaburieuru/claudio`) instead of `claude.exe`.
 | `claude-wrapper/claude-cli.js` / `claude.cmd` | Terminal entry → official harness |
 | `claude-wrapper/install-cli-shims.ps1` | Point npm PATH `claude` at wrapper |
 | `claude-wrapper/set-default-model.js` | CLI to set default model + sync Claude/Cursor |
-| `claude-wrapper/vision-route.js` | Groq image → text before upstream |
 | `claudio-wrapper-nativeN.exe` | Bun-compiled binary for Cursor |
 | `~/.claude-native/providers.json` | Providers + models catalog |
 | `~/.claude-native/catalog.json` | Cached remote registry (models.dev + Zen) |
-| `~/.claude-native/.env` | Groq / vision env (preferred) |
+| `~/.claude-native/.env` | OpenCode / provider env (preferred) |
 | `~/.claude/settings.json` | Synced `availableModels` / default model |
 | `~/claude-native-debug.log` | Wrapper/bridge debug log |
 
@@ -319,8 +306,8 @@ Then the wrapper spawns Claudio (`@gaburieuru/claudio`) instead of `claude.exe`.
 1. [ ] Build/point `claudeProcessWrapper` at latest `claudio-wrapper-nativeN.exe`
 2. [ ] Write `~/.claude-native/providers.json` with user’s keys (env preferred)
 3. [ ] Set `claudeCode.model` to an `anthropic.<id>` from the catalog
-4. [ ] If user pastes images: write `~/.claude-native/.env` with Groq + `qwen/qwen3.6-27b`
+4. [ ] Images: use MiMo-V2.5 Free (direct `image_url`; no vision env)
 5. [ ] Ensure `~/.claude/settings.json` does **not** force `CLAUDE_CODE_USE_OPENAI`
 6. [ ] Reload Window → smoke text → smoke image
-7. [ ] Confirm `~/claude-native-debug.log` shows `/v1/messages` (and vision when images)
+7. [ ] Confirm `~/claude-native-debug.log` shows `/v1/messages`
 8. [ ] Never commit API keys; warn user if they pasted keys in chat

@@ -73,7 +73,6 @@ function buildSlugIndex(providersData) {
 function loadProvidersConfig() {
   const candidates = [
     path.join(os.homedir(), '.claude-native', 'providers.json'),
-    path.join(os.homedir(), '.codius', 'providers.json'),
   ]
   for (const p of candidates) {
     try {

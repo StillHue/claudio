@@ -14,4 +14,4 @@ See **[SETUP-GUIDE.md](./SETUP-GUIDE.md)** for the full agent/human setup prompt
 
 ## Codius
 
-Paused / separate. Do not mix with this wrapper unless the user asks to resume Codex bridging.
+Separate product at `~/codius` (Codex Responses gateway). Uses only `~/.codius/` — never this wrapper’s `~/.claude-native/`.
