@@ -3,15 +3,21 @@
  */
 const DISPLAY = {
   // OpenCode Zen → short Sonnet labels (no "Claude"/"Free"; upstream unchanged).
+  // Ranking by agentic/day-to-day fit: MiMo = Sonnet 5, DeepSeek Flash = 4.8.
   'mimo-v2.5-free': {
-    name: 'Sonnet 4.8',
+    name: 'Sonnet 5',
     description: 'OpenCode Zen → mimo-v2.5-free',
-    slug: 'claude-sonnet-4-8',
+    slug: 'claude-sonnet-5',
   },
   'big-pickle': {
-    name: 'Sonnet 4.8 Max',
+    name: 'Sonnet 5 Max',
     description: 'OpenCode Zen → big-pickle',
-    slug: 'claude-sonnet-4-8-max',
+    slug: 'claude-sonnet-5-max',
+  },
+  'deepseek-v4-flash-free': {
+    name: 'Sonnet 4.8',
+    description: 'OpenCode Zen → deepseek-v4-flash-free',
+    slug: 'claude-sonnet-4-8',
   },
   'north-mini-code-free': {
     name: 'Sonnet 4.5',
@@ -22,11 +28,6 @@ const DISPLAY = {
     name: 'Sonnet 4.5 Fast',
     description: 'OpenCode Zen → laguna-s-2.1-free',
     slug: 'claude-sonnet-4-5-fast',
-  },
-  'deepseek-v4-flash-free': {
-    name: 'Sonnet 5',
-    description: 'OpenCode Zen → deepseek-v4-flash-free',
-    slug: 'claude-sonnet-5',
   },
   'nemotron-3-ultra-free': {
     name: 'Sonnet 4.7',
@@ -234,11 +235,11 @@ const DISPLAY = {
 
 /** Picker / legacy ids → upstream Zen free (or Cohere) model */
 const LEGACY_SLUGS = {
-  lite: 'big-pickle',
-  fast: 'mimo-v2.5-free',
+  lite: 'deepseek-v4-flash-free',
+  fast: 'deepseek-v4-flash-free',
   mini: 'north-mini-code-free',
   spark: 'laguna-s-2.1-free',
-  max: 'deepseek-v4-flash-free',
+  max: 'big-pickle',
   ultra: 'nemotron-3-ultra-free',
   'big-pickle': 'big-pickle',
   mimo: 'mimo-v2.5-free',
@@ -250,29 +251,32 @@ const LEGACY_SLUGS = {
   nemotron: 'nemotron-3-ultra-free',
   'nemotron-3-ultra-free': 'nemotron-3-ultra-free',
   'north-mini-code-free': 'north-mini-code-free',
-  'opencode-zen-lite': 'big-pickle',
-  'opencode-zen-fast': 'mimo-v2.5-free',
+  'opencode-zen-lite': 'deepseek-v4-flash-free',
+  'opencode-zen-fast': 'deepseek-v4-flash-free',
   'opencode-zen-mini': 'north-mini-code-free',
   'opencode-zen-spark': 'laguna-s-2.1-free',
-  'opencode-zen-max': 'deepseek-v4-flash-free',
+  'opencode-zen-max': 'big-pickle',
   'opencode-zen-ultra': 'nemotron-3-ultra-free',
   // Anthropic-looking picker slugs (current + legacy Free/Opus/Haiku ids)
-  'claude-sonnet-4-8': 'mimo-v2.5-free',
-  'claude-sonnet-4.8': 'mimo-v2.5-free',
+  'claude-sonnet-5': 'mimo-v2.5-free',
+  'claude-sonnet-5-free': 'mimo-v2.5-free',
+  'claude-sonnet-5-max': 'big-pickle',
+  'claude-sonnet-5.max': 'big-pickle',
+  sonnet: 'mimo-v2.5-free',
+  'claude-sonnet-4-8': 'deepseek-v4-flash-free',
+  'claude-sonnet-4.8': 'deepseek-v4-flash-free',
+  // Old "4.8 Max" label still resolves to big-pickle
   'claude-sonnet-4-8-max': 'big-pickle',
   'claude-sonnet-4.8-max': 'big-pickle',
   'claude-sonnet-4-5': 'north-mini-code-free',
   'claude-sonnet-4.5': 'north-mini-code-free',
   'claude-sonnet-4-5-fast': 'laguna-s-2.1-free',
   'claude-sonnet-4.5-fast': 'laguna-s-2.1-free',
-  'claude-sonnet-5': 'deepseek-v4-flash-free',
-  'claude-sonnet-5-free': 'deepseek-v4-flash-free',
-  sonnet: 'deepseek-v4-flash-free',
   'claude-sonnet-4-7': 'nemotron-3-ultra-free',
   'claude-sonnet-4.7': 'nemotron-3-ultra-free',
   // Legacy Opus / Haiku / Free aliases → same upstream
-  'claude-opus-4-8-free': 'mimo-v2.5-free',
-  'claude-opus-4.8-free': 'mimo-v2.5-free',
+  'claude-opus-4-8-free': 'deepseek-v4-flash-free',
+  'claude-opus-4.8-free': 'deepseek-v4-flash-free',
   'claude-opus-4-8': 'big-pickle',
   'claude-opus-4.8': 'big-pickle',
   'claude-haiku-4-5-free': 'north-mini-code-free',

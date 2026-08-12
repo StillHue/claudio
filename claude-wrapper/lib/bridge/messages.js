@@ -14,15 +14,12 @@ const {
   joinChatUrl,
   maxOutputTokensCap,
   mapModel,
+  requestShapeStats,
+  visibleTextAgainstReasoning,
 } = require('./translate')
 const { readOpenAIStream } = require('./stream')
+const { summarizeUpstreamError, criticalLog } = require('../wrapper/log')
 const { randomUUID } = require('crypto')
-const {
-  bodyHasImages,
-  routeImagesInBody,
-  visionEnabled,
-  visionAvailable,
-} = require('../../vision-route')
 
 async function handleMessages(req, res, ctx) {
   const maxBodyBytes = Number(process.env.CLAUDE_NATIVE_MAX_BODY_BYTES || 20 * 1024 * 1024)
@@ -68,50 +65,11 @@ async function handleMessages(req, res, ctx) {
     ctx.log?.(`persist default model skipped: ${err.message}`)
   }
 
-  // Text-only providers (OpenCode/Cohere) reject image_url → describe via Groq first
-  if (bodyHasImages(body)) {
-    if (visionEnabled()) {
-      try {
-        await routeImagesInBody(body, ctx.log)
-      } catch (err) {
-        ctx.log(`vision route failed: ${err.message}`)
-        return json(res, 502, {
-          type: 'error',
-          error: {
-            type: 'api_error',
-            message: `vision routing failed: ${err.message}`,
-          },
-        })
-      }
-    } else if (!visionAvailable()) {
-      ctx.log('images present but CLAUDE_CODE_VISION_API_KEY not set')
-      return json(res, 400, {
-        type: 'error',
-        error: {
-          type: 'invalid_request_error',
-          message:
-            'Images attached but vision routing is off. Set CLAUDE_CODE_VISION_API_KEY so the bridge can describe images for text-only models.',
-        },
-      })
-    } else {
-      // Key present but routing disabled — strip bytes so upstream doesn't 400
-      for (const msg of body.messages || []) {
-        if (!Array.isArray(msg.content)) continue
-        msg.content = msg.content.map((b) =>
-          b && b.type === 'image'
-            ? {
-                type: 'text',
-                text: '[imagem anexada — vision routing desabilitado (CLAUDE_CODE_DISABLE_VISION_ROUTE)]',
-              }
-            : b,
-        )
-      }
-    }
-  }
-
+  // Images pass through as OpenAI image_url (MiMo-V2.5 Free accepts them natively).
   const messages = anthropicToOpenAIMessages(body)
   const tools = anthropicToolsToOpenAI(body.tools)
   const stream = body.stream === true
+  const shape = requestShapeStats(messages, tools)
 
   const chatBody = {
     model: upstreamModel,
@@ -133,8 +91,15 @@ async function handleMessages(req, res, ctx) {
     chatBody.tool_choice = mapToolChoice(body.tool_choice)
   }
 
+  let requestBytes = 0
+  try {
+    requestBytes = Buffer.byteLength(JSON.stringify(chatBody), 'utf8')
+  } catch {
+    /* ignore */
+  }
+
   ctx.log(
-    `POST /v1/messages → ${provider.baseUrl} model=${upstreamModel} msgs=${messages.length} tools=${tools?.length || 0} stream=${stream} max_tokens=${chatBody.max_tokens}`,
+    `POST /v1/messages → ${provider.baseUrl} model=${upstreamModel} msgs=${shape.msgs} tools=${shape.tools} toolMsgs=${shape.toolMsgs} images=${shape.images} stream=${stream} max_tokens=${chatBody.max_tokens} bytes=${requestBytes}`,
   )
 
   const headers = { 'Content-Type': 'application/json' }
@@ -166,10 +131,14 @@ async function handleMessages(req, res, ctx) {
   }
 
   if (!upstream.ok) {
-    // Never leak raw provider error bodies to the client. Log only the status
-    // and the (redacted) body length so operators can still diagnose.
+    // Never leak raw provider bodies to the client. Keep a sanitized snippet
+    // in the local debug log so operators can diagnose validation failures.
     const errText = await upstream.text().catch(() => '')
-    ctx.log(`upstream ${upstream.status} (error body ${errText.length} bytes, redacted)`)
+    const summary = summarizeUpstreamError(errText)
+    criticalLog(
+      `upstream ${upstream.status} model=${upstreamModel} msgs=${shape.msgs} tools=${shape.tools} images=${shape.images} max_tokens=${chatBody.max_tokens} bytes=${requestBytes} detail=${summary}`,
+    )
+    ctx.log?.(`upstream ${upstream.status} detail=${summary}`)
     return json(res, upstream.status, {
       type: 'error',
       error: { type: 'api_error', message: `upstream HTTP ${upstream.status}` },
@@ -184,8 +153,12 @@ async function handleMessages(req, res, ctx) {
     const msg = data.choices?.[0]?.message || {}
     const content = []
     const reasoning = extractReasoning(msg)
-    const text = extractMessageText(msg)
-    // Expose OpenCode reasoning as Anthropic thinking (Claude Code Thoughts UI)
+    const rawText = extractMessageText(msg)
+    const text = visibleTextAgainstReasoning(reasoning, rawText)
+    // Expose OpenCode reasoning as Anthropic thinking (Claude Code Thoughts UI).
+    // When content mirrors reasoning exactly, keep thinking for protocol echo and
+    // still emit one text block so the main transcript is not empty when Thoughts
+    // stay collapsed.
     if (reasoning) content.push({ type: 'thinking', thinking: reasoning })
     if (text) content.push({ type: 'text', text })
     else if (reasoning) content.push({ type: 'text', text: reasoning })
@@ -206,13 +179,23 @@ async function handleMessages(req, res, ctx) {
       }
     }
     const hasTools = (msg.tool_calls || []).length > 0
-    // Dedupe: if we added both thinking and text=reasoning, that's intentional for UI
-    const finalContent = content.length ? content : [{ type: 'text', text: '' }]
+    if (!content.length) {
+      criticalLog(
+        `empty upstream completion model=${upstreamModel} msgs=${shape.msgs} images=${shape.images} finish=${data.choices?.[0]?.finish_reason || ''}`,
+      )
+      return json(res, 502, {
+        type: 'error',
+        error: {
+          type: 'api_error',
+          message: 'upstream returned an empty completion (refusing to poison session history)',
+        },
+      })
+    }
     return json(res, 200, {
       id: messageId,
       type: 'message',
       role: 'assistant',
-      content: finalContent,
+      content,
       model: advertisedModel,
       stop_reason: finishReasonToStop(data.choices?.[0]?.finish_reason, hasTools),
       stop_sequence: null,
@@ -246,6 +229,7 @@ async function handleMessages(req, res, ctx) {
 
   let textStarted = false
   let textIndex = 0
+  let textClosed = false
   let thinkingStarted = false
   let thinkingIndex = 0
   let thinkingClosed = false
@@ -284,6 +268,14 @@ async function handleMessages(req, res, ctx) {
     })
   }
 
+  // Idempotent: Claude Code persists a text snapshot per content_block_stop.
+  // Stopping twice (tool open + stream end) renders the same paragraph twice.
+  const closeTextBlock = () => {
+    if (!textStarted || textClosed) return
+    textClosed = true
+    writeSse(res, 'content_block_stop', { type: 'content_block_stop', index: textIndex })
+  }
+
   try {
     const result = await readOpenAIStream(upstream.body, {
       onReasoning(delta) {
@@ -307,9 +299,7 @@ async function handleMessages(req, res, ctx) {
       },
       onToolDelta(openaiIdx, acc, tc) {
         closeThinkingBlock()
-        if (textStarted && !openedTools.size) {
-          writeSse(res, 'content_block_stop', { type: 'content_block_stop', index: textIndex })
-        }
+        if (!openedTools.size) closeTextBlock()
         if (!openedTools.has(openaiIdx)) {
           const idx = nextIndex++
           toolBlockIndex.set(openaiIdx, idx)
@@ -352,20 +342,24 @@ async function handleMessages(req, res, ctx) {
       })
     }
 
-    if (textStarted) {
-      writeSse(res, 'content_block_stop', { type: 'content_block_stop', index: textIndex })
-    }
-    for (const [, idx] of [...toolBlockIndex.entries()].sort((a, b) => a[1] - b[1])) {
-      writeSse(res, 'content_block_stop', { type: 'content_block_stop', index: idx })
+    // Never emit a blank assistant turn into Claude history (becomes content:null → MiMo 400).
+    if (!textStarted && !thinkingStarted && openedTools.size === 0) {
+      criticalLog(
+        `empty upstream stream model=${upstreamModel} msgs=${shape.msgs} images=${shape.images}`,
+      )
+      const notice =
+        '[upstream returned no content — retry the turn; empty replies are not stored as blank assistants]'
+      ensureTextBlock()
+      writeSse(res, 'content_block_delta', {
+        type: 'content_block_delta',
+        index: textIndex,
+        delta: { type: 'text_delta', text: notice },
+      })
     }
 
-    if (!textStarted && !thinkingStarted && openedTools.size === 0) {
-      writeSse(res, 'content_block_start', {
-        type: 'content_block_start',
-        index: 0,
-        content_block: { type: 'text', text: '' },
-      })
-      writeSse(res, 'content_block_stop', { type: 'content_block_stop', index: 0 })
+    closeTextBlock()
+    for (const [, idx] of [...toolBlockIndex.entries()].sort((a, b) => a[1] - b[1])) {
+      writeSse(res, 'content_block_stop', { type: 'content_block_stop', index: idx })
     }
 
     if (openedTools.size > 0) finishReason = 'tool_use'

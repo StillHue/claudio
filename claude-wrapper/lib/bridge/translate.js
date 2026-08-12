@@ -40,6 +40,51 @@ function contentBlockToText(block) {
   return ''
 }
 
+function imagePartFromSource(source) {
+  if (!source || source.type !== 'base64' || !source.data) return null
+  return {
+    type: 'image_url',
+    image_url: {
+      url: `data:${source.media_type || 'image/png'};base64,${source.data}`,
+    },
+  }
+}
+
+/** Flatten tool_result content: string for role=tool + optional image parts for a follow-up user msg. */
+function flattenToolResultContent(content) {
+  const images = []
+  if (typeof content === 'string') {
+    return { text: content, images }
+  }
+  if (!Array.isArray(content)) {
+    return { text: JSON.stringify(content ?? ''), images }
+  }
+  const texts = []
+  for (const c of content) {
+    if (!c) continue
+    if (typeof c === 'string') {
+      texts.push(c)
+      continue
+    }
+    if (c.type === 'text' && c.text) {
+      texts.push(c.text)
+      continue
+    }
+    if (c.type === 'image') {
+      const part = imagePartFromSource(c.source)
+      if (part) {
+        images.push(part)
+        texts.push('[image from tool — see following user message]')
+      } else {
+        texts.push('[image omitted: non-base64 source]')
+      }
+      continue
+    }
+    texts.push(typeof c.text === 'string' ? c.text : JSON.stringify(c))
+  }
+  return { text: texts.join('\n'), images }
+}
+
 /** Anthropic messages → OpenAI chat messages (incl. tool_use / tool_result). */
 function anthropicToOpenAIMessages(body) {
   const out = []
@@ -52,20 +97,26 @@ function anthropicToOpenAIMessages(body) {
     const content = msg.content
 
     if (typeof content === 'string') {
+      // Preserve empty string (not null) so history never becomes invalid for MiMo.
+      if (role === 'assistant' && !content) continue
       out.push({ role, content })
       continue
     }
     if (!Array.isArray(content)) {
-      out.push({ role, content: String(content ?? '') })
+      const text = String(content ?? '')
+      if (role === 'assistant' && !text) continue
+      out.push({ role, content: text })
       continue
     }
 
     if (role === 'assistant') {
       const textParts = []
+      const thinkingParts = []
       const toolCalls = []
       for (const block of content) {
         if (!block) continue
         if (block.type === 'text' && block.text) textParts.push(block.text)
+        if (block.type === 'thinking' && block.thinking) thinkingParts.push(block.thinking)
         if (block.type === 'tool_use') {
           toolCalls.push({
             id: block.id || `toolu_${randomUUID().slice(0, 8)}`,
@@ -80,7 +131,16 @@ function anthropicToOpenAIMessages(body) {
           })
         }
       }
-      const assistant = { role: 'assistant', content: textParts.join('\n') || null }
+      const text = textParts.join('\n')
+      const reasoning = thinkingParts.join('\n')
+      if (!text && !reasoning && !toolCalls.length) continue
+
+      // content:null is only valid when tool_calls are present.
+      const assistant = {
+        role: 'assistant',
+        content: text || (toolCalls.length ? null : ''),
+      }
+      if (reasoning) assistant.reasoning_content = reasoning
       if (toolCalls.length) assistant.tool_calls = toolCalls
       out.push(assistant)
       continue
@@ -89,17 +149,27 @@ function anthropicToOpenAIMessages(body) {
     // user — may mix text + tool_result (+ images)
     const toolResults = content.filter((b) => b && b.type === 'tool_result')
     const other = content.filter((b) => b && b.type !== 'tool_result')
+    const pendingImages = []
 
     for (const tr of toolResults) {
+      const toolCallId = tr.tool_use_id || tr.id || ''
+      if (!toolCallId) continue
+      const flat = flattenToolResultContent(tr.content)
+      for (const img of flat.images) pendingImages.push(img)
       out.push({
         role: 'tool',
-        tool_call_id: tr.tool_use_id || tr.id || '',
-        content:
-          typeof tr.content === 'string'
-            ? tr.content
-            : Array.isArray(tr.content)
-              ? tr.content.map((c) => (typeof c === 'string' ? c : c?.text || JSON.stringify(c))).join('\n')
-              : JSON.stringify(tr.content ?? ''),
+        tool_call_id: toolCallId,
+        content: flat.text || '[empty tool result]',
+      })
+    }
+
+    if (pendingImages.length) {
+      out.push({
+        role: 'user',
+        content: [
+          { type: 'text', text: 'Images returned by tools:' },
+          ...pendingImages,
+        ],
       })
     }
 
@@ -188,6 +258,11 @@ function mapModel(requested, provider) {
   return requested || 'deepseek-v4-flash-free'
 }
 
+/** Models whose OpenAI-compatible endpoint accepts image_url content directly. */
+function supportsDirectVision(upstreamModel) {
+  return String(upstreamModel || '').toLowerCase() === 'mimo-v2.5-free'
+}
+
 function extractReasoning(msgOrDelta) {
   if (!msgOrDelta || typeof msgOrDelta !== 'object') return ''
   if (typeof msgOrDelta.reasoning === 'string' && msgOrDelta.reasoning) return msgOrDelta.reasoning
@@ -216,10 +291,47 @@ function extractMessageText(msg) {
   return ''
 }
 
+/**
+ * Prefer a single visible paragraph when the model mirrors reasoning into content
+ * or prefixes the answer with the full reasoning string.
+ */
+function visibleTextAgainstReasoning(reasoning, text) {
+  const r = String(reasoning || '')
+  const t = String(text || '')
+  if (!t) return ''
+  if (!r) return t
+  if (t === r) return t
+  if (t.startsWith(r)) {
+    const rest = t.slice(r.length).replace(/^\s+/, '')
+    return rest || t
+  }
+  return t
+}
+
 function finishReasonToStop(reason, hasTools) {
   if (hasTools || reason === 'tool_calls') return 'tool_use'
   if (reason === 'length') return 'max_tokens'
   return 'end_turn'
+}
+
+/** Count image_url parts + rough JSON size for request diagnostics. */
+function requestShapeStats(messages, tools) {
+  let images = 0
+  let toolMsgs = 0
+  for (const m of messages || []) {
+    if (m?.role === 'tool') toolMsgs += 1
+    if (Array.isArray(m?.content)) {
+      for (const p of m.content) {
+        if (p?.type === 'image_url') images += 1
+      }
+    }
+  }
+  return {
+    msgs: (messages || []).length,
+    tools: tools?.length || 0,
+    toolMsgs,
+    images,
+  }
 }
 
 module.exports = {
@@ -230,8 +342,12 @@ module.exports = {
   mapToolChoice,
   extractReasoning,
   extractMessageText,
+  visibleTextAgainstReasoning,
   finishReasonToStop,
   joinChatUrl,
   maxOutputTokensCap,
   mapModel,
+  supportsDirectVision,
+  requestShapeStats,
+  flattenToolResultContent,
 }

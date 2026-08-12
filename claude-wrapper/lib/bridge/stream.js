@@ -2,9 +2,43 @@
  * OpenAI Chat Completions SSE reader.
  * Normalizes cumulative vs incremental content streams and accumulates
  * tool_call deltas.
+ *
+ * IMPORTANT: never dedupe short token deltas (e.g. "o", "e", "**").
+ * A recentChunks Set used to drop repeated 1–2 char pieces and produced
+ * "letra comida" + unmatched `**` in the Claude Code UI.
  */
 const { randomUUID } = require('crypto')
 const { extractReasoning } = require('./translate')
+
+/**
+ * Emit only the new suffix when upstream sends cumulative text.
+ * Also suppresses full-chunk resends that would concatenate into HelloHello.
+ */
+function takeDelta(prev, next) {
+  if (!next) return { text: prev || '', emit: '' }
+  if (!prev) return { text: next, emit: next }
+  if (next === prev) return { text: prev, emit: '' }
+  if (next.length > prev.length && next.startsWith(prev)) {
+    return { text: next, emit: next.slice(prev.length) }
+  }
+  // Upstream resent a shorter prefix of what we already have.
+  if (prev.length >= next.length && prev.startsWith(next)) {
+    return { text: prev, emit: '' }
+  }
+  // Full paragraph resent as a "new" incremental chunk (gateway quirk).
+  if (next.length >= 40 && prev.endsWith(next)) {
+    return { text: prev, emit: '' }
+  }
+  // Shared-prefix rewrite: replace instead of blind append when enough overlap.
+  let i = 0
+  const max = Math.min(prev.length, next.length)
+  while (i < max && prev[i] === next[i]) i++
+  if (i >= 24) {
+    return { text: next, emit: next.slice(i) }
+  }
+  // Incremental (or non-prefix revision): append as-is.
+  return { text: prev + next, emit: next }
+}
 
 async function readOpenAIStream(body, handlers) {
   const reader = body.getReader()
@@ -12,9 +46,6 @@ async function readOpenAIStream(body, handlers) {
   let buf = ''
   let fullText = ''
   let fullReasoning = ''
-  let streamMode = null
-  const recentChunks = new Set()
-  const MAX_RECENT_CHUNKS = 10
   /** @type {Map<number, { id: string, name: string, arguments: string }>} */
   const toolAcc = new Map()
 
@@ -38,55 +69,17 @@ async function readOpenAIStream(body, handlers) {
       const choice = jsonChunk.choices?.[0]
       if (!choice) continue
       const delta = choice.delta || {}
+
       if (delta.content) {
-        const chunk = delta.content
-        if (!fullText) {
-          fullText = chunk
-          handlers.onText?.(chunk)
-        } else if (streamMode === 'cumulative') {
-          if (chunk.length > fullText.length && chunk.startsWith(fullText)) {
-            const inc = chunk.slice(fullText.length)
-            fullText = chunk
-            if (inc) handlers.onText?.(inc)
-          } else {
-            streamMode = 'incremental'
-            fullText += chunk
-            handlers.onText?.(chunk)
-          }
-        } else if (streamMode === 'incremental') {
-          // Normalize whitespace for comparison to catch duplicated chunks
-          const normalizedChunk = chunk.replace(/\s+/g, ' ').trim()
-          if (!recentChunks.has(normalizedChunk)) {
-            recentChunks.add(normalizedChunk)
-            if (recentChunks.size > MAX_RECENT_CHUNKS) {
-              const first = recentChunks.values().next().value
-              recentChunks.delete(first)
-            }
-            // Incremental: each chunk is a new delta — accumulate, never replace.
-            fullText += chunk
-            handlers.onText?.(chunk)
-          }
-        } else {
-          const looksCumulative =
-            chunk.length > fullText.length &&
-            chunk.startsWith(fullText) &&
-            chunk.length >= fullText.length * 2
-          if (looksCumulative) {
-            streamMode = 'cumulative'
-            const inc = chunk.slice(fullText.length)
-            fullText = chunk
-            if (inc) handlers.onText?.(inc)
-          } else {
-            streamMode = 'incremental'
-            fullText += chunk
-            handlers.onText?.(chunk)
-          }
-        }
+        const { text, emit } = takeDelta(fullText, delta.content)
+        fullText = text
+        if (emit) handlers.onText?.(emit)
       }
       const reasoningDelta = extractReasoning(delta)
       if (reasoningDelta) {
-        fullReasoning += reasoningDelta
-        handlers.onReasoning?.(reasoningDelta)
+        const { text, emit } = takeDelta(fullReasoning, reasoningDelta)
+        fullReasoning = text
+        if (emit) handlers.onReasoning?.(emit)
       }
       if (Array.isArray(delta.tool_calls)) {
         for (const tc of delta.tool_calls) {
@@ -117,4 +110,4 @@ async function readOpenAIStream(body, handlers) {
   }
 }
 
-module.exports = { readOpenAIStream }
+module.exports = { readOpenAIStream, takeDelta }

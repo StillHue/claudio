@@ -81,6 +81,29 @@ Write-Host "Providers: ~/.claude-native/providers.json with API key enables the 
 Write-Host "Provider UI: /provider in Claude (or node .\provider-ui.js)"
 Write-Host "Legacy Ink fork: set CLAUDE_WRAPPER_MODE=claudio"
 
+# Official Claude native installer drops claude.exe in ~/.local/bin, which
+# shadows npm shims (PATHEXT prefers .exe over .cmd) and bypasses the wrapper → login wall.
+$localBin = Join-Path $env:USERPROFILE '.local\bin'
+if (Test-Path $localBin) {
+  $localExe = Join-Path $localBin 'claude.exe'
+  if (Test-Path $localExe) {
+    $bak = Join-Path $localBin ("claude.exe.official-backup-" + (Get-Date -Format 'yyyyMMdd-HHmmss'))
+    Move-Item -LiteralPath $localExe -Destination $bak -Force
+    Write-Host "moved $localExe -> $bak (was shadowing wrapper)"
+  }
+  $localCmd = Join-Path $localBin 'claude.cmd'
+  Set-Content -Path $localCmd -Value $cmdText -Encoding ASCII
+  Write-Host "installed $localCmd"
+  foreach ($name in @('claude.ps1')) {
+    $ps1 = Join-Path $localBin $name
+    if (Test-Path $ps1) {
+      Copy-Item $ps1 "$ps1.bak-claudio-fork" -Force
+      Remove-Item $ps1 -Force
+      Write-Host "removed $ps1 (was shadowing .cmd)"
+    }
+  }
+}
+
 $installProvider = Join-Path $here 'install-provider-command.js'
 if ((Test-Path $installProvider) -and (Get-Command node -ErrorAction SilentlyContinue)) {
   node $installProvider

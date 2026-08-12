@@ -59,10 +59,8 @@ function syncClaudeAvailableModels(providersData) {
   // Constrain Default: without this, Claude Code keeps showing
   // "Default (recommended) · Opus …" even when settings.model is a gateway id.
   settings.enforceAvailableModels = true
-  // Only update model if not already set or if it's not in the available list
-  if (!settings.model || !ids.includes(settings.model)) {
-    settings.model = defaultId
-  }
+  // Always align with providers.json active default (set-default-model / wrapper sync).
+  settings.model = defaultId
 
   // Strip leftovers that force OpenAI chat routing and bypass our
   // Anthropic Messages bridge (ANTHROPIC_BASE_URL). Keep COHERE_API_KEY etc.
@@ -128,14 +126,13 @@ function syncCursorClaudeModel(defaultId) {
  * Call from CLI / wrapper spawn only — never from mid-stream.
  */
 function syncDefaultModel(providersData) {
-  const claude = syncClaudeAvailableModels(providersData)
   const active = providersData.active || 'opencode'
   const activeProvider = providersData.providers?.[active]
-  const defaultId =
-    claude.model ||
-    (activeProvider
-      ? modelId(active, activeProvider.model || (activeProvider.models || [])[0])
-      : null)
+  const fromProviders = activeProvider
+    ? modelId(active, activeProvider.model || (activeProvider.models || [])[0])
+    : null
+  const claude = syncClaudeAvailableModels(providersData)
+  const defaultId = fromProviders || claude.model
   const cursor = syncCursorClaudeModel(defaultId)
   return {
     model: defaultId,

@@ -240,10 +240,10 @@ function syncOpencodeModelsIntoProviders(catalog, providersPath) {
   const free = oc.models.filter((m) => m.free).map((m) => m.id)
   const live = oc.models.filter((m) => m.live).map((m) => m.id)
   const all = oc.models.map((m) => m.id)
-  const nextModels = freeLive.length
-    ? freeLive
-    : free.length
-      ? free
+  const nextModels = free.length
+    ? free
+    : freeLive.length
+      ? freeLive
       : live.length
         ? live
         : all

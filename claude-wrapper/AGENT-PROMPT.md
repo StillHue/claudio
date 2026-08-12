@@ -104,19 +104,11 @@ Create/update with the user’s providers. Example shape:
 - Put the user’s preferred default first in `models[]` and in `providers.<active>.model`.
 - Prefer `apiKeyEnv` + user env when possible.
 
-### 3) Vision (images) — `~/.claude-native/.env`
+### 3) Images — MiMo direct vision
 
-If the user has a Mistral key:
+**MiMo-V2.5 Free** accepts images directly (Anthropic `image` → OpenAI `image_url`). No external vision API / `CLAUDE_CODE_VISION_*` env is needed.
 
-```bash
-CLAUDE_CODE_VISION_API_KEY=...
-MISTRAL_API_KEY=...
-CLAUDE_CODE_VISION_BASE_URL=https://api.mistral.ai/v1
-CLAUDE_CODE_VISION_MODEL=mistral-small-latest
-CLAUDE_CODE_VISION_ROUTE=1
-```
-
-Without Mistral, say clearly that pasting images will fail on text-only models.
+Text-only upstream models will reject images; keep the catalog on MiMo for vision use.
 
 ### 4) Cursor User Settings JSON
 
@@ -126,7 +118,7 @@ Set (merge, don’t wipe unrelated settings):
 |-----|--------|
 | `claudeCode.claudeProcessWrapper` | Absolute path to the `.exe` from step 1 |
 | `claudeCode.skipApiCheck` | `true` |
-| `claudeCode.model` | e.g. `anthropic.big-pickle` |
+| `claudeCode.model` | e.g. `anthropic.opencode.claude-sonnet-5` |
 
 ### 5) Sync Claude settings
 
@@ -140,7 +132,7 @@ Strip any leftover `env.CLAUDE_CODE_USE_OPENAI` / `OPENAI_*` routing keys if pre
 2. Open the **Claude Code** panel
 3. Confirm picker lists `anthropic.*` ids from the catalog
 4. Smoke text: short prompt → non-empty reply
-5. Optional smoke image if Mistral vision is configured
+5. Optional smoke image with MiMo (direct vision)
 6. If debug needed: `CLAUDE_WRAPPER_DEBUG=1` and check `~/claude-native-debug.log` for `POST /v1/messages`
 
 ### 7) Report back
@@ -150,7 +142,7 @@ Give the user a short summary:
 - Wrapper path
 - Default model id
 - Providers enabled
-- Vision on/off
+- Vision: MiMo direct (no external router)
 - What to click (Reload → Claude Code → send “hi”)
 
 ## Troubleshooting (fix, don’t just list)
@@ -160,7 +152,7 @@ Give the user a short summary:
 | Still hits Anthropic / login wall | Fix `claudeProcessWrapper` → `.exe`, Reload |
 | `EINVAL` on Windows | Wrong path to `.cmd` — use compiled `.exe` |
 | Empty / hung replies | Check log; raise isn’t needed (bridge floors `max_tokens`); try another model |
-| Images → 400 | Configure Mistral vision `.env` (step 3) |
+| Images → 400 | Confirm active model is `mimo-v2.5-free` |
 | OpenCode 500 on `big-pickle` | Provider/upstream flake (often internal); retry or switch model — not a local misconfig if `/chat/completions` is `opencode.ai/zen/v1` |
 | `invalid bridge token` + `/login` warning | `/logout` or rebuild wrapper (quarantines `.credentials.json` while bridged); shared `~/.claude-native/bridge.token` |
 | Need provider/model catalog | `node sync-catalog.js sync` then `list --bridge` / `list --models opencode` |

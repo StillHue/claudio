@@ -30,7 +30,7 @@ const {
 } = require('./resolve-official-claude')
 const { debugLog } = require('./lib/wrapper/log')
 const {
-  loadVisionEnvFiles,
+  loadNativeEnvFiles,
   wrapperBaseDir,
   getSharedBridgeToken,
 } = require('./lib/wrapper/env')
@@ -193,7 +193,7 @@ function attachChild(child) {
 }
 
 async function runNative(rawArgs) {
-  loadVisionEnvFiles()
+  loadNativeEnvFiles()
   const fromExt = parseOfficialLaunch(rawArgs)
   const offeredPath =
     fromExt && !isNodeBinary(fromExt.command) ? fromExt.command : fromExt?.args?.[0]
@@ -244,9 +244,12 @@ async function runNative(rawArgs) {
   }
 
   const providersCfg = loadProvidersConfig()
-  const isEphemeral =
-    userArgs.includes('auth') ||
+  const isVersion =
     userArgs.some((a) => a === '--version' || a === '-v' || a === 'version')
+  // auth status must still get bridge tokens — Cursor --enable-auth-status
+  // otherwise reports "Not logged in" and the TUI blocks prompts.
+  const isAuth = userArgs.includes('auth')
+  const skipSettingsSync = isVersion || isAuth
 
   let provider = null
   try {
@@ -254,13 +257,13 @@ async function runNative(rawArgs) {
   } catch {
     provider = null
   }
-  // --version / auth: never start bridge (fast, no settings rewrite)
-  const useBridge = !isEphemeral && !!(provider && provider.apiKey)
+  // --version only: skip bridge (fast). auth + normal: bridge when key exists.
+  const useBridge = !isVersion && !!(provider && provider.apiKey)
 
   let bridge = null
   let synced = { path: null, ids: [], changed: false }
   if (useBridge) {
-    if (!isEphemeral) {
+    if (!skipSettingsSync) {
       synced = syncDefaultModel(providersCfg.data)
       if (synced.changed) {
         debugLog(
@@ -277,7 +280,8 @@ async function runNative(rawArgs) {
       getProvidersPath: () => providersCfg.path,
     })
     debugLog(
-      `native mode — provider=${provider.name} model=${provider.model} bridge=${bridge.url} binary=${command}`,
+      `native mode — provider=${provider.name} model=${provider.model} bridge=${bridge.url} binary=${command}` +
+        (isAuth ? ' (auth)' : ''),
     )
   } else {
     debugLog(`native mode — passthrough (no provider API key) binary=${command}`)
@@ -298,6 +302,11 @@ async function runNative(rawArgs) {
     // presents a matching x-api-key and/or Bearer to the local bridge.
     env.ANTHROPIC_API_KEY = bridgeToken
     env.ANTHROPIC_AUTH_TOKEN = bridgeToken
+    // Custom picker slugs (anthropic.opencode.*) are not in Claude's built-in
+    // window table — avoid the "not a model this version recognizes" soft-fail.
+    if (!env.CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT) {
+      env.CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT = '1'
+    }
     // Default open on loopback: Claude often presents /login OAuth instead of
     // our token → 401 and every slash (including /provider) looks "dead".
     // Opt into strict shared-token auth with CLAUDE_NATIVE_BRIDGE_STRICT=1
@@ -311,6 +320,8 @@ async function runNative(rawArgs) {
     delete env.OPENAI_BASE_URL
     delete env.OPENAI_API_BASE
     delete env.OPENAI_MODEL
+    delete env.OPENAI_HOST
+    delete env.OPENAI_API_KEY
     delete env.CLAUDE_CODE_USE_OPENAI
     delete env.CLAUDE_CODE_USE_BEDROCK
     delete env.CLAUDE_CODE_USE_VERTEX

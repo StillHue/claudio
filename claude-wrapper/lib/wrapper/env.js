@@ -6,33 +6,19 @@ const path = require('path')
 const os = require('os')
 const { randomUUID } = require('crypto')
 
-const VISION_ENV_KEYS = [
-  'CLAUDE_CODE_VISION_API_KEY',
-  'MANIAC_VISION_API_KEY',
-  'MISTRAL_API_KEY',
-  'COHERE_API_KEY',
-  'CLAUDE_CODE_VISION_BASE_URL',
-  'MANIAC_VISION_BASE_URL',
-  'CLAUDE_CODE_VISION_MODEL',
-  'MANIAC_VISION_MODEL',
-  'CLAUDE_CODE_VISION_ROUTE',
-  'CLAUDE_CODE_DISABLE_VISION_ROUTE',
-]
-
-/** Load vision keys from .env — ~/.claude-native/.env wins over inherited process.env. */
-function loadVisionEnvFiles() {
+/**
+ * Load ~/.claude-native/.env (and optional fallbacks) into process.env.
+ * Does not overwrite keys already set in the process environment.
+ */
+function loadNativeEnvFiles() {
   const candidates = [
     path.join(os.homedir(), '.claude-native', '.env'),
     path.join(os.homedir(), '.openclaude', '.env'),
-    path.join(os.homedir(), 'maniac-agent', '.env'),
-    path.join('C:', 'Users', os.userInfo().username, 'maniac-agent', '.env'),
   ]
   let loaded = 0
-  const primaryKeys = new Set()
   for (const file of candidates) {
     try {
       if (!fs.existsSync(file)) continue
-      const isPrimary = file === candidates[0]
       const text = fs.readFileSync(file, 'utf8')
       for (const line of text.split(/\r?\n/)) {
         const t = line.trim()
@@ -40,8 +26,8 @@ function loadVisionEnvFiles() {
         const i = t.indexOf('=')
         if (i < 0) continue
         const key = t.slice(0, i).trim()
-        if (!VISION_ENV_KEYS.includes(key)) continue
-        if (!isPrimary && (process.env[key] || primaryKeys.has(key))) continue
+        if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) continue
+        if (process.env[key]) continue
         let val = t.slice(i + 1).trim()
         if (
           (val.startsWith('"') && val.endsWith('"')) ||
@@ -51,7 +37,6 @@ function loadVisionEnvFiles() {
         }
         process.env[key] = val
         loaded += 1
-        if (isPrimary) primaryKeys.add(key)
       }
     } catch {
       /* ignore */
@@ -98,8 +83,7 @@ function getSharedBridgeToken() {
 }
 
 module.exports = {
-  VISION_ENV_KEYS,
-  loadVisionEnvFiles,
+  loadNativeEnvFiles,
   wrapperBaseDir,
   getSharedBridgeToken,
 }

@@ -43,7 +43,7 @@ const {
 } = require('./resolve-official-claude')
 const { debugLog } = require('./lib/wrapper/log')
 const {
-  loadVisionEnvFiles,
+  loadNativeEnvFiles,
   wrapperBaseDir,
   getSharedBridgeToken,
 } = require('./lib/wrapper/env')

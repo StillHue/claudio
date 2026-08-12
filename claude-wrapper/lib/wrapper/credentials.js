@@ -21,6 +21,21 @@ const CLAUDE_CREDENTIALS_BAK_LEGACY = path.join(
 )
 const CRED_QUARANTINE_REF = path.join(os.homedir(), '.claude-native', 'credentials-quarantine.ref')
 
+/** Reset a leaked ref counter from crashed wrapper processes. */
+function resetStuckQuarantineRef() {
+  try {
+    if (!fs.existsSync(CRED_QUARANTINE_REF)) return
+    const n = parseInt(fs.readFileSync(CRED_QUARANTINE_REF, 'utf8').trim(), 10) || 0
+    // Healthy overlap is 1–3 (auth sibling + main). Dozens = leak.
+    if (n > 8) {
+      fs.writeFileSync(CRED_QUARANTINE_REF, '0', { mode: 0o600 })
+      debugLog(`reset stuck credentials quarantine ref (${n} → 0)`)
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 function quarantineClaudeLoginCredentials() {
   const dir = path.join(os.homedir(), '.claude-native')
   try {
@@ -28,6 +43,7 @@ function quarantineClaudeLoginCredentials() {
   } catch {
     /* ignore */
   }
+  resetStuckQuarantineRef()
   try {
     if (fs.existsSync(CLAUDE_CREDENTIALS_BAK_LEGACY)) {
       if (!fs.existsSync(CLAUDE_CREDENTIALS_BAK)) {
