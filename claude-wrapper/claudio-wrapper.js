@@ -170,6 +170,19 @@ async function runNative(rawArgs) {
       `native mode — provider=${provider.name} model=${provider.model} bridge=${bridge.url} binary=${command}` +
         (isAuth ? ' (auth)' : ''),
     )
+  } else if (!isVersion && !isAuth) {
+    // First-run: no provider/apiKey → show Third party providers instead of passthrough
+    debugLog(`native mode — no provider API key, showing Third party providers`)
+    try {
+      const { showThirdPartyProviders } = require('./lib/provider/third-party-ui')
+      const ok = await showThirdPartyProviders()
+      process.exit(ok ? 0 : 1)
+    } catch (err) {
+      console.error('[claude-wrapper] No provider configured.')
+      console.error('  Providers: OpenCode Zen (OPENCODE_API_KEY), Nvidia (NVIDIA_API_KEY), or OpenAI Compatible (OPENAI_API_KEY)')
+      console.error('  Set the API key in claude-wrapper/.env or run: node lib/provider/third-party-ui.js')
+      process.exit(1)
+    }
   } else {
     debugLog(`native mode — passthrough (no provider API key) binary=${command}`)
   }
