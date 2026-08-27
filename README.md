@@ -30,14 +30,14 @@ Coding agent CLI — any LLM. Terminal or Cursor.
 
 ### Cursor + official Claude Code (recommended)
 
-One-click on Windows (builds the native bridge, wires Cursor, opens provider UI):
+One-click on Windows (builds the native bridge, wires Cursor, shows Third party providers on first run):
 
 ```powershell
 cd claude-wrapper
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
-Details: [claude-wrapper/SETUP-GUIDE.md](./claude-wrapper/SETUP-GUIDE.md).
+First run with no provider shows a Third party providers screen (OpenCode Zen · Nvidia · OpenAI Compatible) — pick one, paste the API key, and `providers.json` + `.env` are written automatically. Details: [claude-wrapper/ARCHITECTURE.md](./claude-wrapper/ARCHITECTURE.md).
 
 ### Global CLI (Ink fork)
 
@@ -106,12 +106,13 @@ claudio
 ## Features
 
 - **Multi-provider**: OpenAI, Anthropic, Gemini, Ollama, OpenRouter, Groq, DeepSeek, OpenCode Zen/Go, and more
+- **Dual API support**: OpenAI Chat Completions (`/chat/completions`) and Responses (`/responses`) — muse-spark and future providers work via the same bridge
 - **Tool-driven workflows**: Bash, file read/write/edit, grep, glob, agents, tasks, MCP, web search
-- **Streaming responses**: Real-time token output
+- **Streaming responses**: Real-time token output (including reasoning `Thinking` blocks via `reasoning.summary`)
 - **Vision routing**: Images described via Groq for text-only models, so you can paste images with any provider
 - **Background sessions**: Run long tasks detached (`claudio --bg "fix failing tests"`)
 - **Resume/fork conversations**: `claudio --resume <id>` or `claudio --continue`
-- **Cursor + official Claude Code**: Thin process wrapper keeps Anthropic’s harness; only inference is redirected (OpenCode Zen, Cohere, …). See [claude-wrapper/SETUP-GUIDE.md](./claude-wrapper/SETUP-GUIDE.md)
+- **Cursor + official Claude Code**: Thin process wrapper keeps Anthropic’s harness; only inference is redirected (OpenCode Zen · Muse Spark/Laguna/Hy3, Nvidia · Nano/Lightning, …). See [claude-wrapper/ARCHITECTURE.md](./claude-wrapper/ARCHITECTURE.md)
 - **VS Code extension**: Launch integration, provider-aware Control Center, in-editor chat
 
 ## Supported Providers
@@ -119,8 +120,9 @@ claudio
 | Provider | Setup | Notes |
 | --- | --- | --- |
 | OpenAI-compatible | `/provider` or env vars | OpenAI, OpenRouter, DeepSeek, Groq, Mistral, LM Studio, etc. |
-| OpenCode Zen | `/provider` or env vars | 48 models, pay-as-you-go, `OPENCODE_API_KEY` |
+| OpenCode Zen | `Third party providers` screen or `/provider` or env vars | 48 models, pay-as-you-go, `OPENCODE_API_KEY` — free tier: `muse-spark` (responses), `laguna`, `hy3` |
 | OpenCode Go | `/provider` or env vars | $10/mo subscription, 13 open models |
+| Nvidia | `Third party providers` or env vars | `NVIDIA_API_KEY` — `nemotron-3-nano` / `nemotron-3.5-lightning` |
 | Gemini | `/provider` or env vars | API key only |
 | GitHub Models | `/onboard-github` | Interactive onboarding |
 | Codex OAuth | `/provider` | Browser sign-in, stored credentials |
@@ -131,7 +133,9 @@ claudio
 | Cloudflare Workers AI | `/provider` or env vars | `CLOUDFLARE_API_TOKEN` |
 | Bedrock / Vertex / Foundry | env vars | Anthropic-family cloud routes |
 
-Full details in [cli/README.md](./cli/README.md).
+`claude-wrapper` also supports **Third party providers** on first run (no `providers.json`): pick OpenCode Zen / Nvidia / OpenAI Compatible, paste the API key, and the wrapper writes `providers.json` + `.env` automatically.
+
+Full details in [cli/README.md](./cli/README.md) and [claude-wrapper/ARCHITECTURE.md](./claude-wrapper/ARCHITECTURE.md).
 
 ## From Source
 
@@ -147,10 +151,10 @@ Requires Bun >= 1.3.13 for source builds.
 
 Recommended path: keep the **official Claude Code** extension and point
 `claudeCode.claudeProcessWrapper` at the native wrapper. Inference goes to
-OpenCode Zen / Cohere / etc.; tools, permissions, and Thoughts UI stay native.
+OpenCode Zen / Nvidia / etc.; tools, permissions, and Thoughts UI (including `muse-spark` reasoning via `summary:auto`) stay native.
 
-Full agent/human setup: **[claude-wrapper/SETUP-GUIDE.md](./claude-wrapper/SETUP-GUIDE.md)**.  
-**Paste-into-Cursor prompt:** **[claude-wrapper/AGENT-PROMPT.md](./claude-wrapper/AGENT-PROMPT.md)**.
+Setup: **[claude-wrapper/ARCHITECTURE.md](./claude-wrapper/ARCHITECTURE.md)**.  
+First run without a provider shows the **Third party providers** picker — select OpenCode Zen / Nvidia / OpenAI Compatible and paste the API key.
 
 Legacy: `CLAUDE_WRAPPER_MODE=claudio` still swaps in the Claudio CLI instead of
 `claude.exe` — prefer native mode.
