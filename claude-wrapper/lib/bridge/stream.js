@@ -9,36 +9,7 @@
  */
 const { randomUUID } = require('crypto')
 const { extractReasoning } = require('./translate')
-
-/**
- * Emit only the new suffix when upstream sends cumulative text.
- * Also suppresses full-chunk resends that would concatenate into HelloHello.
- */
-function takeDelta(prev, next) {
-  if (!next) return { text: prev || '', emit: '' }
-  if (!prev) return { text: next, emit: next }
-  if (next === prev) return { text: prev, emit: '' }
-  if (next.length > prev.length && next.startsWith(prev)) {
-    return { text: next, emit: next.slice(prev.length) }
-  }
-  // Upstream resent a shorter prefix of what we already have.
-  if (prev.length >= next.length && prev.startsWith(next)) {
-    return { text: prev, emit: '' }
-  }
-  // Full paragraph resent as a "new" incremental chunk (gateway quirk).
-  if (next.length >= 40 && prev.endsWith(next)) {
-    return { text: prev, emit: '' }
-  }
-  // Shared-prefix rewrite: replace instead of blind append when enough overlap.
-  let i = 0
-  const max = Math.min(prev.length, next.length)
-  while (i < max && prev[i] === next[i]) i++
-  if (i >= 24) {
-    return { text: next, emit: next.slice(i) }
-  }
-  // Incremental (or non-prefix revision): append as-is.
-  return { text: prev + next, emit: next }
-}
+const { takeDelta } = require('./delta')
 
 async function readOpenAIStream(body, handlers) {
   const reader = body.getReader()

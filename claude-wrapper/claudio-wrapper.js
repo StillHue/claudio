@@ -1,22 +1,14 @@
 #!/usr/bin/env node
 /**
- * Process wrapper for the official Claude Code VS Code / Cursor extension.
+ * Process wrapper for official Claude Code (CLI / Cursor / VS Code).
  *
- * Modes (CLAUDE_WRAPPER_MODE):
- *   native  — keep official Claude Code harness; only swap inference via local
- *             Anthropic Messages → Chat Completions bridge (default when the
- *             extension passes its bundled claude.exe / cli.js).
- *   claudio — replace Claude Code with the Claudio CLI (legacy).
+ * Keeps Anthropic's harness; swaps inference via a local
+ * Anthropic Messages → OpenAI Chat Completions bridge.
  *
- * Configured via: claudeCode.claudeProcessWrapper
- *
- * On Windows, point the setting at claudio-wrapper.exe (bun --compile), not
- * .cmd — Node spawn() of .cmd without shell yields EINVAL.
- *
- * Security: never spawn with shell:true + forwarded argv (command injection).
+ * Configure: claudeCode.claudeProcessWrapper → this .exe (not .cmd on Windows).
+ * Security: never spawn with shell:true + forwarded argv.
  */
-const { spawn, execFileSync } = require('child_process')
-const fs = require('fs')
+const { spawn } = require('child_process')
 const path = require('path')
 const { startNativeBridge } = require('./native-bridge')
 const {
@@ -31,47 +23,12 @@ const {
 const { debugLog } = require('./lib/wrapper/log')
 const {
   loadNativeEnvFiles,
-  wrapperBaseDir,
   getSharedBridgeToken,
 } = require('./lib/wrapper/env')
 const {
   quarantineClaudeLoginCredentials,
   restoreClaudeLoginCredentials,
 } = require('./lib/wrapper/credentials')
-
-function resolveClaudioEntry() {
-  const baseDir = wrapperBaseDir()
-
-  const local = path.join(baseDir, '..', 'cli', 'bin', 'claudio')
-  if (path.isAbsolute(local) && fs.existsSync(local)) return local
-
-  const candidates = []
-  const globalBins = (prefix) => {
-    if (!prefix || !path.isAbsolute(prefix)) return
-    candidates.push(path.join(prefix, 'node_modules', '@gaburieuru', 'claudio', 'bin', 'claudio'))
-    candidates.push(path.join(prefix, 'node_modules', 'claudio', 'bin', 'claudio'))
-  }
-
-  if (process.env.APPDATA && path.isAbsolute(process.env.APPDATA)) {
-    globalBins(path.join(process.env.APPDATA, 'npm'))
-  }
-
-  try {
-    const prefix = execFileSync('npm', ['prefix', '-g'], {
-      encoding: 'utf8',
-      windowsHide: true,
-      timeout: 2000,
-    }).trim()
-    globalBins(prefix)
-  } catch {
-    // ignore
-  }
-
-  for (const c of candidates) {
-    if (c && path.isAbsolute(c) && fs.existsSync(c)) return c
-  }
-  return null
-}
 
 function isNodeBinary(filePath) {
   if (!filePath || typeof filePath !== 'string') return false
@@ -128,70 +85,6 @@ function findBundledClaudeExe() {
   return { command: latest.path, args: [], version: latest.version }
 }
 
-function resolveNodeBinary() {
-  if (isNodeBinary(process.execPath)) {
-    return process.execPath
-  }
-
-  const fromEnv = process.env.NODE_BINARY || process.env.npm_node_execpath
-  if (fromEnv && path.isAbsolute(fromEnv) && fs.existsSync(fromEnv)) {
-    return fromEnv
-  }
-
-  if (process.platform === 'win32') {
-    const guesses = [
-      path.join(process.env.ProgramFiles || 'C:\\Program Files', 'nodejs', 'node.exe'),
-      path.join(process.env.LOCALAPPDATA || '', 'Programs', 'node', 'node.exe'),
-    ]
-    for (const g of guesses) {
-      if (g && fs.existsSync(g)) return g
-    }
-  }
-
-  try {
-    const which = process.platform === 'win32' ? 'where' : 'which'
-    const out = execFileSync(which, ['node'], {
-      encoding: 'utf8',
-      windowsHide: true,
-      timeout: 2000,
-    })
-      .split(/\r?\n/)
-      .map((l) => l.trim())
-      .find((l) => l && path.isAbsolute(l) && fs.existsSync(l))
-    if (out) return out
-  } catch {
-    // fall through
-  }
-
-  return null
-}
-
-function detectMode(rawArgs) {
-  const forced = (process.env.CLAUDE_WRAPPER_MODE || process.env.CLAUDIO_MODE || '').toLowerCase()
-  if (forced === 'native' || forced === 'proxy') return 'native'
-  if (forced === 'claudio' || forced === 'legacy') return 'claudio'
-  // Default: official Claude Code harness whenever a binary exists.
-  if (parseOfficialLaunch(rawArgs) || resolveLatestOfficialClaude()) return 'native'
-  return 'claudio'
-}
-
-function attachChild(child) {
-  child.on('exit', (code, signal) => {
-    if (signal) {
-      try {
-        process.kill(process.pid, signal)
-      } catch {
-        process.exit(1)
-      }
-    }
-    process.exit(code ?? 0)
-  })
-  child.on('error', (err) => {
-    console.error('[claude-wrapper] failed to start child:', err.message)
-    process.exit(1)
-  })
-}
-
 async function runNative(rawArgs) {
   loadNativeEnvFiles()
   const fromExt = parseOfficialLaunch(rawArgs)
@@ -209,10 +102,8 @@ async function runNative(rawArgs) {
   let command = preferred?.path || bundled?.command || null
   let userArgs = []
   if (fromExt) {
-    // Extension may pass [claude.exe, ...args] or [node, cli.js, ...args]
     if (isNodeBinary(fromExt.command)) {
-      // Prefer native binary over node+cli.js when we have one
-      userArgs = fromExt.args.slice(1) // drop cli.js
+      userArgs = fromExt.args.slice(1)
       if (!command) {
         command = fromExt.command
         userArgs = fromExt.args
@@ -228,10 +119,9 @@ async function runNative(rawArgs) {
 
   if (!command) {
     console.error(
-      '[claude-wrapper] native mode: Claude Code binary not found.\n' +
+      '[claude-wrapper] Claude Code binary not found.\n' +
         'Install with: irm https://claude.ai/install.ps1 | iex\n' +
-        'Or install the Claude Code Cursor extension.\n' +
-        'Legacy fork: CLAUDE_WRAPPER_MODE=claudio',
+        'Or install the Claude Code Cursor/VS Code extension.',
     )
     process.exit(1)
   }
@@ -246,8 +136,6 @@ async function runNative(rawArgs) {
   const providersCfg = loadProvidersConfig()
   const isVersion =
     userArgs.some((a) => a === '--version' || a === '-v' || a === 'version')
-  // auth status must still get bridge tokens — Cursor --enable-auth-status
-  // otherwise reports "Not logged in" and the TUI blocks prompts.
   const isAuth = userArgs.includes('auth')
   const skipSettingsSync = isVersion || isAuth
 
@@ -257,7 +145,6 @@ async function runNative(rawArgs) {
   } catch {
     provider = null
   }
-  // --version only: skip bridge (fast). auth + normal: bridge when key exists.
   const useBridge = !isVersion && !!(provider && provider.apiKey)
 
   let bridge = null
@@ -296,21 +183,12 @@ async function runNative(rawArgs) {
     env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY =
       process.env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY || '1'
     const bridgeToken = getSharedBridgeToken()
-    // Quarantine BEFORE injecting tokens so /login cannot win the race.
     quarantineClaudeLoginCredentials()
-    // With login aside, set both headers to the bridge token so Claude
-    // presents a matching x-api-key and/or Bearer to the local bridge.
     env.ANTHROPIC_API_KEY = bridgeToken
-    env.ANTHROPIC_AUTH_TOKEN = bridgeToken
-    // Custom picker slugs (anthropic.opencode.*) are not in Claude's built-in
-    // window table — avoid the "not a model this version recognizes" soft-fail.
+    delete env.ANTHROPIC_AUTH_TOKEN
     if (!env.CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT) {
       env.CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT = '1'
     }
-    // Default open on loopback: Claude often presents /login OAuth instead of
-    // our token → 401 and every slash (including /provider) looks "dead".
-    // Opt into strict shared-token auth with CLAUDE_NATIVE_BRIDGE_STRICT=1
-    // (and unset CLAUDE_NATIVE_BRIDGE_OPEN_LOCAL).
     if (process.env.CLAUDE_NATIVE_BRIDGE_STRICT === '1') {
       delete env.CLAUDE_NATIVE_BRIDGE_OPEN_LOCAL
     } else {
@@ -339,13 +217,16 @@ async function runNative(rawArgs) {
   const shutdown = async () => {
     if (shutdownPromise) return shutdownPromise
     shutdownPromise = (async () => {
-      // Wait for child to exit first (with timeout)
       if (child && !child.exitCode) {
         try {
           child.kill('SIGTERM')
           await new Promise((resolve) => {
             const timeout = setTimeout(() => {
-              try { child.kill('SIGKILL') } catch {}
+              try {
+                child.kill('SIGKILL')
+              } catch {
+                /* ignore */
+              }
               resolve()
             }, 5000)
             child.once('exit', () => {
@@ -402,47 +283,10 @@ async function runNative(rawArgs) {
   })
 }
 
-function runClaudio(rawArgs) {
-  const args = stripExtensionLauncher(rawArgs)
-  const entry = resolveClaudioEntry()
-  if (!entry) {
-    console.error(
-      '[claudio-wrapper] could not find Claudio binary.\n' +
-        'Install globally: npm install -g @gaburieuru/claudio@latest',
-    )
-    process.exit(1)
-  }
-
-  if (process.env.CLAUDIO_WRAPPER_DEBUG === '1') {
-    console.error(`[claudio-wrapper] using ${entry}`)
-  }
-
-  const nodeBinary = resolveNodeBinary()
-  if (!nodeBinary) {
-    console.error(
-      '[claudio-wrapper] could not find node.exe to launch Claudio.\n' +
-        'Ensure Node.js is on PATH, or set NODE_BINARY to an absolute node path.',
-    )
-    process.exit(1)
-  }
-
-  const child = spawn(nodeBinary, [entry, ...args], {
-    stdio: 'inherit',
-    env: process.env,
-    windowsHide: true,
-  })
-  attachChild(child)
-}
-
 const rawArgs = process.argv.slice(2)
-const mode = detectMode(rawArgs)
-debugLog(`mode=${mode} argv0=${rawArgs[0] || ''}`)
+debugLog(`argv0=${rawArgs[0] || ''}`)
 
-if (mode === 'native') {
-  runNative(rawArgs).catch((err) => {
-    console.error('[claude-wrapper] native failed:', err.message)
-    process.exit(1)
-  })
-} else {
-  runClaudio(rawArgs)
-}
+runNative(rawArgs).catch((err) => {
+  console.error('[claude-wrapper] failed:', err.message)
+  process.exit(1)
+})

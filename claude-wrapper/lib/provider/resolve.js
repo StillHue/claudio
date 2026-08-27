@@ -71,7 +71,9 @@ function buildSlugIndex(providersData) {
 }
 
 function loadProvidersConfig() {
+  const rootDir = path.resolve(__dirname, '..', '..')
   const candidates = [
+    path.join(rootDir, 'providers.json'),
     path.join(os.homedir(), '.claude-native', 'providers.json'),
   ]
   for (const p of candidates) {
@@ -262,6 +264,9 @@ function resolveProvider(providersData, requestedModel) {
     p.baseUrl ||
     'https://opencode.ai/zen/v1'
   ).replace(/\/$/, '')
+  // Per-model format override (e.g. muse-spark → responses), else provider default
+  const format =
+    (p.modelFormats && p.modelFormats[upstreamModel]) || p.format || 'chat'
 
   return {
     ...p,
@@ -270,6 +275,7 @@ function resolveProvider(providersData, requestedModel) {
     model: upstreamModel,
     models,
     apiKey,
+    format,
     smallModel: p.smallModel || models[0] || p.model,
     bigModel: p.bigModel || p.model || models[models.length - 1],
   }
