@@ -96,17 +96,19 @@ function loadProvidersConfig() {
       /* ignore */
     }
   }
-  console.error('[provider-config] WARNING: providers.json not found, using hardcoded OpenCode fallback')
+  console.error('[provider-config] WARNING: providers.json not found, using hardcoded OpenRouter fallback')
   return {
     path: null,
     data: {
-      active: 'opencode',
+      active: 'openrouter',
       providers: {
-        opencode: {
-          baseUrl: 'https://opencode.ai/zen/v1',
-          model: 'deepseek-v4-flash-free',
-          apiKeyEnv: 'OPENAI_API_KEY',
-          models: ['deepseek-v4-flash-free', 'big-pickle'],
+        openrouter: {
+          baseUrl: 'https://openrouter.ai/api/v1',
+          model: 'openrouter/auto',
+          apiKeyEnv: 'OPENROUTER_API_KEY',
+          tools: true,
+          format: 'chat',
+          models: ['openrouter/auto', 'openrouter/auto-beta'],
         },
       },
     },
@@ -119,6 +121,7 @@ function loadProvidersConfig() {
  * Embeds real provider: anthropic.alibaba.qwen3.6-plus, anthropic.opencode.claude-sonnet-5
  */
 function modelId(providerName, model) {
+  if (model === 'auto' || providerName === 'auto') return 'anthropic.auto'
   const tag = providerTag(providerName)
   const slug = modelSlug(model)
   return `anthropic.${tag}.${slug}`
@@ -126,6 +129,11 @@ function modelId(providerName, model) {
 
 function parseModelId(id, providersData) {
   if (!id || typeof id !== 'string') return null
+
+  const lower = id.toLowerCase()
+  if (lower === 'auto' || lower === 'anthropic.auto' || lower === 'claude-auto') {
+    return { provider: 'openrouter', model: 'openrouter/auto' }
+  }
 
   if (providersData) {
     const hit = buildSlugIndex(providersData).get(id.toLowerCase())
@@ -173,17 +181,28 @@ function parseModelId(id, providersData) {
 }
 
 function listCatalogEntries(providersData) {
-  const out = []
-  const providers = providersData.providers || {}
+  const out = [
+    {
+      id: 'anthropic.auto',
+      provider: 'auto',
+      model: 'auto',
+      display_name: 'Auto',
+      description: 'OpenRouter Auto Router — classifies the task and routes across models (BYOK providers on your OpenRouter account)',
+      baseUrl: '',
+      apiKeyEnv: '',
+    },
+  ]
+  const providers = providersData?.providers || {}
   for (const [name, p] of Object.entries(providers)) {
     if (!p) continue
     const label = PROVIDER_LABEL[name] || name
     const models = Array.isArray(p.models) && p.models.length ? p.models : p.model ? [p.model] : []
     for (const model of models) {
+      if (model === 'auto') continue
       const nice = DISPLAY[model]?.name || model
-      // Masked Sonnet names stand alone; others keep "Provider · name".
+      // Masked Sonnet names and Auto stand alone; others keep "Provider · name".
       const display_name =
-        /^Sonnet\b/i.test(nice) ? nice : `${label} · ${nice}`
+        model === 'auto' || /^Sonnet\b/i.test(nice) || nice === 'Auto' ? nice : `${label} · ${nice}`
       out.push({
         id: modelId(name, model),
         provider: name,
@@ -210,7 +229,7 @@ function resolveApiKey(p) {
  * Prefer exact catalog hits; else active provider default.
  */
 function resolveProvider(providersData, requestedModel) {
-  const active = providersData.active || 'opencode'
+  const active = providersData.active || 'openrouter'
   const providers = providersData.providers || {}
   const parsed = parseModelId(requestedModel, providersData)
 
@@ -240,6 +259,9 @@ function resolveProvider(providersData, requestedModel) {
   }
 
   const models = Array.isArray(p.models) && p.models.length ? p.models : [p.model]
+  if (upstreamModel === 'auto') {
+    upstreamModel = p.model || models[0]
+  }
   if (!upstreamModel) {
     // Claude built-in aliases → size heuristic within active provider
     const lower = String(requestedModel || '').toLowerCase()
@@ -262,7 +284,7 @@ function resolveProvider(providersData, requestedModel) {
   const baseUrl = (
     process.env.CLAUDE_NATIVE_BASE_URL ||
     p.baseUrl ||
-    'https://opencode.ai/zen/v1'
+    'https://openrouter.ai/api/v1'
   ).replace(/\/$/, '')
   // Per-model format override (e.g. muse-spark → responses), else provider default
   const format =

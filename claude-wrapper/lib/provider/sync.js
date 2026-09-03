@@ -32,7 +32,8 @@ function syncClaudeAvailableModels(providersData) {
   let settings = {}
   try {
     if (fs.existsSync(settingsPath)) {
-      settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'))
+      const raw = fs.readFileSync(settingsPath, 'utf8').replace(/^\uFEFF/, '')
+      settings = JSON.parse(raw)
     }
   } catch (err) {
     // NEVER wipe a corrupt settings.json by rewriting {}.
@@ -49,11 +50,14 @@ function syncClaudeAvailableModels(providersData) {
   }
   if (!settings || typeof settings !== 'object') settings = {}
 
-  const active = providersData.active || 'opencode'
+  const active = providersData.active || 'openrouter'
   const activeProvider = providersData.providers?.[active]
-  const defaultId = activeProvider
-    ? modelId(active, activeProvider.model || (activeProvider.models || [])[0])
-    : ids[0]
+  const defaultId =
+    active === 'auto' || activeProvider?.model === 'auto'
+      ? 'anthropic.auto'
+      : activeProvider
+        ? modelId(active, activeProvider.model || (activeProvider.models || [])[0])
+        : ids[0]
 
   settings.availableModels = ids
   // Constrain Default: without this, Claude Code keeps showing
@@ -72,6 +76,8 @@ function syncClaudeAvailableModels(providersData) {
       'CLAUDE_CODE_USE_OPENAI',
       'CLAUDE_CODE_USE_BEDROCK',
       'CLAUDE_CODE_USE_VERTEX',
+      'ANTHROPIC_API_KEY',
+      'ANTHROPIC_AUTH_TOKEN',
     ]) {
       delete settings.env[k]
     }
@@ -106,7 +112,8 @@ function syncCursorClaudeModel(defaultId) {
     if (!fs.existsSync(settingsPath)) continue
     let settings = {}
     try {
-      settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'))
+      const raw = fs.readFileSync(settingsPath, 'utf8').replace(/^\uFEFF/, '')
+      settings = JSON.parse(raw)
     } catch {
       continue
     }
@@ -126,11 +133,14 @@ function syncCursorClaudeModel(defaultId) {
  * Call from CLI / wrapper spawn only — never from mid-stream.
  */
 function syncDefaultModel(providersData) {
-  const active = providersData.active || 'opencode'
+  const active = providersData.active || 'openrouter'
   const activeProvider = providersData.providers?.[active]
-  const fromProviders = activeProvider
-    ? modelId(active, activeProvider.model || (activeProvider.models || [])[0])
-    : null
+  const fromProviders =
+    active === 'auto' || activeProvider?.model === 'auto'
+      ? 'anthropic.auto'
+      : activeProvider
+        ? modelId(active, activeProvider.model || (activeProvider.models || [])[0])
+        : null
   const claude = syncClaudeAvailableModels(providersData)
   const defaultId = fromProviders || claude.model
   const cursor = syncCursorClaudeModel(defaultId)

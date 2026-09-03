@@ -1,0 +1,56 @@
+{
+  "active": "nvidia",
+  "providers": {
+    "opencode": {
+      "baseUrl": "https://opencode.ai/zen/v1",
+      "model": "muse-spark-1.2-contributor-free",
+      "apiKeyEnv": "OPENCODE_API_KEY",
+      "tools": true,
+      "format": "chat",
+      "modelFormats": {
+        "muse-spark-1.2-contributor-free": "responses"
+      },
+      "models": [
+        "muse-spark-1.2-contributor-free",
+        "laguna-s-2.1-free",
+        "hy3-free",
+        "deepseek-v4-flash-free",
+        "big-pickle",
+        "mimo-v2.5-free",
+        "north-mini-code-free",
+        "nemotron-3-ultra-free"
+      ]
+    },
+    "nvidia": {
+      "baseUrl": "https://integrate.api.nvidia.com/v1",
+      "model": "auto",
+      "apiKeyEnv": "NVIDIA_API_KEY",
+      "tools": true,
+      "format": "chat",
+      "models": [
+        "auto",
+        "nvidia/nemotron-3-ultra-550b-a55b",
+        "nvidia/nemotron-3-super-120b-a12b",
+        "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "nvidia/nemotron-3-nano-30b-a3b",
+        "meta/llama-3.3-70b-instruct",
+        "deepseek-ai/deepseek-r1",
+        "deepseek-ai/deepseek-v3",
+        "qwen/qwen2.5-coder-32b-instruct",
+        "mistralai/mistral-large-2-instruct",
+        "mistralai/codestral-2501"
+      ]
+    },
+    "openrouter": {
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "model": "openrouter/auto",
+      "apiKeyEnv": "OPENROUTER_API_KEY",
+      "tools": true,
+      "format": "chat",
+      "models": [
+        "openrouter/auto",
+        "openrouter/auto-beta"
+      ]
+    }
+  }
+}
