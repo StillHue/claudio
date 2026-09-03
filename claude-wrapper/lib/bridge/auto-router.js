@@ -53,11 +53,11 @@ function routeAutoModel(body, providersData, ctx) {
   const data = providersData || loadProvidersConfig().data
   const entry = data.providers?.openrouter
   if (!entry) {
-    throw new Error('Provider openrouter não configurado em providers.json')
+    throw new Error('Provider openrouter is not configured in providers.json')
   }
   const apiKey = resolveApiKey(entry)
   if (!apiKey) {
-    throw new Error('OPENROUTER_API_KEY não configurada — defina em .env do wrapper ou ~/.claude-native/.env')
+    throw new Error('OPENROUTER_API_KEY is not configured — set it in the wrapper .env or ~/.claude-native/.env')
   }
 
   let upstreamModel = 'openrouter/auto'
@@ -75,7 +75,7 @@ function routeAutoModel(body, providersData, ctx) {
   }
   const openRouterPlugins = buildAutoRouterPlugins(upstreamModel)
   ctx?.log?.(
-    `[auto-router] → openrouter/${upstreamModel} plugins=${JSON.stringify(openRouterPlugins)}`,
+    `[auto-router] → ${upstreamModel} plugins=${JSON.stringify(openRouterPlugins)}`,
   )
   return {
     provider,
