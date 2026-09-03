@@ -20,6 +20,15 @@ const openrouterOnly = {
 }
 
 describe('openrouter auto-only', () => {
+  it('committed providers.json is openrouter-only', () => {
+    const fs = require('node:fs')
+    const providersPath = path.join(__dirname, '..', 'providers.json')
+    const cfg = JSON.parse(fs.readFileSync(providersPath, 'utf8'))
+    assert.equal(cfg.active, 'openrouter')
+    assert.equal(Object.keys(cfg.providers).length, 1)
+    assert.ok(cfg.providers.openrouter)
+  })
+
   it('treats anthropic.auto as Auto', () => {
     assert.equal(autoRouter.isAutoModel('anthropic.auto'), true)
     assert.equal(autoRouter.isAutoModel('auto'), true)
