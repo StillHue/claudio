@@ -6,6 +6,7 @@ const { json } = require('./http')
 const { mapModel } = require('./translate')
 const { handleChat } = require('./messages-chat')
 const { handleResponses } = require('./messages-responses')
+const { isAutoModel, isOpenRouterModel, routeAutoModelAsync } = require('./auto-router')
 
 async function handleMessages(req, res, ctx) {
   const maxBodyBytes = Number(process.env.CLAUDE_NATIVE_MAX_BODY_BYTES || 20 * 1024 * 1024)
@@ -25,20 +26,43 @@ async function handleMessages(req, res, ctx) {
     return json(res, 400, { type: 'error', error: { type: 'invalid_request_error', message: 'invalid JSON body' } })
   }
 
-  const provider = ctx.getProvider(body.model)
-  const upstreamModel = mapModel(body.model, provider)
-  const upstreamFormat = provider.format || 'chat'
+  let provider
+  let upstreamModel
+  let upstreamFormat
 
-  try {
+  if (isAutoModel(body.model) || isOpenRouterModel(body.model)) {
     const data = typeof ctx.getProvidersData === 'function' ? ctx.getProvidersData() : null
-    if (data && provider?.name && upstreamModel) {
-      const { persistProvidersDefault } = require('../provider/sync')
-      const cfgPath = typeof ctx.getProvidersPath === 'function' ? ctx.getProvidersPath() : undefined
-      const saved = persistProvidersDefault(data, provider.name, upstreamModel, cfgPath)
-      if (saved.changed) ctx.log?.(`persisted default model → ${provider.name}/${upstreamModel}`)
+    let routed
+    try {
+      routed = await routeAutoModelAsync(body, data, ctx)
+    } catch (err) {
+      return json(res, 401, {
+        type: 'error',
+        error: { type: 'authentication_error', message: err.message },
+      })
     }
-  } catch (err) {
-    ctx.log?.(`persist default model skipped: ${err.message}`)
+    provider = routed.provider
+    upstreamModel = routed.upstreamModel
+    upstreamFormat = routed.upstreamFormat
+    // stash plugins for chat handler
+    body.__openRouterPlugins = routed.openRouterPlugins || []
+    body.__openRouterSessionId = body.session_id || body.sessionId || null
+  } else {
+    provider = ctx.getProvider(body.model)
+    upstreamModel = mapModel(body.model, provider)
+    upstreamFormat = provider.format || 'chat'
+
+    try {
+      const data = typeof ctx.getProvidersData === 'function' ? ctx.getProvidersData() : null
+      if (data && provider?.name && upstreamModel) {
+        const { persistProvidersDefault } = require('../provider/sync')
+        const cfgPath = typeof ctx.getProvidersPath === 'function' ? ctx.getProvidersPath() : undefined
+        const saved = persistProvidersDefault(data, provider.name, upstreamModel, cfgPath)
+        if (saved.changed) ctx.log?.(`persisted default model → ${provider.name}/${upstreamModel}`)
+      }
+    } catch (err) {
+      ctx.log?.(`persist default model skipped: ${err.message}`)
+    }
   }
 
   if (upstreamFormat === 'responses') {
