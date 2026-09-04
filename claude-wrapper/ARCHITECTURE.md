@@ -2,16 +2,17 @@
 
 Official Claude Code harness. Inference goes to whatever is in
 `~/.claude-native/providers.json` (or `./providers.json`) via a local
-Anthropic Messages â†’ Chat Completions **or Responses** bridge that starts with Claude and
-exits with it â€” no background Node server. Third party providers picker shows on first run if no `apiKey`.
+Anthropic Messages -> Chat Completions **or Responses** bridge that starts with Claude and
+exits with it -- no background Node server. Third party providers picker shows on first run if no `apiKey`.
 
 
 ## Auto model
 
 `Auto` / `anthropic.auto` always routes to OpenRouter (`openrouter/auto`).
 Classification, sticky multi-turn, vision vs coding, and rate-limit fallbacks are handled by OpenRouter Auto Router.
-NVIDIA is used via OpenRouter BYOK on the account — the wrapper does not call NVIDIA or OpenCode directly on the Auto path.
+NVIDIA is used via OpenRouter BYOK on the account -- the wrapper does not call NVIDIA or OpenCode directly on the Auto path.
 Required: `OPENROUTER_API_KEY`. Optional: `OPENROUTER_COST_TIER`.
+
 ## Layout
 
 | Path | Role |
@@ -19,11 +20,11 @@ Required: `OPENROUTER_API_KEY`. Optional: `OPENROUTER_COST_TIER`.
 | `claudio-wrapper.js` | Launches Claude Code + ephemeral bridge; shows Third party providers if no apiKey |
 | `claude-cli.js` | CLI entry |
 | `native-bridge.js` | Loopback Anthropic-compatible proxy |
-| `lib/bridge/messages.js` | Router (50 lines) â†’ chat vs responses |
+| `lib/bridge/messages.js` | Router (50 lines) -> chat vs responses |
 | `lib/bridge/messages-chat.js` | Chat Completions handler |
 | `lib/bridge/messages-responses.js` | Responses handler (muse-spark, reasoning summary) |
-| `lib/bridge/translate.js` | Anthropic â†’ Chat Completions |
-| `lib/bridge/translate-responses.js` | Anthropic â†’ Responses (`input`/`instructions`) |
+| `lib/bridge/translate.js` | Anthropic -> Chat Completions |
+| `lib/bridge/translate-responses.js` | Anthropic -> Responses (`input`/`instructions`) |
 | `lib/bridge/stream.js` | Chat SSE reader |
 | `lib/bridge/stream-responses.js` | Responses SSE reader (`reasoning_summary_text.delta`) |
 | `lib/bridge/delta.js` | Shared `takeDelta` dedup |
@@ -39,30 +40,17 @@ Required: `OPENROUTER_API_KEY`. Optional: `OPENROUTER_COST_TIER`.
 
 ```json
 {
-  "active": "opencode",
+  "active": "openrouter",
   "providers": {
-    "opencode": {
-      "baseUrl": "https://opencode.ai/zen/v1",
-      "model": "muse-spark-1.2-contributor-free",
-      "apiKeyEnv": "OPENCODE_API_KEY",
-      "tools": true,
-      "format": "chat",
-      "modelFormats": { "muse-spark-1.2-contributor-free": "responses" },
-      "models": [
-        "muse-spark-1.2-contributor-free",
-        "laguna-s-2.1-free",
-        "hy3-free"
-      ]
-    },
-    "nvidia": {
-      "baseUrl": "https://integrate.api.nvidia.com/v1",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-      "apiKeyEnv": "NVIDIA_API_KEY",
+    "openrouter": {
+      "baseUrl": "https://openrouter.ai/api/v1",
+      "model": "openrouter/auto",
+      "apiKeyEnv": "OPENROUTER_API_KEY",
       "tools": true,
       "format": "chat",
       "models": [
-        "nvidia/nemotron-3-nano-30b-a3b",
-        "nvidia/nemotron-3.5-lightning-30b-a3b"
+        "openrouter/auto",
+        "openrouter/auto-beta"
       ]
     }
   }
