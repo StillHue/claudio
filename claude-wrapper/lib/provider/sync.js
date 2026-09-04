@@ -4,7 +4,7 @@
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
-const { modelId, loadProvidersConfig, listCatalogEntries, parseModelId } = require('./resolve')
+const { modelId, loadProvidersConfig, listCatalogEntries, parseModelId, AUTO_PICKER_ID } = require('./resolve')
 
 /**
  * Cursor User settings.json candidates (Windows + Linux/macOS).
@@ -57,7 +57,7 @@ function syncClaudeAvailableModels(providersData) {
     activeProvider?.model === 'auto' ||
     activeProvider?.model === 'openrouter/auto' ||
     activeProvider?.model === 'openrouter/auto-beta'
-      ? 'Auto'
+      ? AUTO_PICKER_ID
       : activeProvider
         ? modelId(active, activeProvider.model || (activeProvider.models || [])[0])
         : ids[0]
@@ -69,7 +69,8 @@ function syncClaudeAvailableModels(providersData) {
   // Always align with providers.json active default (set-default-model / wrapper sync).
   settings.model = defaultId
 
-  // Friendly picker: only "Auto", never raw anthropic.auto / openrouter/* rows.
+  // Claude rewrites bare "Auto" to anthropic.openrouter.openrouter-auto.
+  // Keep that canonical id in availableModels, but label the picker row "Auto".
   settings.modelPicker = {
     replaceBuiltInOptions: true,
     options: [
@@ -162,7 +163,7 @@ function syncDefaultModel(providersData) {
     activeProvider?.model === 'auto' ||
     activeProvider?.model === 'openrouter/auto' ||
     activeProvider?.model === 'openrouter/auto-beta'
-      ? 'Auto'
+      ? AUTO_PICKER_ID
       : activeProvider
         ? modelId(active, activeProvider.model || (activeProvider.models || [])[0])
         : null

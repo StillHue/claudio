@@ -117,8 +117,11 @@ function loadProvidersConfig() {
 
 /**
  * Picker id for Claude Code.
- * OpenRouter Auto is exposed as the friendly id "Auto" (not anthropic.auto).
+ * Claude Code rewrites bare "Auto" to anthropic.openrouter.openrouter-auto.
+ * Use that canonical id everywhere and label it "Auto" via modelPicker.
  */
+const AUTO_PICKER_ID = 'anthropic.openrouter.openrouter-auto'
+
 function isAutoPickerId(id) {
   if (!id || typeof id !== 'string') return false
   const lower = id.toLowerCase().trim()
@@ -128,7 +131,7 @@ function isAutoPickerId(id) {
     lower === 'claude-auto' ||
     lower === 'openrouter/auto' ||
     lower === 'openrouter/auto-beta' ||
-    lower === 'anthropic.openrouter.openrouter-auto' ||
+    lower === AUTO_PICKER_ID ||
     lower === 'anthropic.openrouter.auto' ||
     lower === 'anthropic.openrouter.auto-beta' ||
     lower.endsWith('.auto') ||
@@ -137,9 +140,9 @@ function isAutoPickerId(id) {
 }
 
 function modelId(providerName, model) {
-  if (model === 'auto' || providerName === 'auto') return 'Auto'
+  if (model === 'auto' || providerName === 'auto') return AUTO_PICKER_ID
   if (isAutoPickerId(model) || model === 'openrouter/auto' || model === 'openrouter/auto-beta') {
-    return 'Auto'
+    return AUTO_PICKER_ID
   }
   const tag = providerTag(providerName)
   const slug = modelSlug(model)
@@ -204,12 +207,12 @@ function listCatalogEntries(providersData) {
   const openrouter = providers.openrouter
   const out = [
     {
-      id: 'Auto',
+      id: AUTO_PICKER_ID,
       provider: openrouter ? 'openrouter' : 'auto',
       model: openrouter ? 'openrouter/auto' : 'auto',
       display_name: 'Auto',
       description:
-        'OpenRouter Auto Router — classifies the task and routes across models (BYOK providers on your OpenRouter account)',
+        'OpenRouter Auto Router -- classifies the task and routes across models (BYOK providers on your OpenRouter account)',
       baseUrl: openrouter?.baseUrl || '',
       apiKeyEnv: openrouter?.apiKeyEnv || '',
     },
@@ -345,6 +348,7 @@ function buildAnthropicModelsList(providersData) {
 module.exports = {
   buildSlugIndex,
   loadProvidersConfig,
+  AUTO_PICKER_ID,
   isAutoPickerId,
   modelId,
   parseModelId,

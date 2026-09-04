@@ -19,6 +19,8 @@ const {
   buildAnthropicModelsList,
   resolveApiKey,
   buildSlugIndex,
+  AUTO_PICKER_ID,
+  isAutoPickerId,
 } = require('./lib/provider/resolve')
 const {
   syncClaudeAvailableModels,
@@ -44,6 +46,8 @@ module.exports = {
   resolveApiKey,
   buildSlugIndex,
   buildAnthropicModelsList,
+  AUTO_PICKER_ID,
+  isAutoPickerId,
   syncClaudeAvailableModels,
   syncCursorClaudeModel,
   syncDefaultModel,

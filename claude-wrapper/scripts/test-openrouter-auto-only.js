@@ -71,13 +71,16 @@ describe('openrouter auto-only', () => {
     const friendly = parseModelId('Auto', openrouterOnly)
     assert.equal(friendly.provider, 'openrouter')
     assert.equal(friendly.model, 'openrouter/auto')
+    const canonical = parseModelId('anthropic.openrouter.openrouter-auto', openrouterOnly)
+    assert.equal(canonical.provider, 'openrouter')
+    assert.equal(canonical.model, 'openrouter/auto')
   })
 
   it('catalog exposes only Auto', () => {
-    const { listCatalogEntries } = require('../lib/provider/resolve')
+    const { listCatalogEntries, AUTO_PICKER_ID } = require('../lib/provider/resolve')
     const entries = listCatalogEntries(openrouterOnly)
     assert.equal(entries.length, 1)
-    assert.equal(entries[0].id, 'Auto')
+    assert.equal(entries[0].id, AUTO_PICKER_ID)
     assert.equal(entries[0].display_name, 'Auto')
   })
 
