@@ -2,9 +2,16 @@
 
 Official Claude Code harness. Inference goes to whatever is in
 `~/.claude-native/providers.json` (or `./providers.json`) via a local
-Anthropic Messages → Chat Completions **or Responses** bridge that starts with Claude and
-exits with it — no background Node server. Third party providers picker shows on first run if no `apiKey`.
+Anthropic Messages â†’ Chat Completions **or Responses** bridge that starts with Claude and
+exits with it â€” no background Node server. Third party providers picker shows on first run if no `apiKey`.
 
+
+## Auto model
+
+`Auto` / `anthropic.auto` always routes to OpenRouter (`openrouter/auto`).
+Classification, sticky multi-turn, vision vs coding, and rate-limit fallbacks are handled by OpenRouter Auto Router.
+NVIDIA is used via OpenRouter BYOK on the account — the wrapper does not call NVIDIA or OpenCode directly on the Auto path.
+Required: `OPENROUTER_API_KEY`. Optional: `OPENROUTER_COST_TIER`.
 ## Layout
 
 | Path | Role |
@@ -12,11 +19,11 @@ exits with it — no background Node server. Third party providers picker shows 
 | `claudio-wrapper.js` | Launches Claude Code + ephemeral bridge; shows Third party providers if no apiKey |
 | `claude-cli.js` | CLI entry |
 | `native-bridge.js` | Loopback Anthropic-compatible proxy |
-| `lib/bridge/messages.js` | Router (50 lines) → chat vs responses |
+| `lib/bridge/messages.js` | Router (50 lines) â†’ chat vs responses |
 | `lib/bridge/messages-chat.js` | Chat Completions handler |
 | `lib/bridge/messages-responses.js` | Responses handler (muse-spark, reasoning summary) |
-| `lib/bridge/translate.js` | Anthropic → Chat Completions |
-| `lib/bridge/translate-responses.js` | Anthropic → Responses (`input`/`instructions`) |
+| `lib/bridge/translate.js` | Anthropic â†’ Chat Completions |
+| `lib/bridge/translate-responses.js` | Anthropic â†’ Responses (`input`/`instructions`) |
 | `lib/bridge/stream.js` | Chat SSE reader |
 | `lib/bridge/stream-responses.js` | Responses SSE reader (`reasoning_summary_text.delta`) |
 | `lib/bridge/delta.js` | Shared `takeDelta` dedup |
@@ -72,4 +79,4 @@ Cursor/VS Code:
 "claudeCode.skipApiCheck": true
 ```
 
-Change model: `node set-default-model.js nvidia/nemotron-3-ultra-550b-a55b`
+Change model: `node set-default-model.js openrouter/auto`
