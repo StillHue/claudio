@@ -68,6 +68,17 @@ describe('openrouter auto-only', () => {
     const parsed = parseModelId('anthropic.auto', openrouterOnly)
     assert.equal(parsed.provider, 'openrouter')
     assert.equal(parsed.model, 'openrouter/auto')
+    const friendly = parseModelId('Auto', openrouterOnly)
+    assert.equal(friendly.provider, 'openrouter')
+    assert.equal(friendly.model, 'openrouter/auto')
+  })
+
+  it('catalog exposes only Auto', () => {
+    const { listCatalogEntries } = require('../lib/provider/resolve')
+    const entries = listCatalogEntries(openrouterOnly)
+    assert.equal(entries.length, 1)
+    assert.equal(entries[0].id, 'Auto')
+    assert.equal(entries[0].display_name, 'Auto')
   })
 
   it('buildAutoRouterPlugins respects OPENROUTER_COST_TIER', () => {

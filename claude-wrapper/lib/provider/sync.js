@@ -53,8 +53,11 @@ function syncClaudeAvailableModels(providersData) {
   const active = providersData.active || 'openrouter'
   const activeProvider = providersData.providers?.[active]
   const defaultId =
-    active === 'auto' || activeProvider?.model === 'auto'
-      ? 'anthropic.auto'
+    active === 'auto' ||
+    activeProvider?.model === 'auto' ||
+    activeProvider?.model === 'openrouter/auto' ||
+    activeProvider?.model === 'openrouter/auto-beta'
+      ? 'Auto'
       : activeProvider
         ? modelId(active, activeProvider.model || (activeProvider.models || [])[0])
         : ids[0]
@@ -65,6 +68,25 @@ function syncClaudeAvailableModels(providersData) {
   settings.enforceAvailableModels = true
   // Always align with providers.json active default (set-default-model / wrapper sync).
   settings.model = defaultId
+
+  // Friendly picker: only "Auto", never raw anthropic.auto / openrouter/* rows.
+  settings.modelPicker = {
+    replaceBuiltInOptions: true,
+    options: [
+      {
+        model: defaultId,
+        label: 'Auto',
+        description:
+          'OpenRouter Auto Router -- routes vision, coding, and rate limits across models',
+      },
+    ],
+  }
+
+  if (!settings.env || typeof settings.env !== 'object') settings.env = {}
+  settings.env.ANTHROPIC_CUSTOM_MODEL_OPTION = defaultId
+  settings.env.ANTHROPIC_CUSTOM_MODEL_OPTION_NAME = 'Auto'
+  settings.env.ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION =
+    'OpenRouter Auto Router -- routes vision, coding, and rate limits across models'
 
   // Strip leftovers that force OpenAI chat routing and bypass our
   // Anthropic Messages bridge (ANTHROPIC_BASE_URL). Keep COHERE_API_KEY etc.
@@ -136,8 +158,11 @@ function syncDefaultModel(providersData) {
   const active = providersData.active || 'openrouter'
   const activeProvider = providersData.providers?.[active]
   const fromProviders =
-    active === 'auto' || activeProvider?.model === 'auto'
-      ? 'anthropic.auto'
+    active === 'auto' ||
+    activeProvider?.model === 'auto' ||
+    activeProvider?.model === 'openrouter/auto' ||
+    activeProvider?.model === 'openrouter/auto-beta'
+      ? 'Auto'
       : activeProvider
         ? modelId(active, activeProvider.model || (activeProvider.models || [])[0])
         : null

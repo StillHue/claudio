@@ -8,8 +8,7 @@
       "tools": true,
       "format": "chat",
       "models": [
-        "openrouter/auto",
-        "openrouter/auto-beta"
+        "openrouter/auto"
       ]
     }
   }

@@ -117,11 +117,26 @@ function loadProvidersConfig() {
 
 /**
  * Picker id for Claude Code.
- * Must start with anthropic. (or claude) — no slashes.
- * Embeds real provider: anthropic.alibaba.qwen3.6-plus, anthropic.opencode.claude-sonnet-5
+ * OpenRouter Auto is exposed as the friendly id "Auto" (not anthropic.auto).
  */
+function isAutoPickerId(id) {
+  if (!id || typeof id !== 'string') return false
+  const lower = id.toLowerCase().trim()
+  return (
+    lower === 'auto' ||
+    lower === 'anthropic.auto' ||
+    lower === 'claude-auto' ||
+    lower === 'openrouter/auto' ||
+    lower === 'openrouter/auto-beta' ||
+    lower.endsWith('.auto')
+  )
+}
+
 function modelId(providerName, model) {
-  if (model === 'auto' || providerName === 'auto') return 'anthropic.auto'
+  if (model === 'auto' || providerName === 'auto') return 'Auto'
+  if (isAutoPickerId(model) || model === 'openrouter/auto' || model === 'openrouter/auto-beta') {
+    return 'Auto'
+  }
   const tag = providerTag(providerName)
   const slug = modelSlug(model)
   return `anthropic.${tag}.${slug}`
@@ -130,8 +145,8 @@ function modelId(providerName, model) {
 function parseModelId(id, providersData) {
   if (!id || typeof id !== 'string') return null
 
-  const lower = id.toLowerCase()
-  if (lower === 'auto' || lower === 'anthropic.auto' || lower === 'claude-auto') {
+  const lower = id.toLowerCase().trim()
+  if (isAutoPickerId(id)) {
     return { provider: 'openrouter', model: 'openrouter/auto' }
   }
 
@@ -181,28 +196,30 @@ function parseModelId(id, providersData) {
 }
 
 function listCatalogEntries(providersData) {
+  const providers = providersData?.providers || {}
+  const openrouter = providers.openrouter
   const out = [
     {
-      id: 'anthropic.auto',
-      provider: 'auto',
-      model: 'auto',
+      id: 'Auto',
+      provider: openrouter ? 'openrouter' : 'auto',
+      model: openrouter ? 'openrouter/auto' : 'auto',
       display_name: 'Auto',
-      description: 'OpenRouter Auto Router — classifies the task and routes across models (BYOK providers on your OpenRouter account)',
-      baseUrl: '',
-      apiKeyEnv: '',
+      description:
+        'OpenRouter Auto Router — classifies the task and routes across models (BYOK providers on your OpenRouter account)',
+      baseUrl: openrouter?.baseUrl || '',
+      apiKeyEnv: openrouter?.apiKeyEnv || '',
     },
   ]
-  const providers = providersData?.providers || {}
   for (const [name, p] of Object.entries(providers)) {
     if (!p) continue
     const label = PROVIDER_LABEL[name] || name
     const models = Array.isArray(p.models) && p.models.length ? p.models : p.model ? [p.model] : []
     for (const model of models) {
-      if (model === 'auto') continue
+      // Auto Router slugs are represented solely by the picker id "Auto".
+      if (model === 'auto' || isAutoPickerId(model)) continue
+      if (model === 'openrouter/auto' || model === 'openrouter/auto-beta') continue
       const nice = DISPLAY[model]?.name || model
-      // Masked Sonnet names and Auto stand alone; others keep "Provider · name".
-      const display_name =
-        model === 'auto' || /^Sonnet\b/i.test(nice) || nice === 'Auto' ? nice : `${label} · ${nice}`
+      const display_name = /^Sonnet\b/i.test(nice) || nice === 'Auto' ? nice : `${label} · ${nice}`
       out.push({
         id: modelId(name, model),
         provider: name,
@@ -324,6 +341,7 @@ function buildAnthropicModelsList(providersData) {
 module.exports = {
   buildSlugIndex,
   loadProvidersConfig,
+  isAutoPickerId,
   modelId,
   parseModelId,
   listCatalogEntries,
