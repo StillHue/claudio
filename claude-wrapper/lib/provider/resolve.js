@@ -128,7 +128,11 @@ function isAutoPickerId(id) {
     lower === 'claude-auto' ||
     lower === 'openrouter/auto' ||
     lower === 'openrouter/auto-beta' ||
-    lower.endsWith('.auto')
+    lower === 'anthropic.openrouter.openrouter-auto' ||
+    lower === 'anthropic.openrouter.auto' ||
+    lower === 'anthropic.openrouter.auto-beta' ||
+    lower.endsWith('.auto') ||
+    lower.endsWith('.openrouter-auto')
   )
 }
 
