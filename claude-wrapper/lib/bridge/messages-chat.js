@@ -51,6 +51,12 @@ async function handleChat(req, res, ctx, { body, provider, upstreamModel }) {
     chatBody.tools = tools
     chatBody.tool_choice = mapToolChoice(body.tool_choice)
   }
+  if (Array.isArray(body.__openRouterPlugins) && body.__openRouterPlugins.length) {
+    chatBody.plugins = body.__openRouterPlugins
+  }
+  if (body.__openRouterSessionId) {
+    chatBody.session_id = body.__openRouterSessionId
+  }
 
   let requestBytes = 0
   try {
@@ -63,6 +69,10 @@ async function handleChat(req, res, ctx, { body, provider, upstreamModel }) {
 
   const headers = { 'Content-Type': 'application/json' }
   if (provider.apiKey) headers.Authorization = `Bearer ${provider.apiKey}`
+  if (provider.name === 'openrouter') {
+    headers['HTTP-Referer'] = process.env.OPENROUTER_HTTP_REFERER || 'https://github.com/StillHue/claudio'
+    headers['X-Title'] = process.env.OPENROUTER_APP_TITLE || 'claudio-wrapper'
+  }
 
   let upstream
   const upstreamTimeoutMs = Number(process.env.CLAUDE_NATIVE_UPSTREAM_TIMEOUT_MS || 180000)
@@ -103,6 +113,9 @@ async function handleChat(req, res, ctx, { body, provider, upstreamModel }) {
 
   if (!stream) {
     const data = await upstream.json()
+    if (provider.name === 'openrouter' && data?.model) {
+      ctx.log?.(`[openrouter] upstream-resolved-model=${data.model}`)
+    }
     const msg = data.choices?.[0]?.message || {}
     const content = []
     const reasoning = extractReasoning(msg)
