@@ -66,6 +66,12 @@ async function handleChat(req, res, ctx, { body, provider, upstreamModel }) {
   ctx.log(
     `POST /v1/messages → ${provider.baseUrl} model=${upstreamModel} msgs=${shape.msgs} tools=${shape.tools} toolMsgs=${shape.toolMsgs} images=${shape.images} stream=${stream} max_tokens=${chatBody.max_tokens} bytes=${requestBytes}`,
   )
+  if (provider.name === 'openrouter') {
+    const pluginSummary = Array.isArray(chatBody.plugins) ? JSON.stringify(chatBody.plugins) : '[]'
+    ctx.log?.(
+      `[openrouter] request model=${upstreamModel} stream=${stream} plugins=${pluginSummary}`,
+    )
+  }
 
   const headers = { 'Content-Type': 'application/json' }
   if (provider.apiKey) headers.Authorization = `Bearer ${provider.apiKey}`

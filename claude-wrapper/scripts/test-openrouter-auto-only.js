@@ -54,7 +54,6 @@ describe('openrouter auto-only', () => {
   it('fails fast when OPENROUTER_API_KEY is missing', () => {
     const prev = process.env.OPENROUTER_API_KEY
     delete process.env.OPENROUTER_API_KEY
-    // also ensure providers entry has no inline apiKey
     try {
       assert.throws(
         () => autoRouter.routeAutoModel({ model: 'auto', messages: [] }, openrouterOnly, { log() {} }),
@@ -94,5 +93,25 @@ describe('openrouter auto-only', () => {
     } finally {
       if (prev !== undefined) process.env.OPENROUTER_COST_TIER = prev
     }
+  })
+
+  it('resolveVisionInMessages passes images through for openrouter', async () => {
+    const { resolveVisionInMessages } = require('../lib/bridge/vision-describer')
+    const messages = [
+      {
+        role: 'user',
+        content: [
+          { type: 'text', text: 'describe' },
+          { type: 'image_url', image_url: { url: 'data:image/png;base64,abc' } },
+        ],
+      },
+    ]
+    const out = await resolveVisionInMessages(
+      messages,
+      { name: 'openrouter', baseUrl: 'https://openrouter.ai/api/v1' },
+      { log() {} },
+    )
+    assert.equal(out[0].content[1].type, 'image_url')
+    assert.equal(out[0].content[1].image_url.url, 'data:image/png;base64,abc')
   })
 })
