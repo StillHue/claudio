@@ -86,26 +86,39 @@ describe('openrouter auto-only', () => {
 
   it('buildAutoRouterPlugins respects OPENROUTER_COST_TIER', () => {
     const prev = process.env.OPENROUTER_COST_TIER
+    const prevAllowed = process.env.OPENROUTER_ALLOWED_MODELS
     process.env.OPENROUTER_COST_TIER = 'max'
+    process.env.OPENROUTER_ALLOWED_MODELS = 'nvidia/*'
     try {
       const plugins = autoRouter.buildAutoRouterPlugins('openrouter/auto')
-      assert.deepEqual(plugins, [{ id: 'auto-router', cost_tier: 'max' }])
+      assert.deepEqual(plugins, [
+        { id: 'auto-router', cost_tier: 'max', allowed_models: ['nvidia/*'] },
+      ])
       const beta = autoRouter.buildAutoRouterPlugins('openrouter/auto-beta')
       assert.equal(beta[0].id, 'auto-beta-router')
     } finally {
       if (prev === undefined) delete process.env.OPENROUTER_COST_TIER
       else process.env.OPENROUTER_COST_TIER = prev
+      if (prevAllowed === undefined) delete process.env.OPENROUTER_ALLOWED_MODELS
+      else process.env.OPENROUTER_ALLOWED_MODELS = prevAllowed
     }
   })
 
-  it('buildAutoRouterPlugins returns empty when cost tier unset', () => {
+  it('buildAutoRouterPlugins defaults to nvidia/* when allowed unset', () => {
     const prev = process.env.OPENROUTER_COST_TIER
+    const prevAllowed = process.env.OPENROUTER_ALLOWED_MODELS
     delete process.env.OPENROUTER_COST_TIER
     delete process.env.AUTO_ROUTER_COST_TIER
+    delete process.env.OPENROUTER_ALLOWED_MODELS
     try {
-      assert.deepEqual(autoRouter.buildAutoRouterPlugins('openrouter/auto'), [])
+      const plugins = autoRouter.buildAutoRouterPlugins('openrouter/auto')
+      assert.equal(plugins.length, 1)
+      assert.equal(plugins[0].id, 'auto-router')
+      assert.deepEqual(plugins[0].allowed_models, ['nvidia/*'])
+      assert.equal(plugins[0].cost_tier, undefined)
     } finally {
       if (prev !== undefined) process.env.OPENROUTER_COST_TIER = prev
+      if (prevAllowed !== undefined) process.env.OPENROUTER_ALLOWED_MODELS = prevAllowed
     }
   })
 

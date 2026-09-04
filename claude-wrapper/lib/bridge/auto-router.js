@@ -28,24 +28,42 @@ function getCostTierOrNull() {
   if (!raw) return null
   const t = String(raw).toLowerCase().trim()
   if (!COST_TIERS.includes(t)) {
-    console.warn(`[auto-router] invalid cost_tier="${raw}", ignoring plugin`)
+    console.warn(`[auto-router] invalid cost_tier="${raw}", ignoring plugin cost_tier`)
     return null
   }
   return t
 }
 
+function parseModelListEnv(name) {
+  const raw = process.env[name]
+  if (!raw) return []
+  return raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+}
+
+/**
+ * OpenRouter Auto Router plugin.
+ * Always attach for openrouter/auto so allowed_models (e.g. nvidia/*) actually apply.
+ * Without this, Auto routes across the whole OpenRouter catalog and can burn credits.
+ */
 function buildAutoRouterPlugins(modelName) {
-  const costTier = getCostTierOrNull()
-  if (!costTier) return []
   const model = String(modelName || 'openrouter/auto')
   const plugin = {
     id: model.includes('beta') ? 'auto-beta-router' : 'auto-router',
-    cost_tier: costTier,
   }
-  const allowed = process.env.OPENROUTER_ALLOWED_MODELS
-  if (allowed) plugin.allowed_models = allowed.split(',').map((s) => s.trim()).filter(Boolean)
-  const excluded = process.env.OPENROUTER_EXCLUDED_MODELS
-  if (excluded) plugin.excluded_models = excluded.split(',').map((s) => s.trim()).filter(Boolean)
+
+  const costTier = getCostTierOrNull()
+  if (costTier) plugin.cost_tier = costTier
+
+  // Default: only NVIDIA models on OpenRouter (BYOK). Override via OPENROUTER_ALLOWED_MODELS.
+  const allowed = parseModelListEnv('OPENROUTER_ALLOWED_MODELS')
+  plugin.allowed_models = allowed.length ? allowed : ['nvidia/*']
+
+  const excluded = parseModelListEnv('OPENROUTER_EXCLUDED_MODELS')
+  if (excluded.length) plugin.excluded_models = excluded
+
   return [plugin]
 }
 
