@@ -32,8 +32,8 @@ Your choice of Nvidia vs OpenCode vs custom only changes the catalog Auto can us
 | `lib/provider/` | Resolve models + sync picker settings |
 | `lib/provider/third-party-ui.js` | First-run provider picker |
 | `providers.json` | Active provider + `models[]` used by Auto |
-| `claudio-wrapper-nativeN.exe` | Windows process wrapper for Cursor/VS Code |
-| `install.ps1` | Install wrapper + Cursor wiring (does **not** seed a wrong provider) |
+| `claudio-wrapper-nativeN.exe` | Windows process wrapper for any Claude Code IDE host |
+| `install.ps1` | Install wrapper + wire all IDE hosts (does **not** seed a wrong provider) |
 
 ## Config example (Nvidia)
 
@@ -62,7 +62,7 @@ Your choice of Nvidia vs OpenCode vs custom only changes the catalog Auto can us
 
 Put the matching API key in `claude-wrapper/.env` or `~/.claude-native/.env`.
 
-Cursor / VS Code (official Claude Code extension):
+Any IDE hosting the official Claude Code extension (Cursor, VS Code, Insiders, VSCodium):
 
 ```json
 "claudeCode.claudeProcessWrapper": "C:\\Users\\<you>\\claudio\\claude-wrapper\\claudio-wrapper-nativeN.exe",
@@ -70,7 +70,9 @@ Cursor / VS Code (official Claude Code extension):
 "claudeCode.skipApiCheck": true
 ```
 
+`install.ps1` and `syncIdeClaudeModel` patch / sync `claudeCode.*` across those hosts’ `settings.json`. CLI-only users need no IDE settings — run the wrapper / `claude` shim directly.
+
 ## Two install paths (do not mix)
 
-1. **Official Claude Code UI** (recommended): `claude-wrapper/install.ps1` + Cursor/VS Code extension.
+1. **Official Claude Code UI** (recommended): `claude-wrapper/install.ps1` + Claude Code extension in your IDE (or CLI).
 2. **Ink CLI fork** (`npm i -g @gaburieuru/claudio`): separate TUI — not the Anthropic Claude Code UI.

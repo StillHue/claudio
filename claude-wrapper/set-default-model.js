@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Set the default Claude native model and sync Claude Code + Cursor settings.
+ * Set the default Claude native model and sync Claude Code + IDE host settings.
  *
  * Usage:
  *   node set-default-model.js deepseek-v4-flash-free
@@ -89,10 +89,19 @@ function main() {
     console.log(
       `  claude settings: ${result.sync.claude?.changed ? 'updated' : 'unchanged'} ${result.sync.claude?.path || ''}`,
     )
-    console.log(
-      `  cursor settings: ${result.sync.cursor?.changed ? 'updated' : 'unchanged'} ${result.sync.cursor?.path || ''}`,
-    )
-    console.log('\nReload Claude Code / Cursor window if the picker still shows the old default.')
+    const ideHosts = result.sync.ide?.hosts || []
+    if (ideHosts.length) {
+      for (const h of ideHosts) {
+        console.log(
+          `  ${h.name} settings: ${h.changed ? 'updated' : 'unchanged'} ${h.path || ''}`,
+        )
+      }
+    } else {
+      console.log(
+        `  IDE settings: ${result.sync.ide?.changed ? 'updated' : 'unchanged'} ${result.sync.ide?.path || ''}`,
+      )
+    }
+    console.log('\nReload Claude Code / your IDE window if the picker still shows the old default.')
   } catch (err) {
     console.error(`[set-default-model] ${err.message}`)
     process.exit(1)

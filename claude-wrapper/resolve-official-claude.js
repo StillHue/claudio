@@ -1,6 +1,6 @@
 /**
  * Resolve the newest official Anthropic Claude Code binary on this machine.
- * Shared by Cursor process-wrapper and terminal CLI shim.
+ * Shared by Claude Code process-wrapper and terminal CLI shim.
  */
 const { execFileSync } = require('child_process')
 const fs = require('fs')
@@ -73,6 +73,9 @@ function listExtensionClaudeBinaries() {
   for (const home of homes) {
     roots.push(path.join(home, '.cursor', 'extensions'))
     roots.push(path.join(home, '.vscode', 'extensions'))
+    roots.push(path.join(home, '.vscode-insiders', 'extensions'))
+    roots.push(path.join(home, '.vscodium', 'extensions'))
+    roots.push(path.join(home, '.vscode-oss', 'extensions'))
   }
   const out = []
   for (const root of roots) {

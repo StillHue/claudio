@@ -24,23 +24,23 @@
 <em>you already know me</em>
 </p>
 
-Coding agent CLI — any LLM. Terminal or Cursor.
+Coding agent CLI — any LLM. Terminal, Cursor, VS Code, or other Claude Code hosts.
 
 ## Install
 
-### Cursor + official Claude Code (recommended)
+### Official Claude Code (recommended)
 
-This is the path that keeps the **official Claude Code UI** (Cursor / VS Code extension).
+Keeps the **official Claude Code UI** in your IDE (Cursor, VS Code, Insiders, VSCodium) or CLI.
 It does **not** install the Ink CLI fork.
 
-One-click on Windows (builds the native bridge, wires Cursor; first launch opens the provider picker):
+One-click on Windows (builds the native bridge, wires every installed IDE host; first launch opens the provider picker):
 
 ```powershell
 cd claude-wrapper
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
-1. Reload the Cursor / VS Code window  
+1. Reload your IDE window (or open a new Claude Code CLI session)  
 2. Open the **Claude Code** panel (not a random terminal `claudio` command)  
 3. On first run, pick **your** provider (OpenCode Zen · Nvidia · OpenAI Compatible) and paste **that** provider’s API key  
 

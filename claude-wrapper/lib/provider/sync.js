@@ -1,5 +1,7 @@
 /**
- * Sync providers.json defaults into Claude + Cursor settings.
+ * Sync providers.json defaults into Claude Code + IDE host settings.
+ * IDE hosts: any editor that runs the official Claude Code extension
+ * (Cursor, VS Code, Insiders, VSCodium, …).
  */
 const fs = require('fs')
 const path = require('path')
@@ -7,16 +9,40 @@ const os = require('os')
 const { modelId, loadProvidersConfig, listCatalogEntries, parseModelId, AUTO_PICKER_ID } = require('./resolve')
 
 /**
- * Cursor User settings.json candidates (Windows + Linux/macOS).
- * @returns {string[]}
+ * User settings.json candidates for Claude Code IDE hosts (Windows + Linux/macOS).
+ * @returns {{ name: string, path: string }[]}
  */
-function cursorUserSettingsPaths() {
-  const paths = []
-  if (process.env.APPDATA) {
-    paths.push(path.join(process.env.APPDATA, 'Cursor', 'User', 'settings.json'))
+function ideHostSettingsTargets() {
+  const targets = []
+  const home = os.homedir()
+  const winApps = process.env.APPDATA
+    ? [
+        ['Cursor', path.join(process.env.APPDATA, 'Cursor', 'User', 'settings.json')],
+        ['VS Code', path.join(process.env.APPDATA, 'Code', 'User', 'settings.json')],
+        ['VS Code Insiders', path.join(process.env.APPDATA, 'Code - Insiders', 'User', 'settings.json')],
+        ['VSCodium', path.join(process.env.APPDATA, 'VSCodium', 'User', 'settings.json')],
+      ]
+    : []
+  const unixApps = [
+    ['Cursor', path.join(home, '.config', 'Cursor', 'User', 'settings.json')],
+    ['VS Code', path.join(home, '.config', 'Code', 'User', 'settings.json')],
+    ['VS Code Insiders', path.join(home, '.config', 'Code - Insiders', 'User', 'settings.json')],
+    ['VSCodium', path.join(home, '.config', 'VSCodium', 'User', 'settings.json')],
+  ]
+  const all = winApps.length ? winApps : unixApps
+  const seen = new Set()
+  for (const [name, p] of all) {
+    const key = p.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    targets.push({ name, path: p })
   }
-  paths.push(path.join(os.homedir(), '.config', 'Cursor', 'User', 'settings.json'))
-  return paths
+  return targets
+}
+
+/** @deprecated use ideHostSettingsTargets — kept for callers */
+function cursorUserSettingsPaths() {
+  return ideHostSettingsTargets().map((t) => t.path)
 }
 
 /**
@@ -51,7 +77,6 @@ function syncClaudeAvailableModels(providersData) {
   if (!settings || typeof settings !== 'object') settings = {}
 
   const active = providersData.active
-  const activeProvider = active ? providersData.providers?.[active] : null
   const providerLabel = active || 'your provider'
   const autoDescription = `Auto — routes vision, coding, and complexity across ${providerLabel} models`
 
@@ -114,51 +139,69 @@ function syncClaudeAvailableModels(providersData) {
 }
 
 /**
- * Merge only `claudeCode.model` into Cursor User settings.json (só-se-mudou).
- * @returns {{ path: string|null, changed: boolean, model: string|null }}
+ * Merge `claudeCode.model` into every installed IDE host settings.json.
+ * @returns {{ changed: boolean, model: string|null, hosts: { name: string, path: string, changed: boolean }[], path: string|null }}
  */
-function syncCursorClaudeModel(defaultId) {
-  if (!defaultId) return { path: null, changed: false, model: null }
-  for (const settingsPath of cursorUserSettingsPaths()) {
-    if (!fs.existsSync(settingsPath)) continue
+function syncIdeClaudeModel(defaultId) {
+  const hosts = []
+  if (!defaultId) return { changed: false, model: null, hosts, path: null }
+
+  for (const target of ideHostSettingsTargets()) {
+    if (!fs.existsSync(target.path)) {
+      // Only touch hosts that already have a settings file (IDE was used).
+      continue
+    }
     let settings = {}
     try {
-      const raw = fs.readFileSync(settingsPath, 'utf8').replace(/^\uFEFF/, '')
+      const raw = fs.readFileSync(target.path, 'utf8').replace(/^\uFEFF/, '')
       settings = JSON.parse(raw)
     } catch {
+      hosts.push({ name: target.name, path: target.path, changed: false, error: 'parse_failed' })
       continue
     }
     if (settings['claudeCode.model'] === defaultId) {
-      return { path: settingsPath, changed: false, model: defaultId }
+      hosts.push({ name: target.name, path: target.path, changed: false })
+      continue
     }
     settings['claudeCode.model'] = defaultId
-    const next = JSON.stringify(settings, null, 2) + '\n'
-    fs.writeFileSync(settingsPath, next, 'utf8')
-    return { path: settingsPath, changed: true, model: defaultId }
+    fs.writeFileSync(target.path, JSON.stringify(settings, null, 2) + '\n', 'utf8')
+    hosts.push({ name: target.name, path: target.path, changed: true })
   }
-  return { path: null, changed: false, model: defaultId }
+
+  return {
+    changed: hosts.some((h) => h.changed),
+    model: defaultId,
+    hosts,
+    path: hosts.find((h) => h.changed)?.path || hosts[0]?.path || null,
+  }
+}
+
+/** @deprecated use syncIdeClaudeModel */
+function syncCursorClaudeModel(defaultId) {
+  return syncIdeClaudeModel(defaultId)
 }
 
 /**
- * Full default-model sync: Claude settings + Cursor claudeCode.model.
+ * Full default-model sync: ~/.claude + every Claude Code IDE host.
  * Call from CLI / wrapper spawn only — never from mid-stream.
  */
 function syncDefaultModel(providersData) {
   const claude = syncClaudeAvailableModels(providersData)
   const defaultId = AUTO_PICKER_ID
-  const cursor = syncCursorClaudeModel(defaultId)
+  const ide = syncIdeClaudeModel(defaultId)
   return {
     model: defaultId,
     ids: claude.ids || [],
     claude,
-    cursor,
-    changed: !!(claude.changed || cursor.changed),
+    cursor: ide, // backward-compatible alias
+    ide,
+    changed: !!(claude.changed || ide.changed),
     path: claude.path,
   }
 }
 
 /**
- * Persist active provider + model into providers.json (no Claude/Cursor rewrite).
+ * Persist active provider + model into providers.json (no Claude/IDE rewrite).
  * Safe to call from POST /v1/messages hot path.
  * @returns {{ changed: boolean, path: string|null, provider: string|null, model: string|null }}
  */
@@ -199,61 +242,42 @@ function persistProvidersDefault(providersData, providerName, upstreamModel, con
 }
 
 /**
- * Set default model from CLI arg (bare id or anthropic.<id>).
  * Updates providers.json then runs syncDefaultModel.
  */
-function setDefaultModel(requestedId) {
+function setDefaultModel(providerName, upstreamModel) {
   const loaded = loadProvidersConfig()
   const data = loaded.data
-  if (!data.providers || !Object.keys(data.providers).length) {
+  if (!data?.providers || !Object.keys(data.providers).length) {
     throw new Error('No providers configured in ~/.claude-native/providers.json')
   }
-
-  let providerName = null
-  let upstreamModel = null
-  const parsed = parseModelId(requestedId, data)
-  if (parsed && data.providers[parsed.provider]) {
-    providerName = parsed.provider
-    upstreamModel = parsed.model
-  } else {
-    const bare = String(requestedId || '')
-      .replace(/^anthropic\./i, '')
-      .trim()
-    for (const [n, cand] of Object.entries(data.providers)) {
-      const models = Array.isArray(cand.models) && cand.models.length ? cand.models : [cand.model]
-      if (models.includes(bare) || cand.model === bare) {
-        providerName = n
-        upstreamModel = bare
-        break
-      }
+  let name = providerName
+  let model = upstreamModel
+  if (!name || !model) {
+    const parsed = parseModelId(String(providerName || upstreamModel || ''), data)
+    if (parsed) {
+      name = parsed.provider
+      model = parsed.model
     }
   }
-
-  if (!providerName || !upstreamModel) {
-    throw new Error(`Unknown model: ${requestedId}`)
+  if (!name || !model) {
+    throw new Error('Could not resolve provider/model')
   }
-
-  const models =
-    Array.isArray(data.providers[providerName].models) && data.providers[providerName].models.length
-      ? data.providers[providerName].models
-      : [data.providers[providerName].model]
-  if (!models.includes(upstreamModel)) {
-    // Allow setting as default even if not listed — append for catalog sync.
-    if (!Array.isArray(data.providers[providerName].models)) {
-      data.providers[providerName].models = models.filter(Boolean)
-    }
-    if (!data.providers[providerName].models.includes(upstreamModel)) {
-      data.providers[providerName].models.unshift(upstreamModel)
-    }
+  if (!data.providers[name]) {
+    throw new Error(`Provider "${name}" not found`)
   }
-
+  if (!Array.isArray(data.providers[name].models)) {
+    data.providers[name].models = []
+  }
+  if (!data.providers[name].models.includes(model)) {
+    data.providers[name].models.unshift(model)
+  }
   const configPath = loaded.path || path.join(os.homedir(), '.claude-native', 'providers.json')
-  const persisted = persistProvidersDefault(data, providerName, upstreamModel, configPath)
+  const persisted = persistProvidersDefault(data, name, model, configPath)
   const synced = syncDefaultModel(data)
   return {
-    provider: providerName,
-    model: upstreamModel,
-    pickerId: modelId(providerName, upstreamModel),
+    provider: name,
+    model,
+    pickerId: modelId(name, model),
     providersPath: persisted.path,
     providersChanged: persisted.changed,
     sync: synced,
@@ -261,8 +285,10 @@ function setDefaultModel(requestedId) {
 }
 
 module.exports = {
+  ideHostSettingsTargets,
   cursorUserSettingsPaths,
   syncClaudeAvailableModels,
+  syncIdeClaudeModel,
   syncCursorClaudeModel,
   syncDefaultModel,
   persistProvidersDefault,

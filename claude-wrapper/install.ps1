@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-  One-click setup: official Claude Code + Claudio native wrapper + Cursor + /provider UI.
+  One-click setup: official Claude Code + Claudio native wrapper + IDE hosts + provider UI.
 
 .DESCRIPTION
   From a clone of StillHue/claudio (or any checkout with claude-wrapper/):
@@ -11,11 +11,9 @@
   What it does:
     1. Ensures official Claude Code (install.ps1 if missing)
     2. Builds claudio-wrapper-nativeN.exe with Bun (or reuses latest if -SkipBuild)
-    3. Points Cursor User settings at that .exe
+    3. Points Claude Code IDE hosts (Cursor, VS Code, Insiders, VSCodium) at that .exe
     4. Creates ~/.claude-native/ + PATH shims (claude/claudio)
-    5. Installs /provider skill
-    6. Opens the local provider UI to paste an API key
-
+    5. First Claude launch opens the provider picker (no wrong provider seeded)
 .PARAMETER SkipClaudeInstall
   Do not run Anthropic's install.ps1 even if claude.exe is missing.
 
@@ -74,8 +72,13 @@ function Test-ClaudeBinary {
   }
   $cmd = Get-Command claude.exe -ErrorAction SilentlyContinue
   if ($cmd -and $cmd.Source -like '*.exe') { return $cmd.Source }
-  $extRoot = Join-Path $env:USERPROFILE '.cursor\extensions'
-  if (Test-Path $extRoot) {
+  $extRoots = @(
+    (Join-Path $env:USERPROFILE '.cursor\extensions'),
+    (Join-Path $env:USERPROFILE '.vscode\extensions'),
+    (Join-Path $env:USERPROFILE '.vscode-insiders\extensions')
+  )
+  foreach ($extRoot in $extRoots) {
+    if (-not (Test-Path $extRoot)) { continue }
     $hit = Get-ChildItem $extRoot -Directory -Filter 'anthropic.claude-code-*' -ErrorAction SilentlyContinue |
       Sort-Object Name -Descending |
       ForEach-Object {
@@ -120,7 +123,7 @@ function Ensure-ClaudeCode {
     irm https://claude.ai/install.ps1 | iex
   } catch {
     Write-Warning "Official install failed: $($_.Exception.Message)"
-    Write-Warning "Install the Cursor extension anthropic.claude-code or re-run install.ps1 later."
+    Write-Warning "Install the Claude Code extension (Cursor or VS Code: anthropic.claude-code) or re-run install.ps1 later."
     return $null
   }
   return (Test-ClaudeBinary)
@@ -141,19 +144,43 @@ function Build-Wrapper {
   return (Get-Item $outfile)
 }
 
-function Set-CursorWrapper {
-  param([string]$ExePath)
-  $settingsPath = Join-Path $env:APPDATA 'Cursor\User\settings.json'
-  Write-Step "Configuring Cursor -> $settingsPath"
-  if (-not (Test-Path $settingsPath)) {
-    $dir = Split-Path $settingsPath -Parent
+function Get-IdeSettingsTargets {
+  $list = @()
+  if ($env:APPDATA) {
+    $list += @(
+      @{ Name = 'Cursor'; Path = (Join-Path $env:APPDATA 'Cursor\User\settings.json') }
+      @{ Name = 'VS Code'; Path = (Join-Path $env:APPDATA 'Code\User\settings.json') }
+      @{ Name = 'VS Code Insiders'; Path = (Join-Path $env:APPDATA 'Code - Insiders\User\settings.json') }
+      @{ Name = 'VSCodium'; Path = (Join-Path $env:APPDATA 'VSCodium\User\settings.json') }
+    )
+  }
+  return $list
+}
+
+function Patch-IdeSettingsFile {
+  param(
+    [string]$Name,
+    [string]$SettingsPath,
+    [string]$ExePath
+  )
+  $dir = Split-Path $SettingsPath -Parent
+  if (-not (Test-Path $dir)) {
+    # Only create settings for IDEs that already have a product folder under APPDATA.
+    $productRoot = Split-Path $dir -Parent
+    if (-not (Test-Path $productRoot)) {
+      Write-Host "skip $Name (not installed)"
+      return $false
+    }
     New-Item -ItemType Directory -Path $dir -Force | Out-Null
-    Set-Content -Path $settingsPath -Value "{}" -Encoding UTF8
+  }
+  if (-not (Test-Path $SettingsPath)) {
+    Set-Content -Path $SettingsPath -Value "{}" -Encoding UTF8
   }
 
+  Write-Host "Configuring $Name -> $SettingsPath"
   $node = Get-Command node -ErrorAction SilentlyContinue
   if ($node) {
-    $patchJs = Join-Path $env:TEMP 'claudio-patch-cursor-settings.js'
+    $patchJs = Join-Path $env:TEMP 'claudio-patch-ide-settings.js'
     $patchBody = @'
 const fs = require('fs')
 const settingsPath = process.argv[2]
@@ -196,36 +223,63 @@ if (!data || typeof data !== 'object' || Array.isArray(data)) {
 fs.copyFileSync(settingsPath, settingsPath + '.bak-claudio-install')
 data['claudeCode.claudeProcessWrapper'] = exe
 if (data['claudeCode.skipApiCheck'] == null) data['claudeCode.skipApiCheck'] = true
+if (data['claudeCode.disableLoginPrompt'] == null) data['claudeCode.disableLoginPrompt'] = true
+data['claudeCode.model'] = data['claudeCode.model'] || 'anthropic.openrouter.openrouter-auto'
 fs.writeFileSync(settingsPath, JSON.stringify(data, null, 2) + '\n', 'utf8')
 console.log('set claudeCode.claudeProcessWrapper =', exe)
 '@
     Set-Content -Path $patchJs -Value $patchBody -Encoding UTF8
-    & node $patchJs $settingsPath $ExePath
+    & node $patchJs $SettingsPath $ExePath
     if ($LASTEXITCODE -ne 0) {
-      throw "Failed to patch Cursor settings.json (exit $LASTEXITCODE). File left unchanged."
+      Write-Warning "Failed to patch $Name settings.json (exit $LASTEXITCODE). File left unchanged."
+      return $false
     }
     Remove-Item $patchJs -Force -ErrorAction SilentlyContinue
-    return
+    return $true
   }
 
-  $json = Get-Content $settingsPath -Raw -Encoding UTF8
+  $json = Get-Content $SettingsPath -Raw -Encoding UTF8
   if ($json.Length -gt 0 -and [int][char]$json[0] -eq 0xFEFF) { $json = $json.Substring(1) }
   $obj = $null
   try { $obj = $json | ConvertFrom-Json } catch {
-    Write-Error "Could not parse Cursor settings.json. Refusing to overwrite. Fix JSON (or install Node.js for JSONC strip) and re-run."
-    return
+    Write-Warning "Could not parse $Name settings.json. Skipping (install Node.js for JSONC strip)."
+    return $false
   }
   if ($null -eq $obj) {
-    Write-Error "settings.json root is empty/null. Refusing to overwrite."
-    return
+    Write-Warning "$Name settings.json root is empty/null. Skipping."
+    return $false
   }
-  Copy-Item $settingsPath "$settingsPath.bak-claudio-install" -Force
+  Copy-Item $SettingsPath "$SettingsPath.bak-claudio-install" -Force
   $obj | Add-Member -NotePropertyName 'claudeCode.claudeProcessWrapper' -NotePropertyValue $ExePath -Force
   if (-not ($obj.PSObject.Properties.Name -contains 'claudeCode.skipApiCheck')) {
     $obj | Add-Member -NotePropertyName 'claudeCode.skipApiCheck' -NotePropertyValue $true -Force
   }
-  ($obj | ConvertTo-Json -Depth 40) | Set-Content -Path $settingsPath -Encoding UTF8
+  if (-not ($obj.PSObject.Properties.Name -contains 'claudeCode.disableLoginPrompt')) {
+    $obj | Add-Member -NotePropertyName 'claudeCode.disableLoginPrompt' -NotePropertyValue $true -Force
+  }
+  if (-not ($obj.PSObject.Properties.Name -contains 'claudeCode.model')) {
+    $obj | Add-Member -NotePropertyName 'claudeCode.model' -NotePropertyValue 'anthropic.openrouter.openrouter-auto' -Force
+  }
+  ($obj | ConvertTo-Json -Depth 40) | Set-Content -Path $SettingsPath -Encoding UTF8
   Write-Host "set claudeCode.claudeProcessWrapper = $ExePath"
+  return $true
+}
+
+function Set-IdeWrappers {
+  param([string]$ExePath)
+  Write-Step "Configuring Claude Code IDE hosts (Cursor / VS Code / …)"
+  $patched = 0
+  foreach ($t in Get-IdeSettingsTargets) {
+    if (Patch-IdeSettingsFile -Name $t.Name -SettingsPath $t.Path -ExePath $ExePath) {
+      $patched++
+    }
+  }
+  if ($patched -eq 0) {
+    Write-Warning "No IDE settings were patched. Install Cursor or VS Code + Claude Code extension, then re-run."
+    Write-Warning "CLI still works via PATH shims once a provider is configured."
+  } else {
+    Write-Host "Patched $patched IDE host(s)."
+  }
 }
 
 function Ensure-NativeHome {
@@ -267,7 +321,7 @@ if ($SkipBuild) {
   }
 }
 
-Set-CursorWrapper -ExePath $exe.FullName
+Set-IdeWrappers -ExePath $exe.FullName
 
 Write-Step "Ensuring ~/.claude-native"
 Ensure-NativeHome
@@ -283,7 +337,7 @@ if (Test-Path $shim) {
 Write-Host ""
 Write-Host "Done." -ForegroundColor Green
 Write-Host "  Wrapper: $($exe.FullName)"
-Write-Host "  Providers: ~/.claude-native/providers.json (set NVIDIA_API_KEY / apiKey)"
-Write-Host "  Model: node .\set-default-model.js <model-id>"
-Write-Host "  Next: Cursor -> Developer: Reload Window"
+Write-Host "  Providers: ~/.claude-native/providers.json (set on first Claude launch)"
+Write-Host "  Works with: Cursor, VS Code, Insiders, VSCodium, and Claude Code CLI"
+Write-Host "  Next: reload your IDE window (or restart), open Claude Code, pick a provider"
 Write-Host ""
