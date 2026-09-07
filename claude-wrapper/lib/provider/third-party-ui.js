@@ -189,7 +189,7 @@ async function showThirdPartyProviders() {
     console.log(`  Wrote ${target} → active=${selected.id}`)
   }
   console.log('')
-  console.log('  ✓ Provider configured. Run Claude Code again (reload window if in Cursor).')
+  console.log('  ✓ Provider configured. Run Claude Code again (reload the IDE window if needed).')
   console.log('')
   return true
 }

@@ -25,10 +25,12 @@ const {
 const {
   syncClaudeAvailableModels,
   syncCursorClaudeModel,
+  syncIdeClaudeModel,
   syncDefaultModel,
   persistProvidersDefault,
   setDefaultModel,
   cursorUserSettingsPaths,
+  ideHostSettingsTargets,
 } = require('./lib/provider/sync')
 
 module.exports = {
@@ -43,15 +45,17 @@ module.exports = {
   modelId,
   parseModelId,
   resolveProvider,
+  buildAnthropicModelsList,
   resolveApiKey,
   buildSlugIndex,
-  buildAnthropicModelsList,
   AUTO_PICKER_ID,
   isAutoPickerId,
   syncClaudeAvailableModels,
   syncCursorClaudeModel,
+  syncIdeClaudeModel,
   syncDefaultModel,
   persistProvidersDefault,
   setDefaultModel,
   cursorUserSettingsPaths,
+  ideHostSettingsTargets,
 }
