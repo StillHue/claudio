@@ -4,6 +4,11 @@
 const DISPLAY = {
   // OpenCode Zen → short Sonnet labels (no "Claude"/"Free"; upstream unchanged).
   // Ranking by agentic/day-to-day fit: MiMo = Sonnet 5, DeepSeek Flash = 4.8.
+  'auto': {
+    name: 'Auto',
+    description: 'Auto-routes dynamically between Fast & Frontier models based on prompt complexity',
+    slug: 'auto',
+  },
   'muse-spark-1.2-contributor-free': {
     name: 'Muse Spark 1.2',
     description: 'OpenCode Zen → muse-spark-1.2-contributor-free (responses)',
@@ -44,10 +49,85 @@ const DISPLAY = {
     description: 'OpenCode Zen → hy3-free',
     slug: 'hy3-free',
   },
+  // OpenRouter — roteamento inteligente via BYOK providers.
+  'openrouter/auto': {
+    name: 'Auto (OpenRouter)',
+    description: 'OpenRouter → auto-router classifica e roteia entre modelos',
+    slug: 'auto',
+  },
+  'openrouter/auto-beta': {
+    name: 'Auto Beta',
+    description: 'OpenRouter → auto-beta early access',
+    slug: 'auto-beta',
+  },
+  // NVIDIA NIM Models
+  'nvidia/nemotron-3-ultra-550b-a55b': {
+    name: 'Nemotron 3 Ultra 550B',
+    description: 'Nvidia → Flagship 550B frontier model',
+    slug: 'nemotron-ultra-550b',
+  },
+  'nvidia/nemotron-3-super-120b-a12b': {
+    name: 'Nemotron 3 Super 120B',
+    description: 'Nvidia → Fast high-throughput 120B model',
+    slug: 'nemotron-super-120b',
+  },
+  'nvidia/nemotron-3.5-lightning-30b-a3b': {
+    name: 'Nemotron 3.5 Lightning 30B',
+    description: 'Nvidia → Ultra-fast sub-second latency model',
+    slug: 'nemotron-lightning-30b',
+  },
+  'nvidia/nemotron-3-nano-30b-a3b': {
+    name: 'Nemotron 3 Nano 30B',
+    description: 'Nvidia → Lightweight efficient 30B model',
+    slug: 'nemotron-nano-30b',
+  },
+  'nvidia/nemotron-nano-12b-v2-vl': {
+    name: 'Nemotron Nano 12B VL (EOL)',
+    description: 'Nvidia → retired 2026-08-26',
+    slug: 'nemotron-nano-12b-vl',
+  },
+  'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning': {
+    name: 'Nemotron 3 Nano Omni 30B',
+    description: 'Nvidia → Multimodal vision + reasoning',
+    slug: 'nemotron-nano-omni-30b',
+  },
+  'meta/llama-3.3-70b-instruct': {
+    name: 'Llama 3.3 70B Instruct',
+    description: 'Nvidia → Meta Llama 3.3 70B flagship',
+    slug: 'llama-3-3-70b',
+  },
+  'deepseek-ai/deepseek-r1': {
+    name: 'DeepSeek R1',
+    description: 'Nvidia → Reasoning reasoning model',
+    slug: 'deepseek-r1',
+  },
+  'deepseek-ai/deepseek-v3': {
+    name: 'DeepSeek V3',
+    description: 'Nvidia → DeepSeek V3 671B MoE',
+    slug: 'deepseek-v3',
+  },
+  'qwen/qwen2.5-coder-32b-instruct': {
+    name: 'Qwen 2.5 Coder 32B',
+    description: 'Nvidia → Specialized code generation model',
+    slug: 'qwen-2-5-coder-32b',
+  },
+  'mistralai/mistral-large-2-instruct': {
+    name: 'Mistral Large 2',
+    description: 'Nvidia → Mistral flagship 123B model',
+    slug: 'mistral-large-2',
+  },
+  'mistralai/codestral-2501': {
+    name: 'Codestral 2501',
+    description: 'Nvidia → Mistral specialized coding model',
+    slug: 'codestral-2501',
+  },
 }
 
 /** Picker / legacy ids → upstream Zen free (or Cohere) model */
 const LEGACY_SLUGS = {
+  auto: 'auto',
+  'claude-auto': 'auto',
+  'anthropic.auto': 'auto',
   lite: 'deepseek-v4-flash-free',
   fast: 'deepseek-v4-flash-free',
   mini: 'north-mini-code-free',
@@ -107,11 +187,16 @@ const LEGACY_SLUGS = {
 
 const PROVIDER_LABEL = {
   opencode: 'OpenCode Zen',
+  mistral: 'Mistral',
+  nvidia: 'Nvidia',
+  openrouter: 'OpenRouter',
 }
 
 /** Short tag embedded in picker ids: anthropic.<tag>.<model> */
 const PROVIDER_TAG = {
   opencode: 'opencode',
+  openrouter: 'openrouter',
+  nvidia: 'nvidia',
 }
 
 function providerTag(providerName) {

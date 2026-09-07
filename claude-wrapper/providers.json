@@ -1,0 +1,20 @@
+{
+  "active": "nvidia",
+  "providers": {
+    "nvidia": {
+      "baseUrl": "https://integrate.api.nvidia.com/v1",
+      "model": "nvidia/nemotron-3-super-120b-a12b",
+      "apiKeyEnv": "NVIDIA_API_KEY",
+      "tools": true,
+      "format": "chat",
+      "visionModel": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
+      "models": [
+        "nvidia/nemotron-3-ultra-550b-a55b",
+        "nvidia/nemotron-3-super-120b-a12b",
+        "nvidia/nemotron-3.5-lightning-30b-a3b",
+        "nvidia/nemotron-3-nano-30b-a3b",
+        "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
+      ]
+    }
+  }
+}

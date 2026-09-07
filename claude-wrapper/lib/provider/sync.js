@@ -4,7 +4,7 @@
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
-const { modelId, loadProvidersConfig, listCatalogEntries, parseModelId } = require('./resolve')
+const { modelId, loadProvidersConfig, listCatalogEntries, parseModelId, AUTO_PICKER_ID } = require('./resolve')
 
 /**
  * Cursor User settings.json candidates (Windows + Linux/macOS).
@@ -32,7 +32,8 @@ function syncClaudeAvailableModels(providersData) {
   let settings = {}
   try {
     if (fs.existsSync(settingsPath)) {
-      settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'))
+      const raw = fs.readFileSync(settingsPath, 'utf8').replace(/^\uFEFF/, '')
+      settings = JSON.parse(raw)
     }
   } catch (err) {
     // NEVER wipe a corrupt settings.json by rewriting {}.
@@ -49,18 +50,32 @@ function syncClaudeAvailableModels(providersData) {
   }
   if (!settings || typeof settings !== 'object') settings = {}
 
-  const active = providersData.active || 'opencode'
-  const activeProvider = providersData.providers?.[active]
-  const defaultId = activeProvider
-    ? modelId(active, activeProvider.model || (activeProvider.models || [])[0])
-    : ids[0]
+  const active = providersData.active
+  const activeProvider = active ? providersData.providers?.[active] : null
+  const providerLabel = active || 'your provider'
+  const autoDescription = `Auto — routes vision, coding, and complexity across ${providerLabel} models`
 
-  settings.availableModels = ids
-  // Constrain Default: without this, Claude Code keeps showing
-  // "Default (recommended) · Opus …" even when settings.model is a gateway id.
+  // Picker shows only Auto. Discrete catalog models stay resolvable by id,
+  // but listing them here hides Auto in Claude Code / the extension.
+  settings.availableModels = [AUTO_PICKER_ID]
   settings.enforceAvailableModels = true
-  // Always align with providers.json active default (set-default-model / wrapper sync).
-  settings.model = defaultId
+  settings.model = AUTO_PICKER_ID
+
+  settings.modelPicker = {
+    replaceBuiltInOptions: true,
+    options: [
+      {
+        model: AUTO_PICKER_ID,
+        label: 'Auto',
+        description: autoDescription,
+      },
+    ],
+  }
+
+  if (!settings.env || typeof settings.env !== 'object') settings.env = {}
+  settings.env.ANTHROPIC_CUSTOM_MODEL_OPTION = AUTO_PICKER_ID
+  settings.env.ANTHROPIC_CUSTOM_MODEL_OPTION_NAME = 'Auto'
+  settings.env.ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION = autoDescription
 
   // Strip leftovers that force OpenAI chat routing and bypass our
   // Anthropic Messages bridge (ANTHROPIC_BASE_URL). Keep COHERE_API_KEY etc.
@@ -72,6 +87,8 @@ function syncClaudeAvailableModels(providersData) {
       'CLAUDE_CODE_USE_OPENAI',
       'CLAUDE_CODE_USE_BEDROCK',
       'CLAUDE_CODE_USE_VERTEX',
+      'ANTHROPIC_API_KEY',
+      'ANTHROPIC_AUTH_TOKEN',
     ]) {
       delete settings.env[k]
     }
@@ -106,7 +123,8 @@ function syncCursorClaudeModel(defaultId) {
     if (!fs.existsSync(settingsPath)) continue
     let settings = {}
     try {
-      settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8'))
+      const raw = fs.readFileSync(settingsPath, 'utf8').replace(/^\uFEFF/, '')
+      settings = JSON.parse(raw)
     } catch {
       continue
     }
@@ -126,13 +144,8 @@ function syncCursorClaudeModel(defaultId) {
  * Call from CLI / wrapper spawn only — never from mid-stream.
  */
 function syncDefaultModel(providersData) {
-  const active = providersData.active || 'opencode'
-  const activeProvider = providersData.providers?.[active]
-  const fromProviders = activeProvider
-    ? modelId(active, activeProvider.model || (activeProvider.models || [])[0])
-    : null
   const claude = syncClaudeAvailableModels(providersData)
-  const defaultId = fromProviders || claude.model
+  const defaultId = AUTO_PICKER_ID
   const cursor = syncCursorClaudeModel(defaultId)
   return {
     model: defaultId,

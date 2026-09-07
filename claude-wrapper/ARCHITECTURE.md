@@ -2,69 +2,67 @@
 
 Official Claude Code harness. Inference goes to whatever is in
 `~/.claude-native/providers.json` (or `./providers.json`) via a local
-Anthropic Messages → Chat Completions **or Responses** bridge that starts with Claude and
-exits with it — no background Node server. Third party providers picker shows on first run if no `apiKey`.
+Anthropic Messages → Chat Completions **or Responses** bridge that starts with
+Claude and exits with it — no background Node server.
+
+First run with no provider / API key shows the **Third party providers** picker
+(OpenCode Zen · Nvidia · OpenAI Compatible).
+
+## Auto model
+
+`Auto` / `anthropic.auto` (canonical picker id `anthropic.openrouter.openrouter-auto`)
+is a **local intelligent router over the active provider’s `models[]` catalog** —
+same idea as Cursor Auto, not hard-wired to one vendor.
+
+- Classifies the turn: vision · hard (analysis/architecture) · coding · chitchat
+- Picks the best matching model **from that provider’s list** (name heuristics)
+- On 429/5xx/410/empty stream: retries same model once, then upgrades within the same catalog
+- If the active provider is OpenRouter and the only/default model is `openrouter/auto`, Auto passes through to OpenRouter’s Auto Router instead
+
+Your choice of Nvidia vs OpenCode vs custom only changes the catalog Auto can use.
 
 ## Layout
 
 | Path | Role |
 | --- | --- |
-| `claudio-wrapper.js` | Launches Claude Code + ephemeral bridge; shows Third party providers if no apiKey |
-| `claude-cli.js` | CLI entry |
+| `claudio-wrapper.js` | Launches Claude Code + ephemeral bridge; Third party providers if no apiKey |
 | `native-bridge.js` | Loopback Anthropic-compatible proxy |
-| `lib/bridge/messages.js` | Router (50 lines) → chat vs responses |
-| `lib/bridge/messages-chat.js` | Chat Completions handler |
-| `lib/bridge/messages-responses.js` | Responses handler (muse-spark, reasoning summary) |
-| `lib/bridge/translate.js` | Anthropic → Chat Completions |
-| `lib/bridge/translate-responses.js` | Anthropic → Responses (`input`/`instructions`) |
-| `lib/bridge/stream.js` | Chat SSE reader |
-| `lib/bridge/stream-responses.js` | Responses SSE reader (`reasoning_summary_text.delta`) |
-| `lib/bridge/delta.js` | Shared `takeDelta` dedup |
-| `lib/bridge/` | Prune / vision / count-tokens / proxy |
+| `lib/bridge/auto-router.js` | Provider-agnostic Auto routing |
+| `lib/bridge/messages-chat.js` | Chat Completions + empty-stream retry |
 | `lib/provider/` | Resolve models + sync picker settings |
-| `lib/provider/third-party-ui.js` | Third party providers CLI picker (OpenCode Zen / Nvidia / OpenAI Compatible) |
-| `providers.json` | Active provider + model + `format`/`modelFormats` |
+| `lib/provider/third-party-ui.js` | First-run provider picker |
+| `providers.json` | Active provider + `models[]` used by Auto |
 | `claudio-wrapper-nativeN.exe` | Windows process wrapper for Cursor/VS Code |
-| `set-default-model.js` | Change default model + sync settings |
-| `install.ps1` / `install-cli-shims.ps1` | Install wrapper + PATH shims |
+| `install.ps1` | Install wrapper + Cursor wiring (does **not** seed a wrong provider) |
 
-## Config
+## Config example (Nvidia)
 
 ```json
 {
-  "active": "opencode",
+  "active": "nvidia",
   "providers": {
-    "opencode": {
-      "baseUrl": "https://opencode.ai/zen/v1",
-      "model": "muse-spark-1.2-contributor-free",
-      "apiKeyEnv": "OPENCODE_API_KEY",
-      "tools": true,
-      "format": "chat",
-      "modelFormats": { "muse-spark-1.2-contributor-free": "responses" },
-      "models": [
-        "muse-spark-1.2-contributor-free",
-        "laguna-s-2.1-free",
-        "hy3-free"
-      ]
-    },
     "nvidia": {
       "baseUrl": "https://integrate.api.nvidia.com/v1",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
+      "model": "nvidia/nemotron-3-super-120b-a12b",
       "apiKeyEnv": "NVIDIA_API_KEY",
       "tools": true,
       "format": "chat",
+      "visionModel": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
       "models": [
+        "nvidia/nemotron-3-ultra-550b-a55b",
+        "nvidia/nemotron-3-super-120b-a12b",
+        "nvidia/nemotron-3.5-lightning-30b-a3b",
         "nvidia/nemotron-3-nano-30b-a3b",
-        "nvidia/nemotron-3.5-lightning-30b-a3b"
+        "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
       ]
     }
   }
 }
 ```
 
-`format: "chat"` (default) uses `/chat/completions`; `modelFormats: { "muse-spark": "responses" }` routes that model to `/responses` with `reasoning: {effort:"low", summary:"auto"}` so Thoughts show.
+Put the matching API key in `claude-wrapper/.env` or `~/.claude-native/.env`.
 
-Cursor/VS Code:
+Cursor / VS Code (official Claude Code extension):
 
 ```json
 "claudeCode.claudeProcessWrapper": "C:\\Users\\<you>\\claudio\\claude-wrapper\\claudio-wrapper-nativeN.exe",
@@ -72,4 +70,7 @@ Cursor/VS Code:
 "claudeCode.skipApiCheck": true
 ```
 
-Change model: `node set-default-model.js nvidia/nemotron-3-ultra-550b-a55b`
+## Two install paths (do not mix)
+
+1. **Official Claude Code UI** (recommended): `claude-wrapper/install.ps1` + Cursor/VS Code extension.
+2. **Ink CLI fork** (`npm i -g @gaburieuru/claudio`): separate TUI — not the Anthropic Claude Code UI.

@@ -96,29 +96,45 @@ function loadProvidersConfig() {
       /* ignore */
     }
   }
-  console.error('[provider-config] WARNING: providers.json not found, using hardcoded OpenCode fallback')
+  console.error('[provider-config] WARNING: providers.json not found — configure a provider on first run')
   return {
     path: null,
     data: {
-      active: 'opencode',
-      providers: {
-        opencode: {
-          baseUrl: 'https://opencode.ai/zen/v1',
-          model: 'deepseek-v4-flash-free',
-          apiKeyEnv: 'OPENAI_API_KEY',
-          models: ['deepseek-v4-flash-free', 'big-pickle'],
-        },
-      },
+      active: null,
+      providers: {},
     },
   }
 }
 
 /**
  * Picker id for Claude Code.
- * Must start with anthropic. (or claude) — no slashes.
- * Embeds real provider: anthropic.alibaba.qwen3.6-plus, anthropic.opencode.claude-sonnet-5
+ * Claude Code rewrites bare "Auto" to anthropic.openrouter.openrouter-auto.
+ * Use that canonical id everywhere and label it "Auto" via modelPicker.
  */
+const AUTO_PICKER_ID = 'anthropic.openrouter.openrouter-auto'
+
+function isAutoPickerId(id) {
+  if (!id || typeof id !== 'string') return false
+  const lower = id.toLowerCase().trim()
+  return (
+    lower === 'auto' ||
+    lower === 'anthropic.auto' ||
+    lower === 'claude-auto' ||
+    lower === 'openrouter/auto' ||
+    lower === 'openrouter/auto-beta' ||
+    lower === AUTO_PICKER_ID ||
+    lower === 'anthropic.openrouter.auto' ||
+    lower === 'anthropic.openrouter.auto-beta' ||
+    lower.endsWith('.auto') ||
+    lower.endsWith('.openrouter-auto')
+  )
+}
+
 function modelId(providerName, model) {
+  if (model === 'auto' || providerName === 'auto') return AUTO_PICKER_ID
+  if (isAutoPickerId(model) || model === 'openrouter/auto' || model === 'openrouter/auto-beta') {
+    return AUTO_PICKER_ID
+  }
   const tag = providerTag(providerName)
   const slug = modelSlug(model)
   return `anthropic.${tag}.${slug}`
@@ -126,6 +142,17 @@ function modelId(providerName, model) {
 
 function parseModelId(id, providersData) {
   if (!id || typeof id !== 'string') return null
+
+  const lower = id.toLowerCase().trim()
+  if (isAutoPickerId(id)) {
+    const active = providersData?.active
+    if (active && providersData?.providers?.[active]) {
+      return { provider: active, model: 'auto' }
+    }
+    const names = Object.keys(providersData?.providers || {})
+    if (names.length) return { provider: names[0], model: 'auto' }
+    return { provider: 'auto', model: 'auto' }
+  }
 
   if (providersData) {
     const hit = buildSlugIndex(providersData).get(id.toLowerCase())
@@ -173,29 +200,24 @@ function parseModelId(id, providersData) {
 }
 
 function listCatalogEntries(providersData) {
-  const out = []
-  const providers = providersData.providers || {}
-  for (const [name, p] of Object.entries(providers)) {
-    if (!p) continue
-    const label = PROVIDER_LABEL[name] || name
-    const models = Array.isArray(p.models) && p.models.length ? p.models : p.model ? [p.model] : []
-    for (const model of models) {
-      const nice = DISPLAY[model]?.name || model
-      // Masked Sonnet names stand alone; others keep "Provider · name".
-      const display_name =
-        /^Sonnet\b/i.test(nice) ? nice : `${label} · ${nice}`
-      out.push({
-        id: modelId(name, model),
-        provider: name,
-        model,
-        display_name,
-        description: DISPLAY[model]?.description || `via ${label}`,
-        baseUrl: p.baseUrl,
-        apiKeyEnv: p.apiKeyEnv,
-      })
-    }
-  }
-  return out
+  const providers = providersData?.providers || {}
+  const active = providersData?.active
+  const activeEntry = (active && providers[active]) || providers[Object.keys(providers)[0]] || null
+  const autoProvider = active || Object.keys(providers)[0] || 'auto'
+  const autoDescription = activeEntry
+    ? `Auto — routes vision, coding, and complexity across ${autoProvider} models`
+    : 'Auto — pick a provider on first run, then routes across its models'
+  return [
+    {
+      id: AUTO_PICKER_ID,
+      provider: autoProvider,
+      model: 'auto',
+      display_name: 'Auto',
+      description: autoDescription,
+      baseUrl: activeEntry?.baseUrl || '',
+      apiKeyEnv: activeEntry?.apiKeyEnv || '',
+    },
+  ]
 }
 
 function resolveApiKey(p) {
@@ -210,8 +232,11 @@ function resolveApiKey(p) {
  * Prefer exact catalog hits; else active provider default.
  */
 function resolveProvider(providersData, requestedModel) {
-  const active = providersData.active || 'opencode'
   const providers = providersData.providers || {}
+  const active =
+    providersData.active && providers[providersData.active]
+      ? providersData.active
+      : Object.keys(providers)[0]
   const parsed = parseModelId(requestedModel, providersData)
 
   let name = active
@@ -221,7 +246,7 @@ function resolveProvider(providersData, requestedModel) {
   if (parsed && providers[parsed.provider]) {
     name = parsed.provider
     p = providers[parsed.provider]
-    upstreamModel = parsed.model
+    upstreamModel = parsed.model === 'auto' ? null : parsed.model
   } else if (requestedModel) {
     // bare model name match across providers
     for (const [n, cand] of Object.entries(providers)) {
@@ -240,6 +265,9 @@ function resolveProvider(providersData, requestedModel) {
   }
 
   const models = Array.isArray(p.models) && p.models.length ? p.models : [p.model]
+  if (upstreamModel === 'auto') {
+    upstreamModel = p.model || models[0]
+  }
   if (!upstreamModel) {
     // Claude built-in aliases → size heuristic within active provider
     const lower = String(requestedModel || '').toLowerCase()
@@ -262,7 +290,7 @@ function resolveProvider(providersData, requestedModel) {
   const baseUrl = (
     process.env.CLAUDE_NATIVE_BASE_URL ||
     p.baseUrl ||
-    'https://opencode.ai/zen/v1'
+    'https://integrate.api.nvidia.com/v1'
   ).replace(/\/$/, '')
   // Per-model format override (e.g. muse-spark → responses), else provider default
   const format =
@@ -302,6 +330,8 @@ function buildAnthropicModelsList(providersData) {
 module.exports = {
   buildSlugIndex,
   loadProvidersConfig,
+  AUTO_PICKER_ID,
+  isAutoPickerId,
   modelId,
   parseModelId,
   listCatalogEntries,

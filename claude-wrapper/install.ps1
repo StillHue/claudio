@@ -232,30 +232,13 @@ function Ensure-NativeHome {
   $dir = Join-Path $env:USERPROFILE '.claude-native'
   New-Item -ItemType Directory -Path $dir -Force | Out-Null
   $providers = Join-Path $dir 'providers.json'
-  if (-not (Test-Path $providers)) {
-    $starter = @{
-      active = 'opencode'
-      providers = @{
-        opencode = @{
-          baseUrl = 'https://opencode.ai/zen/v1'
-          model = 'deepseek-v4-flash-free'
-          apiKeyEnv = 'OPENAI_API_KEY'
-          tools = $true
-          models = @(
-            'deepseek-v4-flash-free'
-            'big-pickle'
-            'mimo-v2.5-free'
-            'north-mini-code-free'
-            'laguna-s-2.1-free'
-            'nemotron-3-ultra-free'
-          )
-        }
-      }
-    }
-    ($starter | ConvertTo-Json -Depth 8) | Set-Content -Path $providers -Encoding UTF8
-    Write-Host "created $providers (add API key via provider UI)"
+  # Do NOT seed a provider here — wrong default (e.g. OpenCode) causes API errors
+  # when the user only has another key (NVIDIA / OpenAI). First Claude launch
+  # shows the Third party providers picker and writes providers.json + .env.
+  if (Test-Path $providers) {
+    Write-Host "providers.json already exists ($providers)"
   } else {
-    Write-Host "providers.json already exists"
+    Write-Host "no providers.json yet — first Claude launch will open the provider picker"
   }
 }
 
@@ -289,7 +272,7 @@ Set-CursorWrapper -ExePath $exe.FullName
 Write-Step "Ensuring ~/.claude-native"
 Ensure-NativeHome
 
-Write-Step "Installing PATH shims (claude / claudio)"
+Write-Step "Installing PATH shims (claude)"
 $shim = Join-Path $here 'install-cli-shims.ps1'
 if (Test-Path $shim) {
   & powershell -ExecutionPolicy Bypass -File $shim
@@ -297,27 +280,10 @@ if (Test-Path $shim) {
   Write-Warning "install-cli-shims.ps1 missing - skip"
 }
 
-Write-Step "Installing /provider skill"
-$prov = Join-Path $here 'install-provider-command.js'
-if ((Test-Path $prov) -and (Get-Command node -ErrorAction SilentlyContinue)) {
-  & node $prov
-} else {
-  Write-Warning "Could not install /provider skill (need node + install-provider-command.js)"
-}
-
-if (-not $SkipProviderUi) {
-  Write-Step "Opening provider UI (paste API key locally - not in chat)"
-  $ui = Join-Path $here 'provider-ui.js'
-  if ((Test-Path $ui) -and (Get-Command node -ErrorAction SilentlyContinue)) {
-    Start-Process -FilePath 'node' -ArgumentList @($ui) -WorkingDirectory $here
-  } else {
-    Write-Warning "provider-ui.js could not be started"
-  }
-}
-
 Write-Host ""
 Write-Host "Done." -ForegroundColor Green
 Write-Host "  Wrapper: $($exe.FullName)"
+Write-Host "  Providers: ~/.claude-native/providers.json (set NVIDIA_API_KEY / apiKey)"
+Write-Host "  Model: node .\set-default-model.js <model-id>"
 Write-Host "  Next: Cursor -> Developer: Reload Window"
-Write-Host "  Then: /provider (or the page that just opened) -> paste key -> /model"
 Write-Host ""
