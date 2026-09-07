@@ -20,7 +20,7 @@
 </p>
 
 <p align="center">
-<strong>Welcome to Claude Code</strong><br/>
+<strong>Hi, i'm claudio</strong><br/>
 <em>you already know me</em>
 </p>
 
