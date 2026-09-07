@@ -81,6 +81,16 @@ const DISPLAY = {
     description: 'Nvidia → Lightweight efficient 30B model',
     slug: 'nemotron-nano-30b',
   },
+  'nvidia/nemotron-nano-12b-v2-vl': {
+    name: 'Nemotron Nano 12B VL (EOL)',
+    description: 'Nvidia → retired 2026-08-26',
+    slug: 'nemotron-nano-12b-vl',
+  },
+  'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning': {
+    name: 'Nemotron 3 Nano Omni 30B',
+    description: 'Nvidia → Multimodal vision + reasoning',
+    slug: 'nemotron-nano-omni-30b',
+  },
   'meta/llama-3.3-70b-instruct': {
     name: 'Llama 3.3 70B Instruct',
     description: 'Nvidia → Meta Llama 3.3 70B flagship',

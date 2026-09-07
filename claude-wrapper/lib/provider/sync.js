@@ -50,44 +50,32 @@ function syncClaudeAvailableModels(providersData) {
   }
   if (!settings || typeof settings !== 'object') settings = {}
 
-  const active = providersData.active || 'openrouter'
-  const activeProvider = providersData.providers?.[active]
-  const defaultId =
-    active === 'auto' ||
-    activeProvider?.model === 'auto' ||
-    activeProvider?.model === 'openrouter/auto' ||
-    activeProvider?.model === 'openrouter/auto-beta'
-      ? AUTO_PICKER_ID
-      : activeProvider
-        ? modelId(active, activeProvider.model || (activeProvider.models || [])[0])
-        : ids[0]
+  const active = providersData.active
+  const activeProvider = active ? providersData.providers?.[active] : null
+  const providerLabel = active || 'your provider'
+  const autoDescription = `Auto — routes vision, coding, and complexity across ${providerLabel} models`
 
-  settings.availableModels = ids
-  // Constrain Default: without this, Claude Code keeps showing
-  // "Default (recommended) · Opus …" even when settings.model is a gateway id.
+  // Picker shows only Auto. Discrete catalog models stay resolvable by id,
+  // but listing them here hides Auto in Claude Code / the extension.
+  settings.availableModels = [AUTO_PICKER_ID]
   settings.enforceAvailableModels = true
-  // Always align with providers.json active default (set-default-model / wrapper sync).
-  settings.model = defaultId
+  settings.model = AUTO_PICKER_ID
 
-  // Claude rewrites bare "Auto" to anthropic.openrouter.openrouter-auto.
-  // Keep that canonical id in availableModels, but label the picker row "Auto".
   settings.modelPicker = {
     replaceBuiltInOptions: true,
     options: [
       {
-        model: defaultId,
+        model: AUTO_PICKER_ID,
         label: 'Auto',
-        description:
-          'OpenRouter Auto Router -- routes vision, coding, and rate limits across models',
+        description: autoDescription,
       },
     ],
   }
 
   if (!settings.env || typeof settings.env !== 'object') settings.env = {}
-  settings.env.ANTHROPIC_CUSTOM_MODEL_OPTION = defaultId
+  settings.env.ANTHROPIC_CUSTOM_MODEL_OPTION = AUTO_PICKER_ID
   settings.env.ANTHROPIC_CUSTOM_MODEL_OPTION_NAME = 'Auto'
-  settings.env.ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION =
-    'OpenRouter Auto Router -- routes vision, coding, and rate limits across models'
+  settings.env.ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION = autoDescription
 
   // Strip leftovers that force OpenAI chat routing and bypass our
   // Anthropic Messages bridge (ANTHROPIC_BASE_URL). Keep COHERE_API_KEY etc.
@@ -156,19 +144,8 @@ function syncCursorClaudeModel(defaultId) {
  * Call from CLI / wrapper spawn only — never from mid-stream.
  */
 function syncDefaultModel(providersData) {
-  const active = providersData.active || 'openrouter'
-  const activeProvider = providersData.providers?.[active]
-  const fromProviders =
-    active === 'auto' ||
-    activeProvider?.model === 'auto' ||
-    activeProvider?.model === 'openrouter/auto' ||
-    activeProvider?.model === 'openrouter/auto-beta'
-      ? AUTO_PICKER_ID
-      : activeProvider
-        ? modelId(active, activeProvider.model || (activeProvider.models || [])[0])
-        : null
   const claude = syncClaudeAvailableModels(providersData)
-  const defaultId = fromProviders || claude.model
+  const defaultId = AUTO_PICKER_ID
   const cursor = syncCursorClaudeModel(defaultId)
   return {
     model: defaultId,

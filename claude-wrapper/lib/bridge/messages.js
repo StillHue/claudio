@@ -44,9 +44,11 @@ async function handleMessages(req, res, ctx) {
     provider = routed.provider
     upstreamModel = routed.upstreamModel
     upstreamFormat = routed.upstreamFormat
-    // stash plugins for chat handler
+    // stash plugins / NVIDIA fallback cascade for chat handler
     body.__openRouterPlugins = routed.openRouterPlugins || []
     body.__openRouterSessionId = body.session_id || body.sessionId || null
+    body.__nvidiaFallbackCascade = routed.fallbackCascade || [upstreamModel]
+    body.__autoTier = routed.tier || null
   } else {
     provider = ctx.getProvider(body.model)
     upstreamModel = mapModel(body.model, provider)

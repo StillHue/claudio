@@ -4,7 +4,8 @@ const { joinChatUrl } = require('./translate');
 const visionCache = new Map();
 const MAX_CACHE_SIZE = 100;
 
-const DEFAULT_VISION_MODEL = process.env.CLAUDE_NATIVE_VISION_MODEL || 'nvidia/nemotron-nano-12b-v2-vl';
+const DEFAULT_VISION_MODEL =
+  process.env.CLAUDE_NATIVE_VISION_MODEL || 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning';
 
 const VISION_SYSTEM_PROMPT =
   'Você é um especialista em visão computacional e OCR para desenvolvimento de software.\n' +
@@ -88,7 +89,11 @@ function isOpenRouterProvider(provider) {
   return /openrouter\.ai/i.test(base)
 }
 
-async function resolveVisionInMessages(messages, provider, ctx) {
+function isVisionUpstreamModel(model) {
+  return /vl|vision|omni/i.test(String(model || ''))
+}
+
+async function resolveVisionInMessages(messages, provider, ctx, upstreamModel) {
   if (!Array.isArray(messages) || messages.length === 0) return messages;
 
   let hasImage = false;
@@ -103,9 +108,9 @@ async function resolveVisionInMessages(messages, provider, ctx) {
 
   if (!hasImage) return messages;
 
-  // OpenRouter Auto Router must see real image_url parts (no local NVIDIA flatten).
-  if (isOpenRouterProvider(provider)) {
-    ctx.log?.('[vision] pass-through for openrouter (images left intact)')
+  // OpenRouter Auto / NVIDIA VL must see real image_url parts.
+  if (isOpenRouterProvider(provider) || isVisionUpstreamModel(upstreamModel)) {
+    ctx.log?.('[vision] pass-through (images left intact for ' + (upstreamModel || provider?.name || 'provider') + ')')
     return messages
   }
 
@@ -144,4 +149,5 @@ module.exports = {
   describeImage,
   resolveVisionInMessages,
   DEFAULT_VISION_MODEL,
+  isVisionUpstreamModel,
 };

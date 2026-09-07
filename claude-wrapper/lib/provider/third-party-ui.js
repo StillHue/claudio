@@ -20,10 +20,16 @@ const PROVIDERS = [
   {
     id: 'nvidia',
     name: 'Nvidia',
-    description: 'Nemotron Nano 30B · Lightning 30B',
+    description: 'Nemotron Ultra · Super · Lightning · Omni (vision)',
     baseUrl: 'https://integrate.api.nvidia.com/v1',
     apiKeyEnv: 'NVIDIA_API_KEY',
-    models: ['nvidia/nemotron-3-nano-30b-a3b', 'nvidia/nemotron-3.5-lightning-30b-a3b'],
+    models: [
+      'nvidia/nemotron-3-ultra-550b-a55b',
+      'nvidia/nemotron-3-super-120b-a12b',
+      'nvidia/nemotron-3.5-lightning-30b-a3b',
+      'nvidia/nemotron-3-nano-30b-a3b',
+      'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning',
+    ],
     keyUrl: 'https://build.nvidia.com/explore/reasoning',
   },
   {
@@ -151,36 +157,39 @@ async function showThirdPartyProviders() {
   fs.writeFileSync(envFile, envContent, 'utf8')
   console.log(`\n  Wrote ${envFile} → ${envKey}`)
 
-  // Write providers.json
+  // Write providers.json for the selected provider only (become active).
   const pPath = providersPath()
-  let data = loadExistingProviders()
-  if (!data) {
-    data = { active: selected.id, providers: {} }
+  const nativePath = path.join(os.homedir(), '.claude-native', 'providers.json')
+  const models =
+    selected.id === 'custom' ? [customModel] : selected.models.slice()
+  const providerEntry = {
+    baseUrl: customBaseUrl,
+    model: customModel,
+    apiKeyEnv: selected.apiKeyEnv,
+    tools: true,
+    format: 'chat',
+    models,
   }
-  // Ensure selected provider exists
-  if (!data.providers[selected.id]) {
-    data.providers[selected.id] = {
-      baseUrl: customBaseUrl,
-      model: customModel,
-      apiKeyEnv: selected.apiKeyEnv,
-      tools: true,
-      format: 'chat',
-      models: selected.models,
-    }
-    if (selected.id === 'opencode' && selected.models.includes('muse-spark-1.2-contributor-free')) {
-      data.providers[selected.id].modelFormats = { 'muse-spark-1.2-contributor-free': 'responses' }
-    }
-  } else {
-    // Update existing provider with new key env if needed
-    data.providers[selected.id].baseUrl = customBaseUrl
-    data.providers[selected.id].model = customModel
+  if (selected.id === 'nvidia') {
+    providerEntry.visionModel = 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning'
+    providerEntry.model = 'nvidia/nemotron-3-super-120b-a12b'
   }
-  data.active = selected.id
-  fs.mkdirSync(path.dirname(pPath), { recursive: true })
-  fs.writeFileSync(pPath, JSON.stringify(data, null, 2) + '\n', 'utf8')
-  console.log(`  Wrote ${pPath} → active: ${selected.id}/${customModel}`)
+  if (selected.id === 'opencode' && selected.models.includes('muse-spark-1.2-contributor-free')) {
+    providerEntry.modelFormats = { 'muse-spark-1.2-contributor-free': 'responses' }
+  }
+  const data = {
+    active: selected.id,
+    providers: {
+      [selected.id]: providerEntry,
+    },
+  }
+  for (const target of [pPath, nativePath]) {
+    fs.mkdirSync(path.dirname(target), { recursive: true })
+    fs.writeFileSync(target, JSON.stringify(data, null, 2) + '\n', 'utf8')
+    console.log(`  Wrote ${target} → active=${selected.id}`)
+  }
   console.log('')
-  console.log('  ✓ Provider configured. Run `claude` again.')
+  console.log('  ✓ Provider configured. Run Claude Code again (reload window if in Cursor).')
   console.log('')
   return true
 }

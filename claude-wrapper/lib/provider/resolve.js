@@ -96,21 +96,12 @@ function loadProvidersConfig() {
       /* ignore */
     }
   }
-  console.error('[provider-config] WARNING: providers.json not found, using hardcoded OpenRouter fallback')
+  console.error('[provider-config] WARNING: providers.json not found — configure a provider on first run')
   return {
     path: null,
     data: {
-      active: 'openrouter',
-      providers: {
-        openrouter: {
-          baseUrl: 'https://openrouter.ai/api/v1',
-          model: 'openrouter/auto',
-          apiKeyEnv: 'OPENROUTER_API_KEY',
-          tools: true,
-          format: 'chat',
-          models: ['openrouter/auto', 'openrouter/auto-beta'],
-        },
-      },
+      active: null,
+      providers: {},
     },
   }
 }
@@ -154,7 +145,13 @@ function parseModelId(id, providersData) {
 
   const lower = id.toLowerCase().trim()
   if (isAutoPickerId(id)) {
-    return { provider: 'openrouter', model: 'openrouter/auto' }
+    const active = providersData?.active
+    if (active && providersData?.providers?.[active]) {
+      return { provider: active, model: 'auto' }
+    }
+    const names = Object.keys(providersData?.providers || {})
+    if (names.length) return { provider: names[0], model: 'auto' }
+    return { provider: 'auto', model: 'auto' }
   }
 
   if (providersData) {
@@ -204,41 +201,23 @@ function parseModelId(id, providersData) {
 
 function listCatalogEntries(providersData) {
   const providers = providersData?.providers || {}
-  const openrouter = providers.openrouter
-  const out = [
+  const active = providersData?.active
+  const activeEntry = (active && providers[active]) || providers[Object.keys(providers)[0]] || null
+  const autoProvider = active || Object.keys(providers)[0] || 'auto'
+  const autoDescription = activeEntry
+    ? `Auto — routes vision, coding, and complexity across ${autoProvider} models`
+    : 'Auto — pick a provider on first run, then routes across its models'
+  return [
     {
       id: AUTO_PICKER_ID,
-      provider: openrouter ? 'openrouter' : 'auto',
-      model: openrouter ? 'openrouter/auto' : 'auto',
+      provider: autoProvider,
+      model: 'auto',
       display_name: 'Auto',
-      description:
-        'OpenRouter Auto Router -- classifies the task and routes across models (BYOK providers on your OpenRouter account)',
-      baseUrl: openrouter?.baseUrl || '',
-      apiKeyEnv: openrouter?.apiKeyEnv || '',
+      description: autoDescription,
+      baseUrl: activeEntry?.baseUrl || '',
+      apiKeyEnv: activeEntry?.apiKeyEnv || '',
     },
   ]
-  for (const [name, p] of Object.entries(providers)) {
-    if (!p) continue
-    const label = PROVIDER_LABEL[name] || name
-    const models = Array.isArray(p.models) && p.models.length ? p.models : p.model ? [p.model] : []
-    for (const model of models) {
-      // Auto Router slugs are represented solely by the picker id "Auto".
-      if (model === 'auto' || isAutoPickerId(model)) continue
-      if (model === 'openrouter/auto' || model === 'openrouter/auto-beta') continue
-      const nice = DISPLAY[model]?.name || model
-      const display_name = /^Sonnet\b/i.test(nice) || nice === 'Auto' ? nice : `${label} · ${nice}`
-      out.push({
-        id: modelId(name, model),
-        provider: name,
-        model,
-        display_name,
-        description: DISPLAY[model]?.description || `via ${label}`,
-        baseUrl: p.baseUrl,
-        apiKeyEnv: p.apiKeyEnv,
-      })
-    }
-  }
-  return out
 }
 
 function resolveApiKey(p) {
@@ -253,8 +232,11 @@ function resolveApiKey(p) {
  * Prefer exact catalog hits; else active provider default.
  */
 function resolveProvider(providersData, requestedModel) {
-  const active = providersData.active || 'openrouter'
   const providers = providersData.providers || {}
+  const active =
+    providersData.active && providers[providersData.active]
+      ? providersData.active
+      : Object.keys(providers)[0]
   const parsed = parseModelId(requestedModel, providersData)
 
   let name = active
@@ -264,7 +246,7 @@ function resolveProvider(providersData, requestedModel) {
   if (parsed && providers[parsed.provider]) {
     name = parsed.provider
     p = providers[parsed.provider]
-    upstreamModel = parsed.model
+    upstreamModel = parsed.model === 'auto' ? null : parsed.model
   } else if (requestedModel) {
     // bare model name match across providers
     for (const [n, cand] of Object.entries(providers)) {
@@ -308,7 +290,7 @@ function resolveProvider(providersData, requestedModel) {
   const baseUrl = (
     process.env.CLAUDE_NATIVE_BASE_URL ||
     p.baseUrl ||
-    'https://openrouter.ai/api/v1'
+    'https://integrate.api.nvidia.com/v1'
   ).replace(/\/$/, '')
   // Per-model format override (e.g. muse-spark → responses), else provider default
   const format =

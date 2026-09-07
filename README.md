@@ -30,29 +30,32 @@ Coding agent CLI — any LLM. Terminal or Cursor.
 
 ### Cursor + official Claude Code (recommended)
 
-One-click on Windows (builds the native bridge, wires Cursor, shows Third party providers on first run):
+This is the path that keeps the **official Claude Code UI** (Cursor / VS Code extension).
+It does **not** install the Ink CLI fork.
+
+One-click on Windows (builds the native bridge, wires Cursor; first launch opens the provider picker):
 
 ```powershell
 cd claude-wrapper
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
-First run with no provider shows a Third party providers screen (OpenCode Zen · Nvidia · OpenAI Compatible) — pick one, paste the API key, and `providers.json` + `.env` are written automatically. Details: [claude-wrapper/ARCHITECTURE.md](./claude-wrapper/ARCHITECTURE.md).
+1. Reload the Cursor / VS Code window  
+2. Open the **Claude Code** panel (not a random terminal `claudio` command)  
+3. On first run, pick **your** provider (OpenCode Zen · Nvidia · OpenAI Compatible) and paste **that** provider’s API key  
 
-### Global CLI (Ink fork)
+`Auto` then routes across that provider’s model list. Details: [claude-wrapper/ARCHITECTURE.md](./claude-wrapper/ARCHITECTURE.md).
 
-Requires **Node.js >= 22**.
+### Global CLI (Ink fork) — optional / separate
+
+Requires **Node.js >= 22**. This is a **different UI** (Ink terminal app), not the official Claude Code panel.
 
 ```bash
 npm install -g @gaburieuru/claudio@latest
-```
-
-Verify it worked:
-
-```bash
 claudio --version
 ```
 
+If you wanted the official Claude Code experience, use the wrapper install above — do not expect `claudio` to render Anthropic’s new CLI.
 ## Quick Start
 
 ### First run
