@@ -2,11 +2,8 @@
 /**
  * Process wrapper for official Claude Code (CLI / Cursor / VS Code).
  *
- * Keeps Anthropic's harness; swaps inference via a local
+ * Official Claude Code harness + third-party model inference via a local
  * Anthropic Messages → OpenAI Chat Completions bridge.
- *
- * Configure: claudeCode.claudeProcessWrapper → this .exe (not .cmd on Windows).
- * Security: never spawn with shell:true + forwarded argv.
  */
 const { spawn } = require('child_process')
 const path = require('path')
@@ -179,8 +176,8 @@ async function runNative(rawArgs) {
       process.exit(ok ? 0 : 1)
     } catch (err) {
       console.error('[claude-wrapper] No provider configured.')
-      console.error('  Providers: OpenCode Zen (OPENCODE_API_KEY), Nvidia (NVIDIA_API_KEY), or OpenAI Compatible (OPENAI_API_KEY)')
-      console.error('  Set the API key in claude-wrapper/.env or run: node lib/provider/third-party-ui.js')
+      console.error('  Set MISTRAL_API_KEY in ~/.claude/.env')
+      console.error('  Or run: node lib/provider/third-party-ui.js')
       process.exit(1)
     }
   } else {
@@ -195,6 +192,12 @@ async function runNative(rawArgs) {
     env.CLAUDE_CODE_SKIP_API_KEY_CHECK = process.env.CLAUDE_CODE_SKIP_API_KEY_CHECK || '1'
     env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY =
       process.env.CLAUDE_CODE_ENABLE_GATEWAY_MODEL_DISCOVERY || '1'
+    // Bridge upstream (non-Anthropic) can never serve auto-mode server-side
+    // checks — tell the client not to ask, so the billing notice never shows.
+    // Classifier requests stay the client's own, billed as before.
+    if (!env.CLAUDE_CODE_AUTO_MODE_SERVER) {
+      env.CLAUDE_CODE_AUTO_MODE_SERVER = '0'
+    }
     const bridgeToken = getSharedBridgeToken()
     quarantineClaudeLoginCredentials()
     env.ANTHROPIC_API_KEY = bridgeToken

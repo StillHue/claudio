@@ -1,78 +1,65 @@
-# Claude Code + provider bridge
+# Claude Code + third-party model
 
-Official Claude Code harness. Inference goes to whatever is in
-`~/.claude-native/providers.json` (or `./providers.json`) via a local
-Anthropic Messages → Chat Completions **or Responses** bridge that starts with
-Claude and exits with it — no background Node server.
+**O que é:** Claude Code **oficial** (UI, tools, permissions) + inferência em um modelo third-party.
 
-First run with no provider / API key shows the **Third party providers** picker
-(OpenCode Zen · Nvidia · OpenAI Compatible).
+```
+Claude Code  →  bridge local (Anthropic Messages → Chat Completions)  →  mistral-code-latest
+```
 
-## Auto model
+Não é fork Ink, não é OpenRouter Auto, não é cascade de modelos.
 
-`Auto` / `anthropic.auto` (canonical picker id `anthropic.openrouter.openrouter-auto`)
-is a **local intelligent router over the active provider’s `models[]` catalog** —
-same idea as Cursor Auto, not hard-wired to one vendor.
+## Config
 
-- Classifies the turn: vision · hard (analysis/architecture) · coding · chitchat
-- Picks the best matching model **from that provider’s list** (name heuristics)
-- On 429/5xx/410/empty stream: retries same model once, then upgrades within the same catalog
-- If the active provider is OpenRouter and the only/default model is `openrouter/auto`, Auto passes through to OpenRouter’s Auto Router instead
-
-Your choice of Nvidia vs OpenCode vs custom only changes the catalog Auto can use.
-
-## Layout
-
-| Path | Role |
-| --- | --- |
-| `claudio-wrapper.js` | Launches Claude Code + ephemeral bridge; Third party providers if no apiKey |
-| `native-bridge.js` | Loopback Anthropic-compatible proxy |
-| `lib/bridge/auto-router.js` | Provider-agnostic Auto routing |
-| `lib/bridge/messages-chat.js` | Chat Completions + empty-stream retry |
-| `lib/provider/` | Resolve models + sync picker settings |
-| `lib/provider/third-party-ui.js` | First-run provider picker |
-| `providers.json` | Active provider + `models[]` used by Auto |
-| `claudio-wrapper-nativeN.exe` | Windows process wrapper for any Claude Code IDE host |
-| `install.ps1` | Install wrapper + wire all IDE hosts (does **not** seed a wrong provider) |
-
-## Config example (Nvidia)
+`~/.claude/providers.json` + `~/.claude/.env`
 
 ```json
 {
-  "active": "nvidia",
+  "active": "mistral",
   "providers": {
-    "nvidia": {
-      "baseUrl": "https://integrate.api.nvidia.com/v1",
-      "model": "nvidia/nemotron-3-super-120b-a12b",
-      "apiKeyEnv": "NVIDIA_API_KEY",
-      "tools": true,
+    "mistral": {
+      "baseUrl": "https://api.mistral.ai/v1",
+      "model": "mistral-code-latest",
+      "apiKeyEnv": "MISTRAL_API_KEY",
       "format": "chat",
-      "visionModel": "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning",
-      "models": [
-        "nvidia/nemotron-3-ultra-550b-a55b",
-        "nvidia/nemotron-3-super-120b-a12b",
-        "nvidia/nemotron-3.5-lightning-30b-a3b",
-        "nvidia/nemotron-3-nano-30b-a3b",
-        "nvidia/nemotron-3-nano-omni-30b-a3b-reasoning"
-      ]
+      "tools": true,
+      "models": ["mistral-code-latest"]
     }
   }
 }
 ```
 
-Put the matching API key in `claude-wrapper/.env` or `~/.claude-native/.env`.
-
-Any IDE hosting the official Claude Code extension (Cursor, VS Code, Insiders, VSCodium):
-
-```json
-"claudeCode.claudeProcessWrapper": "C:\\Users\\<you>\\claudio\\claude-wrapper\\claudio-wrapper-nativeN.exe",
-"claudeCode.disableLoginPrompt": true,
-"claudeCode.skipApiCheck": true
+```env
+MISTRAL_API_KEY=...
 ```
 
-`install.ps1` and `syncIdeClaudeModel` patch / sync `claudeCode.*` across those hosts’ `settings.json`. CLI-only users need no IDE settings — run the wrapper / `claude` shim directly.
+No picker do Claude Code use **Sonnet 5** (cosmético; id `anthropic.mistral.mistral-code-latest` → `mistral-code-latest`). Ids legados (`openrouter-auto`, bare Auto) ainda resolvem.
 
-## Two install paths (do not mix)
+## Install
 
-1. **Official Claude Code UI** (recommended): `claude-wrapper/install.ps1` + Claude Code extension in your IDE (or CLI).
-2. **Ink CLI fork** (`npm i -g @gaburieuru/claudio`): separate TUI — not the Anthropic Claude Code UI.
+Windows:
+
+```powershell
+cd claude-wrapper
+powershell -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+Linux/macOS:
+
+```bash
+cd claude-wrapper
+bash ./install.sh
+```
+
+IDE: `claudeCode.claudeProcessWrapper` → `~/.claude/wrapper/claudio-wrapper.cmd` (Windows) ou `~/.claude/wrapper/claudio-wrapper.sh` (Linux/macOS).
+Depois: **Reload Window**.
+
+> Binary resolution order (all platforms): `CLAUDE_CODE_BINARY` override → `~/.local/bin/claude` → npm global (`@anthropic-ai/claude-code`) → extension bundles (incl. `*-server` remote-SSH roots on Linux). Newest semver wins — stale copies never shadow the current CLI.
+
+## Layout
+
+| Path | Papel |
+| --- | --- |
+| `claudio-wrapper.js` | Sobe o bridge e spawna o Claude oficial |
+| `native-bridge.js` | HTTP local Anthropic-shaped |
+| `lib/bridge/*` | Translate + chat upstream |
+| `providers.json` | Um provider, um model |
