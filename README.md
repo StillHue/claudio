@@ -44,7 +44,7 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
 2. Open the **Claude Code** panel (not a random terminal `claudio` command)  
 3. On first run, pick **your** provider (OpenCode Zen · Nvidia · OpenAI Compatible) and paste **that** provider’s API key  
 
-`Auto` then routes across that provider’s model list. Details: [claude-wrapper/ARCHITECTURE.md](./claude-wrapper/ARCHITECTURE.md).
+`Auto` then routes across that provider’s model list. Full reference: [claude-wrapper/CLAUDE-WRAPPER.md](./claude-wrapper/CLAUDE-WRAPPER.md). Short overview: [claude-wrapper/ARCHITECTURE.md](./claude-wrapper/ARCHITECTURE.md).
 
 ### Global CLI (Ink fork) — optional / separate
 
@@ -153,14 +153,12 @@ Requires Bun >= 1.3.13 for source builds.
 ## Cursor (official Claude Code panel)
 
 Recommended path: keep the **official Claude Code** extension and point
-`claudeCode.claudeProcessWrapper` at the native wrapper. Inference goes to
-OpenCode Zen / Nvidia / etc.; tools, permissions, and Thoughts UI (including `muse-spark` reasoning via `summary:auto`) stay native.
+`claudeCode.claudeProcessWrapper` at the wrapper. Inference goes to a
+third-party Chat Completions API (default: Mistral `mistral-code-latest`);
+tools, permissions, and UI stay native.
 
 Setup: **[claude-wrapper/ARCHITECTURE.md](./claude-wrapper/ARCHITECTURE.md)**.  
-First run without a provider shows the **Third party providers** picker — select OpenCode Zen / Nvidia / OpenAI Compatible and paste the API key.
-
-Legacy: `CLAUDE_WRAPPER_MODE=claudio` still swaps in the Claudio CLI instead of
-`claude.exe` — prefer native mode.
+First run without a key prompts for `MISTRAL_API_KEY`.
 
 ## Browser Proxy
 
@@ -172,6 +170,10 @@ Use Cursor subscription models (Composer, Grok, …) as Claudio’s LLM via a lo
 
 ## Docs
 
+- [Wrapper: fallback & retry](./claude-wrapper/docs/fallback-retry.md)
+- [Wrapper: upstream errors](./claude-wrapper/docs/upstream-errors.md)
+- [Wrapper: environment flags](./claude-wrapper/docs/env-flags.md)
+- [Wrapper: test matrix](./claude-wrapper/docs/test-matrix.md)
 - [Claude Code native wrapper (Cursor)](./claude-wrapper/SETUP-GUIDE.md)
 - [Agent prompt (paste into Cursor)](./claude-wrapper/AGENT-PROMPT.md)
 - [Cursor Agent provider](./docs/cursor-agent-provider.md)
