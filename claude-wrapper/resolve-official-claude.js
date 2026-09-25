@@ -32,12 +32,20 @@ function versionFromPath(filePath) {
 
 function versionFromBinary(filePath) {
   try {
-    const out = execFileSync(filePath, ['--version'], {
-      encoding: 'utf8',
-      windowsHide: true,
-      timeout: 4000,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    })
+    const cmd = String(filePath || '')
+    const out = cmd.endsWith('cli.js')
+      ? execFileSync(process.execPath, [filePath, '--version'], {
+          encoding: 'utf8',
+          windowsHide: true,
+          timeout: 8000,
+          stdio: ['ignore', 'pipe', 'pipe'],
+        })
+      : execFileSync(filePath, ['--version'], {
+          encoding: 'utf8',
+          windowsHide: true,
+          timeout: 4000,
+          stdio: ['ignore', 'pipe', 'pipe'],
+        })
     return parseSemver(out) || parseSemver(String(out).trim())
   } catch {
     return null
@@ -67,15 +75,19 @@ function probeCandidate(filePath) {
   return { path: filePath, version, mtime }
 }
 
-function listExtensionClaudeBinaries() {
-  const homes = [os.homedir()]
+function listExtensionClaudeBinaries(home) {
+  const homes = [home || os.homedir()]
   const roots = []
-  for (const home of homes) {
-    roots.push(path.join(home, '.cursor', 'extensions'))
-    roots.push(path.join(home, '.vscode', 'extensions'))
-    roots.push(path.join(home, '.vscode-insiders', 'extensions'))
-    roots.push(path.join(home, '.vscodium', 'extensions'))
-    roots.push(path.join(home, '.vscode-oss', 'extensions'))
+  for (const h of homes) {
+    roots.push(path.join(h, '.cursor', 'extensions'))
+    roots.push(path.join(h, '.vscode', 'extensions'))
+    roots.push(path.join(h, '.vscode-insiders', 'extensions'))
+    roots.push(path.join(h, '.vscodium', 'extensions'))
+    roots.push(path.join(h, '.vscode-oss', 'extensions'))
+    // Remote-SSH servers (Linux): the running extension often lives here,
+    // while a stale copy lingers in the desktop folder.
+    roots.push(path.join(h, '.cursor-server', 'extensions'))
+    roots.push(path.join(h, '.vscode-server', 'extensions'))
   }
   const out = []
   for (const root of roots) {
@@ -106,7 +118,56 @@ function listExtensionClaudeBinaries() {
 /**
  * @returns {{ path: string, version: {major:number,minor:number,patch:number,raw:string}, mtime: number } | null}
  */
+let latestCache = null
+let latestCacheAt = 0
+const LATEST_CACHE_TTL_MS = 60000
+
 function resolveLatestOfficialClaude() {
+  const now = Date.now()
+  if (latestCache && now - latestCacheAt < LATEST_CACHE_TTL_MS) return latestCache
+  const found = resolveLatestOfficialClaudeUncached()
+  latestCache = found
+  latestCacheAt = now
+  return found
+}
+
+/**
+ * Official installs outside extension bundles: npm global + well-known paths.
+ * Covers `npm i -g @anthropic-ai/claude-code` on Linux/macOS.
+ * @returns {string[]} existing candidate paths (binaries or cli.js).
+ */
+function listNpmClaudeBinaries() {
+  const out = []
+  const push = (p) => {
+    if (p && path.isAbsolute(p) && fs.existsSync(p)) out.push(p)
+  }
+  // Dynamic npm root first (respects nvm / custom prefixes).
+  try {
+    const override = process.env.CLAUDIO_NPM_ROOT_G
+    const root = override
+      ? String(override)
+      : execFileSync('npm', ['root', '-g'], {
+          encoding: 'utf8',
+          timeout: 8000,
+          stdio: ['ignore', 'pipe', 'pipe'],
+        }).trim()
+    if (root) {
+      push(path.join(root, '@anthropic-ai', 'claude-code', 'cli.js'))
+      push(path.join(root, '.bin', 'claude'))
+    }
+  } catch {
+    /* npm missing — fall through to static paths */
+  }
+  push('/usr/local/bin/claude')
+  push('/usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js')
+  push(path.join(os.homedir(), '.npm-global', 'bin', 'claude'))
+  return out
+}
+
+/**
+ * @returns {{ path: string, version: {major:number,minor:number,patch:number,raw:string}, mtime: number } | null}
+ */
+function resolveLatestOfficialClaudeUncached() {
   const override =
     process.env.CLAUDE_CODE_BINARY ||
     process.env.CLAUDE_NATIVE_CLAUDE_PATH ||
@@ -115,6 +176,7 @@ function resolveLatestOfficialClaude() {
   if (override) paths.push(override)
   paths.push(path.join(os.homedir(), '.local', 'bin', 'claude.exe'))
   paths.push(path.join(os.homedir(), '.local', 'bin', 'claude'))
+  paths.push(...listNpmClaudeBinaries())
   paths.push(...listExtensionClaudeBinaries())
 
   const seen = new Set()
@@ -170,4 +232,5 @@ module.exports = {
   preferLatestOfficial,
   probeCandidate,
   listExtensionClaudeBinaries,
+  listNpmClaudeBinaries,
 }

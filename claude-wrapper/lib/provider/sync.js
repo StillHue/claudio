@@ -152,12 +152,20 @@ function syncIdeClaudeModel(defaultId) {
       continue
     }
     let settings = {}
+    let raw = ''
     try {
-      const raw = fs.readFileSync(target.path, 'utf8').replace(/^\uFEFF/, '')
+      raw = fs.readFileSync(target.path, 'utf8').replace(/^\uFEFF/, '')
       settings = JSON.parse(raw)
     } catch {
-      hosts.push({ name: target.name, path: target.path, changed: false, error: 'parse_failed' })
-      continue
+      // Recover from trailing junk (e.g. literal "\\n" after the root object).
+      try {
+        const end = raw.lastIndexOf('}')
+        if (end < 0) throw new Error('no closing brace')
+        settings = JSON.parse(raw.slice(0, end + 1))
+      } catch {
+        hosts.push({ name: target.name, path: target.path, changed: false, error: 'parse_failed' })
+        continue
+      }
     }
     if (settings['claudeCode.model'] === defaultId) {
       hosts.push({ name: target.name, path: target.path, changed: false })

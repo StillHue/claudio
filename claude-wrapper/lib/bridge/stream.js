@@ -17,10 +17,13 @@ async function readOpenAIStream(body, handlers) {
   let buf = ''
   let fullText = ''
   let fullReasoning = ''
+  /** Inline SSE error object (some upstreams send HTTP 200 with an error payload). */
+  let streamError = null
   /** @type {Map<number, { id: string, name: string, arguments: string }>} */
   const toolAcc = new Map()
 
-  while (true) {
+  let stopped = false
+  while (!stopped) {
     const { done, value } = await reader.read()
     if (done) break
     buf += dec.decode(value, { stream: true })
@@ -36,6 +39,11 @@ async function readOpenAIStream(body, handlers) {
         jsonChunk = JSON.parse(data)
       } catch {
         continue
+      }
+      if (jsonChunk && typeof jsonChunk === 'object' && jsonChunk.error) {
+        streamError = jsonChunk.error
+        stopped = true
+        break
       }
       const choice = jsonChunk.choices?.[0]
       if (!choice) continue
@@ -78,6 +86,7 @@ async function readOpenAIStream(body, handlers) {
     text: fullText,
     reasoning: fullReasoning,
     toolCalls: [...toolAcc.entries()].sort((a, b) => a[0] - b[0]).map(([, v]) => v),
+    streamError,
   }
 }
 

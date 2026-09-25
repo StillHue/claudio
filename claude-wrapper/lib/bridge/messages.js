@@ -1,12 +1,10 @@
 /**
- * POST /v1/messages — Anthropic Messages router.
- * Delegates to chat (/chat/completions) or responses (/responses) handlers.
+ * POST /v1/messages — Anthropic Messages → Chat Completions.
  */
 const { json } = require('./http')
 const { mapModel } = require('./translate')
 const { handleChat } = require('./messages-chat')
-const { handleResponses } = require('./messages-responses')
-const { isAutoModel, isOpenRouterModel, routeAutoModelAsync } = require('./auto-router')
+const { isAutoModel, routeAutoModelAsync } = require('./auto-router')
 
 async function handleMessages(req, res, ctx) {
   const maxBodyBytes = Number(process.env.CLAUDE_NATIVE_MAX_BODY_BYTES || 20 * 1024 * 1024)
@@ -28,9 +26,8 @@ async function handleMessages(req, res, ctx) {
 
   let provider
   let upstreamModel
-  let upstreamFormat
 
-  if (isAutoModel(body.model) || isOpenRouterModel(body.model)) {
+  if (isAutoModel(body.model)) {
     const data = typeof ctx.getProvidersData === 'function' ? ctx.getProvidersData() : null
     let routed
     try {
@@ -43,16 +40,11 @@ async function handleMessages(req, res, ctx) {
     }
     provider = routed.provider
     upstreamModel = routed.upstreamModel
-    upstreamFormat = routed.upstreamFormat
-    // stash plugins / NVIDIA fallback cascade for chat handler
-    body.__openRouterPlugins = routed.openRouterPlugins || []
-    body.__openRouterSessionId = body.session_id || body.sessionId || null
-    body.__nvidiaFallbackCascade = routed.fallbackCascade || [upstreamModel]
+    body.__fallbackCascade = routed.fallbackCascade?.length ? routed.fallbackCascade : [upstreamModel]
     body.__autoTier = routed.tier || null
   } else {
     provider = ctx.getProvider(body.model)
     upstreamModel = mapModel(body.model, provider)
-    upstreamFormat = provider.format || 'chat'
 
     try {
       const data = typeof ctx.getProvidersData === 'function' ? ctx.getProvidersData() : null
@@ -67,9 +59,6 @@ async function handleMessages(req, res, ctx) {
     }
   }
 
-  if (upstreamFormat === 'responses') {
-    return handleResponses(req, res, ctx, { body, provider, upstreamModel })
-  }
   return handleChat(req, res, ctx, { body, provider, upstreamModel })
 }
 
