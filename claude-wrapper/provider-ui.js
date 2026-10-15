@@ -28,6 +28,76 @@ try {
   faviconBuf = null
 }
 
+/** Remove any secret accidentally persisted in providers.json. */
+function stripProvidersJsonSecrets(providersPath) {
+  try {
+    if (!providersPath || !fs.existsSync(providersPath)) return
+    const raw = fs.readFileSync(providersPath, 'utf8').replace(/^\uFEFF/, '')
+    const data = JSON.parse(raw)
+    let changed = false
+    for (const entry of Object.values(data.providers || {})) {
+      if (entry && typeof entry === 'object' && entry.apiKey) {
+        delete entry.apiKey
+        changed = true
+      }
+    }
+    if (changed) fs.writeFileSync(providersPath, JSON.stringify(data, null, 2) + '\n', 'utf8')
+  } catch {
+    /* ignore */
+  }
+}
+
+/**
+ * Offline fallback catalog: configured providers + first-run list,
+ * so the page still opens with no network / no cache.
+ */
+function fallbackCatalog() {
+  let configured = null
+  try {
+    configured = require('./lib/provider/resolve').loadProvidersConfig().data
+  } catch {
+    configured = null
+  }
+  const providers = []
+  const seen = new Set()
+  for (const [id, p] of Object.entries(configured?.providers || {})) {
+    if (!p || seen.has(id)) continue
+    seen.add(id)
+    const models = Array.isArray(p.models) && p.models.length ? p.models : p.model ? [p.model] : []
+    providers.push({
+      id,
+      name: id,
+      baseUrl: p.baseUrl || '',
+      apiKeyEnv: p.apiKeyEnv || '',
+      dialect: 'openai-chat',
+      bridge: Boolean(p.baseUrl),
+      modelCount: models.length,
+      models: models.map((m) => ({ id: m })),
+    })
+  }
+  try {
+    const { PROVIDERS } = require('./lib/provider/third-party-ui')
+    for (const pr of PROVIDERS || []) {
+      if (seen.has(pr.id)) continue
+      seen.add(pr.id)
+      providers.push({
+        id: pr.id,
+        name: pr.name,
+        baseUrl: pr.baseUrl || '',
+        apiKeyEnv: pr.apiKeyEnv || '',
+        dialect: 'openai-chat',
+        bridge: true,
+        modelCount: (pr.models || []).length,
+        models: (pr.models || []).map((m) => ({ id: m })),
+      })
+    }
+  } catch {
+    /* ignore */
+  }
+  if (!providers.length) return null
+  return { version: 0, offline: true, providers }
+}
+
 function json(res, status, body) {
   const payload = JSON.stringify(body)
   res.writeHead(status, {
@@ -189,7 +259,7 @@ function htmlPage() {
     <p class="mark">Claude</p>
   </div>
   <h1>Connect a provider</h1>
-  <p class="sub">Local only (127.0.0.1). Key is saved to ~/.claude-native/providers.json — not to Claude chat.</p>
+  <p class="sub">Local only (127.0.0.1). Key is saved to ~/.claude/.env — not to Claude chat.</p>
   <div class="card">
     <label for="provider">Provider</label>
     <select id="provider"></select>
@@ -304,11 +374,14 @@ function openBrowser(url) {
 async function main() {
   console.log('Loading provider catalog…')
   let catalog = await refreshCatalog().catch(() => null)
-  if (!catalog) catalog = await loadCatalog({ refresh: false })
+  if (!catalog) catalog = await loadCatalog({ refresh: false }).catch(() => null)
+  if (!catalog?.providers?.length) catalog = fallbackCatalog()
   if (!catalog?.providers?.length) {
-    console.error('Catalog empty. Check network / models.dev')
+    console.error('Catalog empty and no local providers configured.')
+    console.error('Check network, or configure ~/.claude/providers.json manually.')
     process.exit(1)
   }
+  if (catalog.offline) console.log('Catalog offline — showing configured + built-in providers.')
 
   const server = http.createServer(async (req, res) => {
     const host = String(req.headers.host || '')
@@ -370,18 +443,22 @@ async function main() {
       }
       try {
         // Reload catalog in case sync changed
-        catalog = (await loadCatalog({ refresh: false })) || catalog
+        catalog = (await loadCatalog({ refresh: false }).catch(() => null)) || catalog
         const result = enableProvider(catalog, body.providerId, {
           apiKey: body.apiKey,
           model: body.model,
           setActive: true,
         })
+        // enableProvider persists models in providers.json and the key in
+        // ~/.claude/.env — secrets never stay in chat or in json.
+        stripProvidersJsonSecrets(result.path)
         return json(res, 200, {
           provider: result.provider,
           model: result.model,
           modelCount: result.modelCount,
           pickerId: result.pickerId,
           path: result.path,
+          envFile: result.envFile || envFile,
         })
       } catch (err) {
         return json(res, 400, { error: err.message || String(err) })

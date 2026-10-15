@@ -317,11 +317,20 @@ if (Test-Path $shim) {
   Write-Warning "install-cli-shims.ps1 missing - skip"
 }
 
+Write-Step "Installing /provider skill (local auth page)"
+$providerCmd = Join-Path $here 'install-provider-command.js'
+if ((Test-Path $providerCmd) -and (Get-Command node -ErrorAction SilentlyContinue)) {
+  & node $providerCmd --wrapper-dir (Get-WrapperInstallDir)
+} else {
+  Write-Warning "install-provider-command.js missing or node not found - /provider skill skipped"
+}
+
 Write-Host ""
 Write-Host "Done." -ForegroundColor Green
 Write-Host "  Wrapper: $($installed.FullName)"
 Write-Host "  Providers: ~/.claude/providers.json"
 Write-Host "  Env: ~/.claude/.env (provider API key)"
 Write-Host "  Model: Auto picker (active provider)"
+Write-Host "  Auth page: /provider in Claude Code (or node ~/.claude/wrapper/provider-ui.js)"
 Write-Host "  Next: reload your IDE window, open Claude Code"
 Write-Host ""
