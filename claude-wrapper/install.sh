@@ -76,6 +76,7 @@ ensure_claude_home() {
 deploy_wrapper() {
   if command -v rsync >/dev/null 2>&1; then
     rsync -a --delete --exclude node_modules --exclude .git --exclude skills --exclude .env \
+      --exclude '*.bun-build' --exclude 'claudio-wrapper-native*.exe' \
       "$HERE/" "$WRAPPER_DIR/"
   else
     # cp fallback: copy everything except the excluded names.
@@ -84,7 +85,7 @@ deploy_wrapper() {
       for entry in "$HERE"/* "$HERE"/.*; do
         base="$(basename "$entry")"
         case "$base" in
-          .|..|node_modules|.git|skills|.env) continue;;
+          .|..|node_modules|.git|skills|.env|*.bun-build|claudio-wrapper-native*.exe) continue;;
         esac
         cp -r "$entry" "$WRAPPER_DIR/"
       done )
