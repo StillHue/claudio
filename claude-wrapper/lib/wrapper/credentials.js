@@ -6,20 +6,22 @@ const fs = require('fs')
 const path = require('path')
 const os = require('os')
 const { debugLog } = require('./log')
+const { wrapperStatePath, ensureDir, wrapperInstallDir } = require('./paths')
 
 const CLAUDE_CREDENTIALS = path.join(os.homedir(), '.claude', '.credentials.json')
-const CLAUDE_CREDENTIALS_BAK = path.join(
-  os.homedir(),
-  '.claude-native',
-  'login-credentials.bak.json',
-)
+const CLAUDE_CREDENTIALS_BAK = wrapperStatePath('login-credentials.bak.json')
 /** Legacy bak path (same folder as credentials) — migrate away so Claude stops detecting login. */
 const CLAUDE_CREDENTIALS_BAK_LEGACY = path.join(
   os.homedir(),
   '.claude',
   '.credentials.json.claudio-bridge',
 )
-const CRED_QUARANTINE_REF = path.join(os.homedir(), '.claude-native', 'credentials-quarantine.ref')
+const CLAUDE_CREDENTIALS_BAK_LEGACY_NATIVE = path.join(
+  os.homedir(),
+  '.claude-native',
+  'login-credentials.bak.json',
+)
+const CRED_QUARANTINE_REF = wrapperStatePath('credentials-quarantine.ref')
 
 /** Reset a leaked ref counter from crashed wrapper processes. */
 function resetStuckQuarantineRef() {
@@ -37,21 +39,17 @@ function resetStuckQuarantineRef() {
 }
 
 function quarantineClaudeLoginCredentials() {
-  const dir = path.join(os.homedir(), '.claude-native')
-  try {
-    fs.mkdirSync(dir, { recursive: true })
-  } catch {
-    /* ignore */
-  }
+  ensureDir(wrapperInstallDir())
   resetStuckQuarantineRef()
   try {
-    if (fs.existsSync(CLAUDE_CREDENTIALS_BAK_LEGACY)) {
+    for (const legacy of [CLAUDE_CREDENTIALS_BAK_LEGACY, CLAUDE_CREDENTIALS_BAK_LEGACY_NATIVE]) {
+      if (!fs.existsSync(legacy)) continue
       if (!fs.existsSync(CLAUDE_CREDENTIALS_BAK)) {
-        fs.renameSync(CLAUDE_CREDENTIALS_BAK_LEGACY, CLAUDE_CREDENTIALS_BAK)
+        fs.renameSync(legacy, CLAUDE_CREDENTIALS_BAK)
       } else {
-        fs.unlinkSync(CLAUDE_CREDENTIALS_BAK_LEGACY)
+        fs.unlinkSync(legacy)
       }
-      debugLog('migrated legacy credentials bak out of ~/.claude')
+      debugLog('migrated legacy credentials bak → ~/.claude/wrapper/')
     }
   } catch (err) {
     debugLog(`legacy bak migrate failed: ${err.message}`)
@@ -67,7 +65,7 @@ function quarantineClaudeLoginCredentials() {
         /* keep tmp as bak below */
       }
       fs.renameSync(tmp, CLAUDE_CREDENTIALS_BAK)
-      debugLog('quarantined ~/.claude/.credentials.json → ~/.claude-native/')
+      debugLog('quarantined ~/.claude/.credentials.json → ~/.claude/wrapper/')
     } catch (err) {
       try {
         if (fs.existsSync(tmp) && !fs.existsSync(CLAUDE_CREDENTIALS)) {

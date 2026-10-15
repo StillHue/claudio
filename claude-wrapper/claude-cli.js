@@ -1,9 +1,6 @@
 #!/usr/bin/env node
 /**
- * Terminal entry: official Claude Code harness (latest binary) + optional bridge.
- *
- * Default mode is native (same as Cursor). Legacy Ink fork:
- *   set CLAUDE_WRAPPER_MODE=claudio
+ * Terminal entry: official Claude Code harness + local bridge.
  *
  * Usage (same argv as Anthropic Claude Code):
  *   claude
@@ -11,8 +8,8 @@
  *   claude -p "hello"
  */
 
-// Load env vars from ~/.claude/settings.json so the bridge (native-bridge.js)
-// can see keys like CLAUDE_NATIVE_ANTHROPIC_API_KEY needed for system tools.
+// Load env vars from ~/.claude/settings.json so the bridge can see keys
+// like CLAUDE_NATIVE_ANTHROPIC_API_KEY needed for system tools.
 try {
   const fs = require('fs')
   const path = require('path')
@@ -28,7 +25,8 @@ try {
       }
     }
   }
-} catch { /* ignore */ }
+} catch {
+  /* ignore */
+}
 
-process.env.CLAUDE_WRAPPER_MODE = process.env.CLAUDE_WRAPPER_MODE || 'native'
 require('./claudio-wrapper.js')

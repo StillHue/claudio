@@ -1,5 +1,5 @@
 /**
- * Shared delta dedup for OpenAI streaming (chat + responses).
+ * Shared delta dedup for OpenAI chat streaming.
  * Guards against cumulative resends and short-token dedup bugs.
  */
 function takeDelta(prev, next) {
@@ -9,7 +9,7 @@ function takeDelta(prev, next) {
   if (next.length > prev.length && next.startsWith(prev)) {
     return { text: next, emit: next.slice(prev.length) }
   }
-  if (next.length >= 40) {
+  if (next.length >= 24) {
     if (prev.length >= next.length && prev.startsWith(next)) {
       return { text: prev, emit: '' }
     }
@@ -19,7 +19,7 @@ function takeDelta(prev, next) {
     let i = 0
     const max = Math.min(prev.length, next.length)
     while (i < max && prev[i] === next[i]) i++
-    if (i >= 40) {
+    if (i >= 24) {
       return { text: next, emit: next.slice(i) }
     }
   }

@@ -29,7 +29,7 @@ const { anthropicToOpenAIMessages } = require('../lib/bridge/translate')
   assert.ok(!out.some((m) => m.role === 'assistant'), 'empty assistant should be omitted')
 }
 
-// Thinking must round-trip as reasoning_content.
+// Thinking is NOT forwarded as reasoning_content (keeps upstream payloads clean).
 {
   const out = anthropicToOpenAIMessages({
     messages: [
@@ -45,10 +45,10 @@ const { anthropicToOpenAIMessages } = require('../lib/bridge/translate')
   })
   const asst = out.find((m) => m.role === 'assistant')
   assert.strictEqual(asst.content, 'done')
-  assert.strictEqual(asst.reasoning_content, 'plan steps')
+  assert.strictEqual(asst.reasoning_content, undefined)
 }
 
-// Thinking-only + tool_use: null content is OK only with tool_calls + reasoning.
+// Thinking-only + tool_use: null content with tool_calls; no reasoning_content field.
 {
   const out = anthropicToOpenAIMessages({
     messages: [
@@ -63,7 +63,7 @@ const { anthropicToOpenAIMessages } = require('../lib/bridge/translate')
     ],
   })
   const asst = out.find((m) => m.role === 'assistant')
-  assert.strictEqual(asst.reasoning_content, 'need tool')
+  assert.strictEqual(asst.reasoning_content, undefined)
   assert.ok(asst.tool_calls?.length === 1)
   assert.strictEqual(asst.content, null)
 }

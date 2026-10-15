@@ -1,3 +1,3 @@
 @ECHO off
-REM Alias: same as claude.cmd (official harness + optional bridge)
+REM Alias for claude.cmd
 CALL "%~dp0claude.cmd" %*

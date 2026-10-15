@@ -7,6 +7,7 @@ const fs = require('fs')
 const path = require('path')
 const os = require('os')
 const { modelId, loadProvidersConfig, listCatalogEntries, parseModelId, AUTO_PICKER_ID } = require('./resolve')
+const { claudeHomeDir } = require('../wrapper/paths')
 
 /**
  * User settings.json candidates for Claude Code IDE hosts (Windows + Linux/macOS).
@@ -38,11 +39,6 @@ function ideHostSettingsTargets() {
     targets.push({ name, path: p })
   }
   return targets
-}
-
-/** @deprecated use ideHostSettingsTargets — kept for callers */
-function cursorUserSettingsPaths() {
-  return ideHostSettingsTargets().map((t) => t.path)
 }
 
 /**
@@ -81,10 +77,19 @@ function syncClaudeAvailableModels(providersData) {
   const autoDescription = `Auto — routes vision, coding, and complexity across ${providerLabel} models`
 
   // Picker shows only Auto. Discrete catalog models stay resolvable by id,
-  // but listing them here hides Auto in Claude Code / the extension.
   settings.availableModels = [AUTO_PICKER_ID]
   settings.enforceAvailableModels = true
   settings.model = AUTO_PICKER_ID
+
+  // Drop stale/invalid overrides (Claude expects string values).
+  if (settings.modelOverrides && typeof settings.modelOverrides === 'object') {
+    for (const key of Object.keys(settings.modelOverrides)) {
+      if (typeof settings.modelOverrides[key] !== 'string') {
+        delete settings.modelOverrides[key]
+      }
+    }
+    if (!Object.keys(settings.modelOverrides).length) delete settings.modelOverrides
+  }
 
   settings.modelPicker = {
     replaceBuiltInOptions: true,
@@ -102,8 +107,8 @@ function syncClaudeAvailableModels(providersData) {
   settings.env.ANTHROPIC_CUSTOM_MODEL_OPTION_NAME = 'Auto'
   settings.env.ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION = autoDescription
 
-  // Strip leftovers that force OpenAI chat routing and bypass our
-  // Anthropic Messages bridge (ANTHROPIC_BASE_URL). Keep COHERE_API_KEY etc.
+  // Never persist base URLs / API keys in settings.json — the wrapper injects
+  // an ephemeral bridge URL per spawn; stale ports break Auto.
   if (settings.env && typeof settings.env === 'object') {
     for (const k of [
       'OPENAI_BASE_URL',
@@ -114,6 +119,8 @@ function syncClaudeAvailableModels(providersData) {
       'CLAUDE_CODE_USE_VERTEX',
       'ANTHROPIC_API_KEY',
       'ANTHROPIC_AUTH_TOKEN',
+      'ANTHROPIC_BASE_URL',
+      'MISTRAL_API_KEY',
     ]) {
       delete settings.env[k]
     }
@@ -184,11 +191,6 @@ function syncIdeClaudeModel(defaultId) {
   }
 }
 
-/** @deprecated use syncIdeClaudeModel */
-function syncCursorClaudeModel(defaultId) {
-  return syncIdeClaudeModel(defaultId)
-}
-
 /**
  * Full default-model sync: ~/.claude + every Claude Code IDE host.
  * Call from CLI / wrapper spawn only — never from mid-stream.
@@ -201,7 +203,6 @@ function syncDefaultModel(providersData) {
     model: defaultId,
     ids: claude.ids || [],
     claude,
-    cursor: ide, // backward-compatible alias
     ide,
     changed: !!(claude.changed || ide.changed),
     path: claude.path,
@@ -235,7 +236,7 @@ function persistProvidersDefault(providersData, providerName, upstreamModel, con
 
   let target = configPath
   if (!target) {
-    target = path.join(os.homedir(), '.claude-native', 'providers.json')
+    target = path.join(claudeHomeDir(), 'providers.json')
   }
   try {
     fs.mkdirSync(path.dirname(target), { recursive: true })
@@ -243,7 +244,7 @@ function persistProvidersDefault(providersData, providerName, upstreamModel, con
     return { changed: true, path: target, provider: providerName, model: upstreamModel }
   } catch (err) {
     console.error(
-      `[claude-native] failed to write providers.json (${target}): ${err.message}`,
+      `[claude-wrapper] failed to write providers.json (${target}): ${err.message}`,
     )
     return { changed: false, path: target, provider: providerName, model: upstreamModel, error: err.message }
   }
@@ -256,7 +257,7 @@ function setDefaultModel(providerName, upstreamModel) {
   const loaded = loadProvidersConfig()
   const data = loaded.data
   if (!data?.providers || !Object.keys(data.providers).length) {
-    throw new Error('No providers configured in ~/.claude-native/providers.json')
+    throw new Error('No providers configured in ~/.claude/providers.json')
   }
   let name = providerName
   let model = upstreamModel
@@ -279,7 +280,7 @@ function setDefaultModel(providerName, upstreamModel) {
   if (!data.providers[name].models.includes(model)) {
     data.providers[name].models.unshift(model)
   }
-  const configPath = loaded.path || path.join(os.homedir(), '.claude-native', 'providers.json')
+  const configPath = loaded.path || path.join(claudeHomeDir(), 'providers.json')
   const persisted = persistProvidersDefault(data, name, model, configPath)
   const synced = syncDefaultModel(data)
   return {
@@ -294,10 +295,8 @@ function setDefaultModel(providerName, upstreamModel) {
 
 module.exports = {
   ideHostSettingsTargets,
-  cursorUserSettingsPaths,
   syncClaudeAvailableModels,
   syncIdeClaudeModel,
-  syncCursorClaudeModel,
   syncDefaultModel,
   persistProvidersDefault,
   setDefaultModel,
