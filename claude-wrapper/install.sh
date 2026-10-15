@@ -76,6 +76,7 @@ ensure_claude_home() {
 deploy_wrapper() {
   if command -v rsync >/dev/null 2>&1; then
     rsync -a --delete --exclude node_modules --exclude .git --exclude skills --exclude .env \
+      --exclude '*.bun-build' --exclude 'claudio-wrapper-native*.exe' \
       "$HERE/" "$WRAPPER_DIR/"
   else
     # cp fallback: copy everything except the excluded names.
@@ -84,7 +85,7 @@ deploy_wrapper() {
       for entry in "$HERE"/* "$HERE"/.*; do
         base="$(basename "$entry")"
         case "$base" in
-          .|..|node_modules|.git|skills|.env) continue;;
+          .|..|node_modules|.git|skills|.env|*.bun-build|claudio-wrapper-native*.exe) continue;;
         esac
         cp -r "$entry" "$WRAPPER_DIR/"
       done )
@@ -105,7 +106,7 @@ const settingsPath = process.argv[2];
 const exe = process.argv[3];
 const wrapperDir = require('path').dirname(exe);
 function defaultPickerId() {
-  const fallback = 'anthropic.mistral.mistral-code-latest';
+  const fallback = 'anthropic.openrouter.openrouter-auto';
   const candidates = [require('path').join(process.env.HOME || '', '.claude', 'providers.json'),
                       require('path').join(wrapperDir, 'providers.json')];
   for (const p of candidates) {
@@ -205,11 +206,17 @@ step "Deploying wrapper -> ~/.claude/wrapper"
 deploy_wrapper
 set_ide_wrappers
 install_cli_shims
+step "Installing /provider skill (local auth page)"
+if [ -f "$HERE/install-provider-command.js" ]; then
+  node "$HERE/install-provider-command.js" --wrapper-dir "$WRAPPER_DIR" \
+    || echo "WARNING: /provider skill install skipped." >&2
+fi
 
 echo ""
 echo "Done."
 echo "  Wrapper: $WRAPPER_DIR/claudio-wrapper.sh"
 echo "  Providers: ~/.claude/providers.json"
 echo "  Env: ~/.claude/.env"
+echo "  Auth page: /provider in Claude Code (or node ~/.claude/wrapper/provider-ui.js)"
 echo "  Next: reload your IDE window, open Claude Code"
 echo ""

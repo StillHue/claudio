@@ -15,7 +15,8 @@ const os = require('os')
 const MODELS_DEV_URL = process.env.CLAUDE_NATIVE_MODELS_DEV_URL || 'https://models.dev/api.json'
 const ZEN_MODELS_URL =
   process.env.CLAUDE_NATIVE_ZEN_MODELS_URL || 'https://opencode.ai/zen/v1/models'
-const CATALOG_PATH = path.join(os.homedir(), '.claude-native', 'catalog.json')
+const { wrapperStatePath, providersJsonPath } = require('./lib/wrapper/paths')
+const CATALOG_PATH = wrapperStatePath('catalog.json')
 const FETCH_TIMEOUT_MS = Number(process.env.CLAUDE_NATIVE_CATALOG_TIMEOUT_MS || 60000)
 
 /** When models.dev omits `api`, use these OpenAI-compatible bases (bridge dialect). */
@@ -215,7 +216,7 @@ function syncOpencodeModelsIntoProviders(catalog, providersPath) {
   const target =
     providersPath ||
     loaded.path ||
-    path.join(os.homedir(), '.claude-native', 'providers.json')
+    providersJsonPath()
 
   const oc = getProvider(catalog, 'opencode')
   if (!oc) {
@@ -275,11 +276,47 @@ function syncOpencodeModelsIntoProviders(catalog, providersPath) {
 }
 
 /**
- * Enable a catalog provider in providers.json (API key + models + optional active).
+ * Enable a catalog provider in providers.json (models + active).
+ * API keys always go to ~/.claude/.env (never into providers.json).
  * @param {object} catalog
  * @param {string} providerId
- * @param {{ apiKey?: string, model?: string, setActive?: boolean, providersPath?: string|null }} [opts]
+ * @param {{ apiKey?: string, model?: string, setActive?: boolean, providersPath?: string|null, envPath?: string|null }} [opts]
  */
+function persistEnvKey(envName, apiKey, envPath) {
+  if (!envName || !apiKey) return null
+  const { claudeHomeDir, envFileCandidates } = require('./lib/wrapper/paths')
+  let file = envPath || null
+  if (!file) {
+    for (const p of envFileCandidates()) {
+      try {
+        if (p && fs.existsSync(p)) {
+          file = p
+          break
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+  if (!file) file = path.join(claudeHomeDir(), '.env')
+  let content = ''
+  try {
+    if (fs.existsSync(file)) content = fs.readFileSync(file, 'utf8')
+  } catch {
+    /* ignore */
+  }
+  const line = `${envName}=${String(apiKey).trim()}`
+  if (new RegExp(`^${envName}=.*$`, 'm').test(content)) {
+    content = content.replace(new RegExp(`^${envName}=.*$`, 'm'), line)
+  } else {
+    if (content && !content.endsWith('\n')) content += '\n'
+    content += line + '\n'
+  }
+  fs.mkdirSync(path.dirname(file), { recursive: true })
+  fs.writeFileSync(file, content, 'utf8')
+  return file
+}
+
 function enableProvider(catalog, providerId, opts = {}) {
   const { loadProvidersConfig, syncDefaultModel, modelId } = require('./provider-config')
   const meta = getProvider(catalog, providerId)
@@ -298,7 +335,7 @@ function enableProvider(catalog, providerId, opts = {}) {
   const target =
     opts.providersPath ||
     loaded.path ||
-    path.join(os.homedir(), '.claude-native', 'providers.json')
+    providersJsonPath()
 
   const existing = data.providers[meta.id] || {}
   let models =
@@ -319,18 +356,27 @@ function enableProvider(catalog, providerId, opts = {}) {
   if (!model) model = models[0]
 
   data.providers[meta.id] = {
-    ...existing,
     baseUrl: meta.baseUrl,
     apiKeyEnv: meta.apiKeyEnv || existing.apiKeyEnv || '',
     tools: true,
+    format: existing.format || 'chat',
     model,
     models,
   }
-  if (apiKey) data.providers[meta.id].apiKey = apiKey
   if (opts.setActive !== false) data.active = meta.id
 
   fs.mkdirSync(path.dirname(target), { recursive: true })
   fs.writeFileSync(target, JSON.stringify(data, null, 2) + '\n', { encoding: 'utf8', mode: 0o600 })
+
+  // Secrets live in ~/.claude/.env — migrate any legacy inline key out.
+  let envFile = null
+  if (apiKey && (meta.apiKeyEnv || existing.apiKeyEnv)) {
+    try {
+      envFile = persistEnvKey(meta.apiKeyEnv || existing.apiKeyEnv, apiKey, opts.envPath)
+    } catch {
+      /* ignore */
+    }
+  }
 
   const synced = syncDefaultModel(data)
   return {
@@ -342,6 +388,7 @@ function enableProvider(catalog, providerId, opts = {}) {
     hasKey: Boolean(apiKey || (meta.apiKeyEnv && process.env[meta.apiKeyEnv])),
     apiKeyEnv: meta.apiKeyEnv || '',
     path: target,
+    envFile,
     sync: synced,
   }
 }
@@ -359,5 +406,6 @@ module.exports = {
   getProvider,
   syncOpencodeModelsIntoProviders,
   enableProvider,
+  persistEnvKey,
   buildProvidersFromModelsDev,
 }
