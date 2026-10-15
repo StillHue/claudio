@@ -7,7 +7,7 @@
  */
 
 function autoPruneMessages(messages, maxBytes = 220000, keepRecent = 16) {
-  if (!Array.isArray(messages) || messages.length <= keepRecent) {
+  if (!Array.isArray(messages) || messages.length === 0) {
     return { messages, pruned: false, beforeBytes: 0, afterBytes: 0 }
   }
 
@@ -18,24 +18,37 @@ function autoPruneMessages(messages, maxBytes = 220000, keepRecent = 16) {
     return { messages, pruned: false, beforeBytes: 0, afterBytes: 0 }
   }
 
-  if (totalBytes <= maxBytes) {
+  // Always allow aggressive mode to run even when under soft byte budget.
+  if (totalBytes <= maxBytes && messages.length <= keepRecent) {
+    return { messages, pruned: false, beforeBytes: totalBytes, afterBytes: totalBytes }
+  }
+
+  if (totalBytes <= maxBytes && messages.length > keepRecent && maxBytes >= 220000) {
     return { messages, pruned: false, beforeBytes: totalBytes, afterBytes: totalBytes }
   }
 
   const cutoffIndex = Math.max(1, messages.length - keepRecent)
   const pruned = []
+  const toolResultMax = maxBytes < 120000 ? 200 : 500
+  const stringMax = maxBytes < 120000 ? 600 : 1500
 
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i]
     if (i >= cutoffIndex || msg.role === "system") {
-      // Keep recent turns and system message completely unmodified
-      pruned.push(msg)
+      // Keep recent turns; still clip absurdly large recent tool dumps on tight budgets.
+      if (maxBytes < 120000 && msg.role === "tool" && typeof msg.content === "string" && msg.content.length > toolResultMax) {
+        pruned.push({
+          ...msg,
+          content: msg.content.slice(0, toolResultMax) + "\n... [pruned]",
+        })
+      } else {
+        pruned.push(msg)
+      }
       continue
     }
 
-    // Historical turn: prune oversized content (e.g. 50KB tool results)
-    if (msg.role === "tool" && typeof msg.content === "string" && msg.content.length > 500) {
-      const head = msg.content.slice(0, 300)
+    if (msg.role === "tool" && typeof msg.content === "string" && msg.content.length > toolResultMax) {
+      const head = msg.content.slice(0, Math.min(300, toolResultMax))
       const lines = head.split("\n").slice(0, 4).join("\n")
       pruned.push({
         ...msg,
@@ -43,8 +56,8 @@ function autoPruneMessages(messages, maxBytes = 220000, keepRecent = 16) {
       })
     } else if (msg.role === "user" && Array.isArray(msg.content)) {
       const prunedContent = msg.content.map((block) => {
-        if (block?.type === "tool_result" && typeof block.content === "string" && block.content.length > 500) {
-          const head = block.content.slice(0, 300)
+        if (block?.type === "tool_result" && typeof block.content === "string" && block.content.length > toolResultMax) {
+          const head = block.content.slice(0, Math.min(300, toolResultMax))
           const lines = head.split("\n").slice(0, 4).join("\n")
           return {
             ...block,
@@ -54,8 +67,8 @@ function autoPruneMessages(messages, maxBytes = 220000, keepRecent = 16) {
         return block
       })
       pruned.push({ ...msg, content: prunedContent })
-    } else if (typeof msg.content === "string" && msg.content.length > 1500) {
-      const head = msg.content.slice(0, 500)
+    } else if (typeof msg.content === "string" && msg.content.length > stringMax) {
+      const head = msg.content.slice(0, Math.min(500, stringMax))
       pruned.push({
         ...msg,
         content: head + "\n... [prior output pruned for context speed]",
@@ -65,16 +78,27 @@ function autoPruneMessages(messages, maxBytes = 220000, keepRecent = 16) {
     }
   }
 
+  // Drop oldest non-system messages until under budget.
   let afterBytes = totalBytes
   try {
     afterBytes = Buffer.byteLength(JSON.stringify(pruned), "utf8")
   } catch {
     /* ignore */
   }
+  while (afterBytes > maxBytes && pruned.length > keepRecent + 1) {
+    const idx = pruned.findIndex((m, i) => i > 0 && m.role !== "system")
+    if (idx < 0) break
+    pruned.splice(idx, 1)
+    try {
+      afterBytes = Buffer.byteLength(JSON.stringify(pruned), "utf8")
+    } catch {
+      break
+    }
+  }
 
   return {
     messages: pruned,
-    pruned: true,
+    pruned: afterBytes < totalBytes || pruned.length < messages.length,
     beforeBytes: totalBytes,
     afterBytes,
   }

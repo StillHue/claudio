@@ -3,16 +3,15 @@
  */
 const fs = require('fs')
 const path = require('path')
-const os = require('os')
 const { randomUUID } = require('crypto')
-
-const BRIDGE_TOKEN_FILE = path.join(os.homedir(), '.claude-native', 'bridge.token')
+const { bridgeTokenPath } = require('../wrapper/paths')
 
 /** Prefer on-disk shared token so sibling wrappers never disagree with in-memory start token. */
 function expectedBridgeToken(fallback) {
   try {
-    if (fs.existsSync(BRIDGE_TOKEN_FILE)) {
-      const t = fs.readFileSync(BRIDGE_TOKEN_FILE, 'utf8').trim()
+    const file = bridgeTokenPath()
+    if (fs.existsSync(file)) {
+      const t = fs.readFileSync(file, 'utf8').trim()
       if (t.length >= 32) return t
     }
   } catch {

@@ -135,12 +135,12 @@ function anthropicToOpenAIMessages(body) {
       const reasoning = thinkingParts.join('\n')
       if (!text && !reasoning && !toolCalls.length) continue
 
-      // content:null is only valid when tool_calls are present.
+      // Do not forward reasoning_content — many providers reject/ignore it and it
+      // bloats history. Keep visible text only; fall back to thinking if no text.
       const assistant = {
         role: 'assistant',
-        content: text || (toolCalls.length ? null : ''),
+        content: text || (toolCalls.length ? null : reasoning || ''),
       }
-      if (reasoning) assistant.reasoning_content = reasoning
       if (toolCalls.length) assistant.tool_calls = toolCalls
       out.push(assistant)
       continue

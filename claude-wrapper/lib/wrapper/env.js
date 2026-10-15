@@ -3,17 +3,22 @@
  */
 const fs = require('fs')
 const path = require('path')
-const os = require('os')
 const { randomUUID } = require('crypto')
+const {
+  envFileCandidates,
+  bridgeTokenPath,
+  ensureDir,
+  wrapperInstallDir,
+} = require('./paths')
 
 /**
- * Load ~/.claude-native/.env (and optional fallbacks) into process.env.
+ * Load ~/.claude/.env (then legacy ~/.claude-native/.env) into process.env.
  * Does not overwrite keys already set in the process environment.
  */
 function loadNativeEnvFiles() {
   const candidates = [
-    path.join(os.homedir(), '.claude-native', '.env'),
-    path.join(os.homedir(), '.openclaude', '.env'),
+    ...envFileCandidates(),
+    path.join(require('os').homedir(), '.openclaude', '.env'),
   ]
   let loaded = 0
   for (const file of candidates) {
@@ -52,11 +57,17 @@ function loadNativeEnvFiles() {
 function wrapperBaseDir() {
   const execDir = path.dirname(process.execPath)
   const base = path.basename(process.execPath).toLowerCase()
-  if (base.startsWith('claudio-wrapper') && base.endsWith('.exe')) {
-    return execDir
+  if (
+    (base.startsWith('claudio-wrapper') || base === 'claude.exe') &&
+    base.endsWith('.exe')
+  ) {
+    // Prefer install home when the shim copied claude.exe into ~/.claude-shim
+    const installed = wrapperInstallDir()
+    if (fs.existsSync(path.join(installed, 'claudio-wrapper.js'))) return installed
+    if (fs.existsSync(path.join(execDir, 'claudio-wrapper.js'))) return execDir
+    return installed
   }
   if (typeof __dirname === 'string' && __dirname.length > 0) {
-    // When required from lib/wrapper, climb to package root.
     const here = path.resolve(__dirname, '..', '..')
     if (fs.existsSync(path.join(here, 'claudio-wrapper.js'))) return here
     return __dirname
@@ -66,10 +77,10 @@ function wrapperBaseDir() {
 
 /** Stable token shared by sibling wrapper processes (auth status + stream-json). */
 function getSharedBridgeToken() {
-  const dir = path.join(os.homedir(), '.claude-native')
-  const file = path.join(dir, 'bridge.token')
+  const file = bridgeTokenPath()
+  const dir = path.dirname(file)
   try {
-    fs.mkdirSync(dir, { recursive: true })
+    ensureDir(dir)
     if (fs.existsSync(file)) {
       const existing = fs.readFileSync(file, 'utf8').trim()
       if (existing.length >= 32) return existing
