@@ -262,7 +262,7 @@ function Ensure-ClaudeHome {
   if (Test-Path $providers) {
     Write-Host "providers.json already exists ($providers)"
   } else {
-    Write-Host "no providers.json yet - copy providers.example.json to ~/.claude/providers.json and put the API key in ~/.claude/.env"
+    Write-Host "no provider yet - the first Claude launch opens a local page for the provider, model, and API key"
   }
 }
 

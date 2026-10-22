@@ -18,6 +18,7 @@ const {
   preferLatestOfficial,
 } = require('./resolve-official-claude')
 const { debugLog } = require('./lib/wrapper/log')
+const { openProviderSetup } = require('./provider-ui')
 const {
   loadNativeEnvFiles,
   getSharedBridgeToken,
@@ -190,11 +191,9 @@ async function runNative(rawArgs) {
     } catch {
 
     }
-    debugLog('native mode — no provider API key, no UI to offer')
-    console.error('[claude-wrapper] No provider configured.')
-    console.error('  Copilot: run `gh auth login` (token picked up automatically).')
-    console.error('  Others: add the provider to ~/.claude/providers.json + key to ~/.claude/.env')
-    process.exit(1)
+    debugLog('native mode — no provider API key, opening setup page')
+    await openProviderSetup({ log: (...a) => debugLog(...a) })
+    return
   } else {
     debugLog(`native mode — passthrough (no provider API key) binary=${command}`)
   }
