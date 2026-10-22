@@ -29,4 +29,4 @@ try {
   /* ignore */
 }
 
-require('./claudio-wrapper.js')
+require('./claude-wrapper.js')

@@ -33,9 +33,10 @@ async function main() {
   }
 
   const { handleMessages } = require('../lib/bridge/messages')
-  const { AUTO_PICKER_ID } = require('../lib/provider/resolve')
+  const { resolveProvider, loadProvidersConfig } = require('../lib/provider/resolve')
+  const providers = loadProvidersConfig()
   const payload = JSON.stringify({
-    model: AUTO_PICKER_ID,
+    model: providers.data.providers[providers.data.active].model,
     max_tokens: 64,
     stream: true,
     messages: [{ role: 'user', content: 'say hi' }],
@@ -60,9 +61,7 @@ async function main() {
     },
   }
   await handleMessages(req, res, {
-    getProvider: () => {
-      throw new Error('should not hit concrete path')
-    },
+    getProvider: (model) => resolveProvider(providers.data, model),
     getProvidersData: () => require('../lib/provider/resolve').loadProvidersConfig().data,
     getProvidersPath: () => require('../lib/provider/resolve').loadProvidersConfig().path,
     log: () => {},

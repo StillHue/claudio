@@ -1,0 +1,18 @@
+{
+  "active": "nvidia",
+  "providers": {
+    "nvidia": {
+      "baseUrl": "https://integrate.api.nvidia.com/v1",
+      "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+      "apiKeyEnv": "NVIDIA_API_KEY",
+      "tools": true,
+      "format": "chat",
+      "models": [
+        "nvidia/nemotron-3.5-super-vl-120b-a12b"
+      ]
+    }
+  },
+  "pickerModels": [
+    "nvidia/nemotron-3.5-super-vl-120b-a12b"
+  ]
+}

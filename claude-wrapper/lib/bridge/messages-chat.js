@@ -1,7 +1,6 @@
 /**
  * Chat Completions handler (OpenAI /chat/completions).
- * Full tool schemas (no compact). Prunes only oversized old tool dumps.
- * Empty upstream → one same-model retry, then optional cascade.
+ * Empty upstream → one same-model retry, then an error.
  */
 const { json, writeSse, newMessageId } = require('./http')
 const {
@@ -18,23 +17,12 @@ const {
 } = require('./translate')
 const { readOpenAIStream } = require('./stream')
 const { summarizeUpstreamError, criticalLog } = require('../wrapper/log')
-const { autoPruneMessages } = require('./prune')
-const { shouldRetryUpstream } = require('./auto-router')
 const { randomUUID } = require('crypto')
 
-/** Replace image_url parts with a short text stub for text-only providers. */
-function stripImagesFromMessages(messages) {
-  if (!Array.isArray(messages)) return messages
-  return messages.map((msg) => {
-    if (!Array.isArray(msg?.content)) return msg
-    const content = msg.content.map((p) => {
-      if (p && p.type === 'image_url') {
-        return { type: 'text', text: '[image omitted — text-only model]' }
-      }
-      return p
-    })
-    return { ...msg, content }
-  })
+function isUpstreamTimeout(err) {
+  const name = err?.name || ''
+  const msg = String(err?.message || err)
+  return name === 'TimeoutError' || /aborted|timeout|econnreset|fetch failed/i.test(msg)
 }
 
 function completionFromChatData(data) {
@@ -77,40 +65,18 @@ function completionFromChatData(data) {
 
 async function handleChat(req, res, ctx, { body, provider, upstreamModel }) {
   const rawMessages = anthropicToOpenAIMessages(body)
-  const cascade =
-    Array.isArray(body.__fallbackCascade) && body.__fallbackCascade.length
-      ? body.__fallbackCascade
-      : [upstreamModel]
 
   const tools = anthropicToolsToOpenAI(body.tools)
   const wantStream = body.stream === true
   const advertisedModel = body.model || upstreamModel
-  const pruneMaxBytes = Number(process.env.CLAUDE_NATIVE_PRUNE_MAX_BYTES || 220000)
-  const pruneKeepRecent = Number(process.env.CLAUDE_NATIVE_PRUNE_KEEP_RECENT || 16)
 
   const headers = { 'Content-Type': 'application/json' }
   if (provider.apiKey) headers.Authorization = `Bearer ${provider.apiKey}`
 
   const upstreamTimeoutMs = Number(process.env.CLAUDE_NATIVE_UPSTREAM_TIMEOUT_MS || 180000)
-  const messagesCache = new Map()
-
-  async function messagesForModel(model) {
-    if (messagesCache.has(model)) return messagesCache.get(model)
-    // Vision is opt-in per provider (`"vision": true` in providers.json);
-    // text-only models get image stubs instead of base64 payloads.
-    const base = provider?.vision === true ? rawMessages : stripImagesFromMessages(rawMessages)
-    const pruneResult = autoPruneMessages(base, pruneMaxBytes, pruneKeepRecent)
-    if (pruneResult.pruned) {
-      ctx.log?.(
-        `[micro-compact] pruned payload from ${(pruneResult.beforeBytes / 1024).toFixed(1)} KB → ${(pruneResult.afterBytes / 1024).toFixed(1)} KB`,
-      )
-    }
-    messagesCache.set(model, pruneResult.messages)
-    return pruneResult.messages
-  }
 
   async function prepareChatBody(model, { stream }) {
-    const messages = await messagesForModel(model)
+    const messages = rawMessages
     const shape = requestShapeStats(messages, tools)
     const chatBody = {
       model,
@@ -140,13 +106,13 @@ async function handleChat(req, res, ctx, { body, provider, upstreamModel }) {
     return { chatBody, serialized, shape, requestBytes }
   }
 
-  const attempts = cascade.map((model) => ({ model, emptyRetry: false }))
-  const emptyRetried = new Set()
   let lastSummary = ''
   let lastShape = { msgs: 0, tools: 0, images: 0 }
 
-  for (let i = 0; i < attempts.length; i++) {
-    const { model: activeModel, emptyRetry } = attempts[i]
+  // pass 0, then one same-model retry on an empty body or an error inside HTTP 200.
+  for (let pass = 0; pass < 2; pass++) {
+    const activeModel = upstreamModel
+    const emptyRetry = pass === 1
     const { chatBody, serialized, shape, requestBytes } = await prepareChatBody(activeModel, {
       stream: wantStream,
     })
@@ -165,12 +131,8 @@ async function handleChat(req, res, ctx, { body, provider, upstreamModel }) {
         signal: AbortSignal.timeout(upstreamTimeoutMs),
       })
     } catch (err) {
-      const timedOut = shouldRetryUpstream(0, err)
+      const timedOut = isUpstreamTimeout(err)
       ctx.log(`upstream fetch ${timedOut ? 'timeout' : 'failed'}: ${err.message}`)
-      if (timedOut && i < attempts.length - 1) {
-        ctx.log(`[retry] ${activeModel}→${attempts[i + 1].model} reason=timeout`)
-        continue
-      }
       return json(res, timedOut ? 504 : 502, {
         type: 'error',
         error: {
@@ -189,10 +151,6 @@ async function handleChat(req, res, ctx, { body, provider, upstreamModel }) {
         `upstream ${upstream.status} model=${activeModel} msgs=${shape.msgs} tools=${shape.tools} images=${shape.images} max_tokens=${chatBody.max_tokens} bytes=${requestBytes} detail=${lastSummary}`,
       )
       ctx.log?.(`upstream ${upstream.status} detail=${lastSummary}`)
-      if (shouldRetryUpstream(upstream.status) && i < attempts.length - 1) {
-        ctx.log(`[retry] ${activeModel}→${attempts[i + 1].model} reason=${upstream.status}`)
-        continue
-      }
       return json(res, upstream.status, {
         type: 'error',
         error: { type: 'api_error', message: `upstream HTTP ${upstream.status}` },
@@ -211,14 +169,8 @@ async function handleChat(req, res, ctx, { body, provider, upstreamModel }) {
         criticalLog(
           `upstream body-error ${errCode} model=${activeModel} msgs=${shape.msgs} images=${shape.images} detail=${lastSummary}`,
         )
-        if (!emptyRetried.has(activeModel) && i >= attempts.length - 1) {
-          emptyRetried.add(activeModel)
-          attempts.splice(i + 1, 0, { model: activeModel, emptyRetry: true })
+        if (pass === 0) {
           ctx.log(`[retry] ${activeModel} body-error→retry same`)
-          continue
-        }
-        if (shouldRetryUpstream(errCode) && i < attempts.length - 1) {
-          ctx.log(`[retry] ${activeModel}→${attempts[i + 1].model} reason=${errCode}`)
           continue
         }
         return json(res, errCode, {
@@ -231,17 +183,8 @@ async function handleChat(req, res, ctx, { body, provider, upstreamModel }) {
         criticalLog(
           `empty upstream completion model=${activeModel} msgs=${shape.msgs} images=${shape.images} finish=${parsed.finishReason || ''}`,
         )
-        // Single-model cascade: one same-model retry. With a fallback
-        // available, skip it and go straight to the next model — a second
-        // full-latency call on a flaky model is pure wait.
-        if (!emptyRetried.has(activeModel) && i >= attempts.length - 1) {
-          emptyRetried.add(activeModel)
-          attempts.splice(i + 1, 0, { model: activeModel, emptyRetry: true })
+        if (pass === 0) {
           ctx.log(`[retry] ${activeModel} empty→retry same`)
-          continue
-        }
-        if (i < attempts.length - 1) {
-          ctx.log(`[retry] ${activeModel}→${attempts[i + 1].model} reason=empty`)
           continue
         }
         return json(res, 502, {
@@ -317,10 +260,11 @@ async function handleChat(req, res, ctx, { body, provider, upstreamModel }) {
       writeSse(res, 'content_block_stop', { type: 'content_block_stop', index: thinkingIndex })
     }
     const ensureTextBlock = () => {
-      if (textStarted) return
+      if (textStarted && !textClosed) return
       sendHeaders()
       closeThinkingBlock()
       textStarted = true
+      textClosed = false
       textIndex = nextIndex++
       writeSse(res, 'content_block_start', {
         type: 'content_block_start',
@@ -336,7 +280,7 @@ async function handleChat(req, res, ctx, { body, provider, upstreamModel }) {
 
     const result = await readOpenAIStream(upstream.body, {
       onReasoning(delta) {
-        if (!delta) return
+        if (!delta || thinkingClosed || openedTools.size) return
         ensureThinkingBlock()
         writeSse(res, 'content_block_delta', {
           type: 'content_block_delta',
@@ -403,14 +347,8 @@ async function handleChat(req, res, ctx, { body, provider, upstreamModel }) {
       criticalLog(
         `upstream stream-error ${errCode} model=${activeModel} msgs=${shape.msgs} images=${shape.images} detail=${lastSummary}`,
       )
-      if (!emptyRetried.has(activeModel) && i >= attempts.length - 1) {
-        emptyRetried.add(activeModel)
-        attempts.splice(i + 1, 0, { model: activeModel, emptyRetry: true })
+      if (pass === 0) {
         ctx.log(`[retry] ${activeModel} stream-error→retry same`)
-        continue
-      }
-      if (shouldRetryUpstream(errCode) && i < attempts.length - 1) {
-        ctx.log(`[retry] ${activeModel}→${attempts[i + 1].model} reason=${errCode}`)
         continue
       }
       return json(res, errCode, {
@@ -422,58 +360,14 @@ async function handleChat(req, res, ctx, { body, provider, upstreamModel }) {
       criticalLog(
         `empty upstream stream model=${activeModel} msgs=${shape.msgs} images=${shape.images}`,
       )
-      // Single-model cascade: one same-model retry. With a fallback
-      // available, skip it and go straight to the next model.
-      if (!emptyRetried.has(activeModel) && i >= attempts.length - 1) {
-        emptyRetried.add(activeModel)
-        attempts.splice(i + 1, 0, { model: activeModel, emptyRetry: true })
+      if (pass === 0) {
         ctx.log(`[retry] ${activeModel} empty→retry same`)
         continue
       }
-        if (i < attempts.length - 1) {
-          ctx.log(`[retry] ${activeModel}→${attempts[i + 1].model} reason=empty`)
-          continue
-        }
-      // All attempts empty — surface notice (headers not yet sent).
-      res.writeHead(200, {
-        'Content-Type': 'text/event-stream; charset=utf-8',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
+      return json(res, 502, {
+        type: 'error',
+        error: { type: 'api_error', message: 'upstream returned an empty completion' },
       })
-      writeSse(res, 'message_start', {
-        type: 'message_start',
-        message: {
-          id: messageId,
-          type: 'message',
-          role: 'assistant',
-          content: [],
-          model: advertisedModel,
-          stop_reason: null,
-          stop_sequence: null,
-          usage: { input_tokens: 0, output_tokens: 0 },
-        },
-      })
-      writeSse(res, 'content_block_start', {
-        type: 'content_block_start',
-        index: 0,
-        content_block: { type: 'text', text: '' },
-      })
-      const notice =
-        '[upstream returned no content after retries — retry the turn; empty replies are not stored as blank assistants]'
-      writeSse(res, 'content_block_delta', {
-        type: 'content_block_delta',
-        index: 0,
-        delta: { type: 'text_delta', text: notice },
-      })
-      writeSse(res, 'content_block_stop', { type: 'content_block_stop', index: 0 })
-      writeSse(res, 'message_delta', {
-        type: 'message_delta',
-        delta: { stop_reason: 'end_turn', stop_sequence: null },
-        usage: { output_tokens: 0 },
-      })
-      writeSse(res, 'message_stop', { type: 'message_stop' })
-      res.end()
-      return
     }
 
     // Live deltas already flowed above (or this is the all-dupe edge: full
@@ -521,7 +415,7 @@ async function handleChat(req, res, ctx, { body, provider, upstreamModel }) {
     type: 'error',
     error: {
       type: 'api_error',
-      message: lastSummary || `upstream failed after fallback cascade (msgs=${lastShape.msgs})`,
+      message: lastSummary || `upstream failed (msgs=${lastShape.msgs})`,
     },
   })
 }
