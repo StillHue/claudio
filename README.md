@@ -15,13 +15,15 @@ powershell -ExecutionPolicy Bypass -File .\install.ps1
 
 Reload the IDE window after install. Cursor and VS Code must launch `claude-wrapper.exe` (`shell:false`). A `.cmd` or `.js` wrapper fails with `spawn EINVAL`.
 
-`install.ps1` compiles that exe with `bun build --compile` when it is missing.
+The first launch with no API key opens a local page. No model has to be registered before that page. The key goes to `~/.claude/.env`. The provider and model go to `~/.claude/wrapper/providers.json`.
+
+Build the exe before install, from `claude-wrapper/`: `bun build --compile ./claude-wrapper.js --outfile ./claude-wrapper.exe`.
 
 ## Config
 
 | File | Role |
 | --- | --- |
-| `~/.claude/providers.json` | `active` provider, `model`, `baseUrl`, `apiKeyEnv` |
+| `~/.claude/wrapper/providers.json` | `active` provider, `model`, `baseUrl`, `apiKeyEnv` |
 | `~/.claude/.env` | API key named by `apiKeyEnv` |
 
 Start from `claude-wrapper/providers.example.json`. Details, tests, and the retry rules are in `claude-wrapper/README.md`.
