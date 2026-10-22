@@ -58,18 +58,17 @@ function wrapperBaseDir() {
   const execDir = path.dirname(process.execPath)
   const base = path.basename(process.execPath).toLowerCase()
   if (
-    (base.startsWith('claudio-wrapper') || base === 'claude.exe') &&
+    (base.startsWith('claude-wrapper') || base.startsWith('claudio-wrapper') || base === 'claude.exe') &&
     base.endsWith('.exe')
   ) {
-    // Prefer install home when the shim copied claude.exe into ~/.claude-shim
     const installed = wrapperInstallDir()
-    if (fs.existsSync(path.join(installed, 'claudio-wrapper.js'))) return installed
-    if (fs.existsSync(path.join(execDir, 'claudio-wrapper.js'))) return execDir
+    if (fs.existsSync(path.join(installed, 'claude-wrapper.js'))) return installed
+    if (fs.existsSync(path.join(execDir, 'claude-wrapper.js'))) return execDir
     return installed
   }
   if (typeof __dirname === 'string' && __dirname.length > 0) {
     const here = path.resolve(__dirname, '..', '..')
-    if (fs.existsSync(path.join(here, 'claudio-wrapper.js'))) return here
+    if (fs.existsSync(path.join(here, 'claude-wrapper.js'))) return here
     return __dirname
   }
   return execDir

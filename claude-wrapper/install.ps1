@@ -11,7 +11,7 @@
   What it does:
     1. Ensures official Claude Code (if missing)
     2. Deploys wrapper under ~/.claude/wrapper
-    3. Points IDE hosts at claudio-wrapper.cmd
+    3. Points IDE hosts at claude-wrapper.exe
     4. Installs PATH shims (claude)
     5. Centralizes providers.json / .env under ~/.claude
 .PARAMETER SkipClaudeInstall
@@ -262,7 +262,7 @@ function Ensure-ClaudeHome {
   if (Test-Path $providers) {
     Write-Host "providers.json already exists ($providers)"
   } else {
-    Write-Host "no providers.json yet - first Claude launch will open the provider picker"
+    Write-Host "no providers.json yet - copy providers.example.json to ~/.claude/providers.json and put the API key in ~/.claude/.env"
   }
 }
 
@@ -288,10 +288,12 @@ function Deploy-WrapperInstall {
   Get-ChildItem -Path $dest -Filter 'claudio-wrapper-native*.exe' -File -ErrorAction SilentlyContinue |
     ForEach-Object { Remove-Item $_.FullName -Force }
 
-  $cmd = Join-Path $dest 'claudio-wrapper.cmd'
-  if (-not (Test-Path $cmd)) { throw "claudio-wrapper.cmd missing after deploy ($dest)" }
+  $exe = Join-Path $dest 'claude-wrapper.exe'
+  if (-not (Test-Path $exe)) {
+    throw "claude-wrapper.exe missing after deploy ($dest). From the wrapper dir: bun build --compile ./claude-wrapper.js --outfile ./claude-wrapper.exe"
+  }
   Write-Host "deployed wrapper -> $dest"
-  return (Get-Item $cmd)
+  return (Get-Item $exe)
 }
 
 # --- main ---
@@ -317,20 +319,10 @@ if (Test-Path $shim) {
   Write-Warning "install-cli-shims.ps1 missing - skip"
 }
 
-Write-Step "Installing /provider skill (local auth page)"
-$providerCmd = Join-Path $here 'install-provider-command.js'
-if ((Test-Path $providerCmd) -and (Get-Command node -ErrorAction SilentlyContinue)) {
-  & node $providerCmd --wrapper-dir (Get-WrapperInstallDir)
-} else {
-  Write-Warning "install-provider-command.js missing or node not found - /provider skill skipped"
-}
-
 Write-Host ""
 Write-Host "Done." -ForegroundColor Green
 Write-Host "  Wrapper: $($installed.FullName)"
-Write-Host "  Providers: ~/.claude/providers.json"
+Write-Host "  Providers: ~/.claude/providers.json  (active, model, models)"
 Write-Host "  Env: ~/.claude/.env (provider API key)"
-Write-Host "  Model: Auto picker (active provider)"
-Write-Host "  Auth page: /provider in Claude Code (or node ~/.claude/wrapper/provider-ui.js)"
 Write-Host "  Next: reload your IDE window, open Claude Code"
 Write-Host ""

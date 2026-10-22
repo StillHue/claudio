@@ -6,7 +6,8 @@
 const fs = require('fs')
 const path = require('path')
 const os = require('os')
-const { modelId, loadProvidersConfig, listCatalogEntries, parseModelId, AUTO_PICKER_ID } = require('./resolve')
+const { modelId, listCatalogEntries, parseModelId } = require('./resolve')
+const { PICKER_LABEL, PICKER_DESCRIPTION } = require('./display')
 const { claudeHomeDir } = require('../wrapper/paths')
 
 /**
@@ -72,14 +73,37 @@ function syncClaudeAvailableModels(providersData) {
   }
   if (!settings || typeof settings !== 'object') settings = {}
 
-  const active = providersData.active
-  const providerLabel = active || 'your provider'
-  const autoDescription = `Auto — routes vision, coding, and complexity across ${providerLabel} models`
-
-  // Picker shows only Auto. Discrete catalog models stay resolvable by id,
-  settings.availableModels = [AUTO_PICKER_ID]
+  const catalog = listCatalogEntries(providersData)
+  const wanted = Array.isArray(providersData.pickerModels) ? providersData.pickerModels : []
+  const picked = []
+  const source = wanted.length ? wanted : catalog.map((e) => e.model)
+  for (const want of source) {
+    let parsed = null
+    try {
+      parsed = parseModelId(String(want), providersData)
+    } catch {
+      parsed = null
+    }
+    if (!parsed || !parsed.model) continue
+    if (!providersData.providers[parsed.provider]) continue
+    const id = modelId(parsed.provider, parsed.model)
+    if (picked.some((o) => o.model === id)) continue
+    picked.push({
+      model: id,
+      label: PICKER_LABEL,
+      description: PICKER_DESCRIPTION,
+    })
+  }
+  if (!picked.length) return { path: settingsPath, ids, model: null, changed: false }
+  const activeName = providersData.active
+  const activeModel = providersData.providers?.[activeName]?.model
+  const activeId = activeModel ? modelId(activeName, activeModel) : null
+  picked.sort((a, b) => (a.model === activeId ? -1 : b.model === activeId ? 1 : 0))
+  const pickerOptions = picked
+  const defaultId = pickerOptions[0].model
+  settings.availableModels = pickerOptions.map((o) => o.model)
   settings.enforceAvailableModels = true
-  settings.model = AUTO_PICKER_ID
+  settings.model = defaultId
 
   // Drop stale/invalid overrides (Claude expects string values).
   if (settings.modelOverrides && typeof settings.modelOverrides === 'object') {
@@ -93,22 +117,16 @@ function syncClaudeAvailableModels(providersData) {
 
   settings.modelPicker = {
     replaceBuiltInOptions: true,
-    options: [
-      {
-        model: AUTO_PICKER_ID,
-        label: 'Auto',
-        description: autoDescription,
-      },
-    ],
+    options: pickerOptions,
   }
 
   if (!settings.env || typeof settings.env !== 'object') settings.env = {}
-  settings.env.ANTHROPIC_CUSTOM_MODEL_OPTION = AUTO_PICKER_ID
-  settings.env.ANTHROPIC_CUSTOM_MODEL_OPTION_NAME = 'Auto'
-  settings.env.ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION = autoDescription
+  settings.env.ANTHROPIC_CUSTOM_MODEL_OPTION = defaultId
+  settings.env.ANTHROPIC_CUSTOM_MODEL_OPTION_NAME = pickerOptions[0].label
+  settings.env.ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION = pickerOptions[0].description
 
   // Never persist base URLs / API keys in settings.json — the wrapper injects
-  // an ephemeral bridge URL per spawn; stale ports break Auto.
+  // an ephemeral bridge URL per spawn.
   if (settings.env && typeof settings.env === 'object') {
     for (const k of [
       'OPENAI_BASE_URL',
@@ -197,7 +215,7 @@ function syncIdeClaudeModel(defaultId) {
  */
 function syncDefaultModel(providersData) {
   const claude = syncClaudeAvailableModels(providersData)
-  const defaultId = AUTO_PICKER_ID
+  const defaultId = claude.model || ''
   const ide = syncIdeClaudeModel(defaultId)
   return {
     model: defaultId,
@@ -250,54 +268,10 @@ function persistProvidersDefault(providersData, providerName, upstreamModel, con
   }
 }
 
-/**
- * Updates providers.json then runs syncDefaultModel.
- */
-function setDefaultModel(providerName, upstreamModel) {
-  const loaded = loadProvidersConfig()
-  const data = loaded.data
-  if (!data?.providers || !Object.keys(data.providers).length) {
-    throw new Error('No providers configured in ~/.claude/providers.json')
-  }
-  let name = providerName
-  let model = upstreamModel
-  if (!name || !model) {
-    const parsed = parseModelId(String(providerName || upstreamModel || ''), data)
-    if (parsed) {
-      name = parsed.provider
-      model = parsed.model
-    }
-  }
-  if (!name || !model) {
-    throw new Error('Could not resolve provider/model')
-  }
-  if (!data.providers[name]) {
-    throw new Error(`Provider "${name}" not found`)
-  }
-  if (!Array.isArray(data.providers[name].models)) {
-    data.providers[name].models = []
-  }
-  if (!data.providers[name].models.includes(model)) {
-    data.providers[name].models.unshift(model)
-  }
-  const configPath = loaded.path || path.join(claudeHomeDir(), 'providers.json')
-  const persisted = persistProvidersDefault(data, name, model, configPath)
-  const synced = syncDefaultModel(data)
-  return {
-    provider: name,
-    model,
-    pickerId: modelId(name, model),
-    providersPath: persisted.path,
-    providersChanged: persisted.changed,
-    sync: synced,
-  }
-}
-
 module.exports = {
   ideHostSettingsTargets,
   syncClaudeAvailableModels,
   syncIdeClaudeModel,
   syncDefaultModel,
   persistProvidersDefault,
-  setDefaultModel,
 }

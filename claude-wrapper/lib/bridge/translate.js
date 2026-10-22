@@ -224,43 +224,14 @@ function joinChatUrl(baseUrl) {
   return `${b}/chat/completions`
 }
 
-/**
- * Max completion tokens the upstream will accept.
- * Claude Code often asks for 32k; Mistral Medium/Devstral/Codestral hard-cap at 8192.
- * OpenCode Zen and most OpenAI-compat hosts still allow much higher.
- */
-function maxOutputTokensCap(provider, upstreamModel) {
-  const name = String(provider?.name || '').toLowerCase()
-  const base = String(provider?.baseUrl || '').toLowerCase()
-  const model = String(upstreamModel || '').toLowerCase()
+function maxOutputTokensCap() {
   const envCap = Number(process.env.CLAUDE_NATIVE_MAX_OUTPUT_TOKENS || 0)
-  if (envCap > 0) return envCap
-
-  if (
-    name === 'mistral' ||
-    name.startsWith('mistral') ||
-    base.includes('mistral.ai') ||
-    /^(mistral-|codestral|devstral|magistral|ministral)/.test(model)
-  ) {
-    return 8192
-  }
-  // Cohere compatibility endpoint is also conservative on several SKUs
-  if (name === 'cohere' || base.includes('cohere.com')) {
-    return 8192
-  }
-  // OpenCode Zen / Alibaba / Groq-style: keep room for reasoning + tools
-  return 32000
+  return envCap > 0 ? envCap : 32000
 }
 
 function mapModel(requested, provider) {
-  // resolveProvider already picked the upstream model id
   if (provider?.model) return provider.model
-  return requested || 'deepseek-v4-flash-free'
-}
-
-/** Models whose OpenAI-compatible endpoint accepts image_url content directly. */
-function supportsDirectVision(upstreamModel) {
-  return String(upstreamModel || '').toLowerCase() === 'mimo-v2.5-free'
+  return requested
 }
 
 function extractReasoning(msgOrDelta) {
@@ -347,7 +318,6 @@ module.exports = {
   joinChatUrl,
   maxOutputTokensCap,
   mapModel,
-  supportsDirectVision,
   requestShapeStats,
   flattenToolResultContent,
 }

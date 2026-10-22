@@ -18,9 +18,3 @@ If you find a security issue (credential leak, RCE, path traversal, unsafe defau
 - Never paste production credentials into issues, PRs, or sample configs.
 - Treat `claudio` / the process wrapper as high-privilege local tooling (same class as other coding agents).
 - Do not change secure-storage service name bases without a migration path (orphans OS keychain entries).
-
-## Dependency audits
-
-`cli/` may report transitive advisories (`bun audit`) inherited from upstream OpenClaude.
-Prefer targeted upgrades over `bun update --latest` without review. The Cursor extension package
-is audited separately with `npm audit` and should stay clean for releases.

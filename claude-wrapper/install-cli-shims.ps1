@@ -34,7 +34,7 @@ node "%HERE%\claude-cli.js" %*
 EXIT /B %ERRORLEVEL%
 "@
 
-foreach ($name in @('claude.cmd', 'claudio.cmd')) {
+foreach ($name in @('claude.cmd')) {
   $target = Join-Path $npm $name
   if (Test-Path $target) {
     Copy-Item $target "$target.bak-claude-bridge" -Force
@@ -44,7 +44,7 @@ foreach ($name in @('claude.cmd', 'claudio.cmd')) {
   Write-Host "installed $target"
 }
 
-foreach ($name in @('claude.ps1', 'claudio.ps1')) {
+foreach ($name in @('claude.ps1')) {
   $ps1 = Join-Path $npm $name
   if (Test-Path $ps1) {
     Copy-Item $ps1 "$ps1.bak-claude-bridge" -Force
@@ -57,7 +57,6 @@ Write-Host ""
 Write-Host "Done. Open a new terminal and run: claude --version"
 Write-Host "Expect: Claude Code X.Y.Z"
 Write-Host "Providers: ~/.claude/providers.json + provider API key in ~/.claude/.env"
-Write-Host "First-run key setup: node .\lib\provider\third-party-ui.js"
 
 # Official Claude native installer drops claude.exe in ~/.local/bin, which
 # shadows npm shims (PATHEXT prefers .exe over .cmd) and bypasses the wrapper.
@@ -74,12 +73,12 @@ if (Test-Path $localBin) {
       Write-Host "removed shadowing $localExe (kept claude-official.exe)"
     }
   }
-  foreach ($name in @('claude.cmd', 'claudio.cmd')) {
+  foreach ($name in @('claude.cmd')) {
     $target = Join-Path $localBin $name
     Set-Content -Path $target -Value $cmdText -Encoding ASCII
     Write-Host "installed $target"
   }
-  foreach ($name in @('claude.ps1', 'claudio.ps1')) {
+  foreach ($name in @('claude.ps1')) {
     $ps1 = Join-Path $localBin $name
     if (Test-Path $ps1) {
       Copy-Item $ps1 "$ps1.bak-claude-bridge" -Force

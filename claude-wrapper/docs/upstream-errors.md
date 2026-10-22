@@ -11,7 +11,7 @@ Code: `lib/bridge/stream.js`, `lib/bridge/messages-chat.js`, `lib/wrapper/log.js
 | `upstream 429 ...` | Rate limit on the provider key. | Back off; check key quota. |
 | `upstream timed out after 180000ms` | No response in 3 min (huge payload or stuck upstream). | Retry; shrink context (`/compact`). Raise via `CLAUDE_NATIVE_UPSTREAM_TIMEOUT_MS` only if the model is just slow. |
 | `upstream fetch failed: ...` | Network/TLS/DNS between bridge and provider. | Check connectivity and `baseUrl`. |
-| `[upstream returned no content after retries]` | HTTP 200 with zero text, reasoning, or tool calls on every attempt. | Retry the turn. If frequent, see below. |
+| `upstream returned an empty completion` | HTTP 200 with zero text, reasoning, or tool calls after one same-model retry. The bridge answers 502. | Retry the turn. |
 | `upstream HTTP 4xx` (other) | Provider rejected the request shape. | Do not retry blindly — file an issue with the sanitized log line. |
 
 ## The 503-disguised-as-200 case
@@ -30,7 +30,7 @@ Critical diagnostics always land in `~/claude-native-debug.log`
 - `empty upstream stream model=... msgs=...` — genuine empty 200
 - `upstream stream-error <code> ... detail=...` — error inside 200
 - `upstream <status> ... detail=...` — HTTP error status
-- `[retry] A→B reason=...` — cascade step
+- `[retry] <model> …→retry same` — one same-model retry
 
 Secrets are redacted before logging (`sanitizeForLog`).
 
@@ -38,10 +38,9 @@ Secrets are redacted before logging (`sanitizeForLog`).
 
 - **Old CLI picked up**: the resolver prefers newest semver across override →
   `~/.local/bin` → npm global → extension bundles (incl. `*-server` roots).
-  A stale copy only wins if the newer binary fails to probe. See resolution
-  order in [ARCHITECTURE.md](../ARCHITECTURE.md).
+  A stale copy only wins if the newer binary fails to probe.
 - **`spawn EINVAL` in the IDE**: the extension spawns the wrapper directly —
-  it must be `claudio-wrapper.exe` (Windows) or `claudio-wrapper.sh` (Linux),
+  it must be `claude-wrapper.exe` (Windows),
   never a `.cmd` (needs a shell). Re-run the installer for your platform.
 - **Auto-mode billing notice**: expected behind any non-Anthropic upstream;
   the wrapper sets `CLAUDE_CODE_AUTO_MODE_SERVER=0` so it never shows —

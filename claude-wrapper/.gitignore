@@ -1,0 +1,17 @@
+# Build output (rebuild locally with bun — never commit binaries)
+*.exe
+.*.bun-build
+
+# Local machine state (keys, tokens, caches, logs)
+.env
+*.token
+*.log
+catalog.json
+providers.json
+
+# Dependencies
+node_modules/
+
+# Runtime telemetry + local test reports
+turns.jsonl
+.e2e/

@@ -42,22 +42,6 @@ function configCandidates(fileName, extras = []) {
   ]
 }
 
-function firstExisting(paths) {
-  for (const p of paths) {
-    try {
-      if (p && fs.existsSync(p)) return p
-    } catch {
-      /* ignore */
-    }
-  }
-  return null
-}
-
-function providersJsonPath(extras = []) {
-  const hit = firstExisting(configCandidates('providers.json', extras))
-  return hit || path.join(claudeHomeDir(), 'providers.json')
-}
-
 function envFileCandidates(extras = []) {
   return configCandidates('.env', extras)
 }
@@ -84,11 +68,7 @@ function wrapperStatePath(fileName) {
 module.exports = {
   claudeHomeDir,
   wrapperInstallDir,
-  legacyNativeHomeDir,
   ensureDir,
-  configCandidates,
-  firstExisting,
-  providersJsonPath,
   envFileCandidates,
   bridgeTokenPath,
   wrapperStatePath,

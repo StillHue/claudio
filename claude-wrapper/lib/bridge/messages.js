@@ -4,7 +4,7 @@
 const { json } = require('./http')
 const { mapModel } = require('./translate')
 const { handleChat } = require('./messages-chat')
-const { isAutoModel, routeAutoModelAsync } = require('./auto-router')
+const { persistProvidersDefault } = require('../provider/sync')
 
 async function handleMessages(req, res, ctx) {
   const maxBodyBytes = Number(process.env.CLAUDE_NATIVE_MAX_BODY_BYTES || 20 * 1024 * 1024)
@@ -24,39 +24,18 @@ async function handleMessages(req, res, ctx) {
     return json(res, 400, { type: 'error', error: { type: 'invalid_request_error', message: 'invalid JSON body' } })
   }
 
-  let provider
-  let upstreamModel
+  const provider = ctx.getProvider(body.model)
+  const upstreamModel = mapModel(body.model, provider)
 
-  if (isAutoModel(body.model)) {
+  try {
     const data = typeof ctx.getProvidersData === 'function' ? ctx.getProvidersData() : null
-    let routed
-    try {
-      routed = await routeAutoModelAsync(body, data, ctx)
-    } catch (err) {
-      return json(res, 401, {
-        type: 'error',
-        error: { type: 'authentication_error', message: err.message },
-      })
+    if (data && provider?.name && upstreamModel) {
+      const cfgPath = typeof ctx.getProvidersPath === 'function' ? ctx.getProvidersPath() : undefined
+      const saved = persistProvidersDefault(data, provider.name, upstreamModel, cfgPath)
+      if (saved.changed) ctx.log?.(`persisted default model → ${provider.name}/${upstreamModel}`)
     }
-    provider = routed.provider
-    upstreamModel = routed.upstreamModel
-    body.__fallbackCascade = routed.fallbackCascade?.length ? routed.fallbackCascade : [upstreamModel]
-    body.__autoTier = routed.tier || null
-  } else {
-    provider = ctx.getProvider(body.model)
-    upstreamModel = mapModel(body.model, provider)
-
-    try {
-      const data = typeof ctx.getProvidersData === 'function' ? ctx.getProvidersData() : null
-      if (data && provider?.name && upstreamModel) {
-        const { persistProvidersDefault } = require('../provider/sync')
-        const cfgPath = typeof ctx.getProvidersPath === 'function' ? ctx.getProvidersPath() : undefined
-        const saved = persistProvidersDefault(data, provider.name, upstreamModel, cfgPath)
-        if (saved.changed) ctx.log?.(`persisted default model → ${provider.name}/${upstreamModel}`)
-      }
-    } catch (err) {
-      ctx.log?.(`persist default model skipped: ${err.message}`)
-    }
+  } catch (err) {
+    ctx.log?.(`persist default model skipped: ${err.message}`)
   }
 
   return handleChat(req, res, ctx, { body, provider, upstreamModel })

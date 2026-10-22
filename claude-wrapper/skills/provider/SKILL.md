@@ -1,27 +1,16 @@
 ---
 name: provider
-description: Open provider setup UI (pick provider + API key)
+description: Change the wrapper provider and model in providers.json
 disable-model-invocation: true
-allowed-tools: Bash
 ---
 
 # /provider
 
-Open the **local provider UI**. Do not ask for an API key in chat.
+The bridge reads `~/.claude/wrapper/providers.json` and the key from `~/.claude/.env`.
 
 ## Do this
 
-1. Run (blocks until the user finishes or closes the UI):
-
-```bash
-node "{{WRAPPER_DIR}}/provider-ui.js"
-```
-
-2. Tell the user briefly: a browser page opened on `127.0.0.1` — pick provider, paste key there, save. Key does **not** go into this chat.
-
-3. When the command exits, say: restart Claude Code / Reload Window, then use `/model`.
-
-## Rules
-
-- Never ask them to paste the API key in Claude chat.
-- If the command fails, show the error and suggest running `node "{{WRAPPER_DIR}}/provider-ui.js"` in a terminal.
+1. Read `providers.json`.
+2. Set `active` to the provider name, and that provider's `model` plus `models` to the upstream model id.
+3. The API key stays in `~/.claude/.env` under the name in `apiKeyEnv`. Never ask for the key in chat.
+4. Tell the user to reload the IDE window so the picker picks up the new model.

@@ -1,8 +1,0 @@
-{
-  "name": "node-domexception",
-  "version": "1.0.0",
-  "description": "Stub shim: re-exports the platform-native DOMException. Replaces the deprecated node-domexception polyfill.",
-  "main": "index.js",
-  "type": "commonjs",
-  "license": "MIT"
-}

@@ -9,7 +9,7 @@
 # What it does:
 #   1. Ensures official Claude Code (if missing)
 #   2. Deploys wrapper under ~/.claude/wrapper
-#   3. Points IDE hosts at claudio-wrapper.sh
+#   3. Points IDE hosts at claude-wrapper.js
 #   4. Installs PATH shims (~/.local/bin/claude)
 #   5. Centralizes providers.json / .env under ~/.claude
 #
@@ -76,7 +76,6 @@ ensure_claude_home() {
 deploy_wrapper() {
   if command -v rsync >/dev/null 2>&1; then
     rsync -a --delete --exclude node_modules --exclude .git --exclude skills --exclude .env \
-      --exclude '*.bun-build' --exclude 'claudio-wrapper-native*.exe' \
       "$HERE/" "$WRAPPER_DIR/"
   else
     # cp fallback: copy everything except the excluded names.
@@ -85,14 +84,14 @@ deploy_wrapper() {
       for entry in "$HERE"/* "$HERE"/.*; do
         base="$(basename "$entry")"
         case "$base" in
-          .|..|node_modules|.git|skills|.env|*.bun-build|claudio-wrapper-native*.exe) continue;;
+          .|..|node_modules|.git|skills|.env) continue;;
         esac
         cp -r "$entry" "$WRAPPER_DIR/"
       done )
   fi
-  chmod +x "$WRAPPER_DIR/claudio-wrapper.sh"
-  [ -f "$WRAPPER_DIR/claudio-wrapper.sh" ] \
-    || { echo "claudio-wrapper.sh missing after deploy ($WRAPPER_DIR)" >&2; exit 1; }
+  chmod +x "$WRAPPER_DIR/claude-wrapper.js"
+  [ -f "$WRAPPER_DIR/claude-wrapper.js" ] \
+    || { echo "claude-wrapper.js missing after deploy ($WRAPPER_DIR)" >&2; exit 1; }
   echo "deployed wrapper -> $WRAPPER_DIR"
 }
 
@@ -137,7 +136,7 @@ data['claudeCode.model'] = data['claudeCode.model'] || pickerId;
 fs.writeFileSync(settingsPath, JSON.stringify(data, null, 2) + '\n', 'utf8');
 console.log('set claudeCode.claudeProcessWrapper =', exe);
 PATCH_EOF
-  node "$tmp_js" "$2" "$WRAPPER_DIR/claudio-wrapper.sh"
+  node "$tmp_js" "$2" "$WRAPPER_DIR/claude-wrapper.js"
   local rc=$?
   rm -f "$tmp_js"
   return $rc
@@ -175,7 +174,7 @@ install_cli_shims() {
   # Official native installer drops claude in ~/.local/bin, which would
   # shadow the wrapper. Keep it aside as claude-official.
   if [ -f "$LOCAL_BIN/claude" ] && [ ! -L "$LOCAL_BIN/claude" ]; then
-    if ! grep -q "claudio-wrapper" "$LOCAL_BIN/claude" 2>/dev/null; then
+    if ! grep -q "claude-cli.js" "$LOCAL_BIN/claude" 2>/dev/null; then
       mv -f "$LOCAL_BIN/claude" "$LOCAL_BIN/claude-official"
       echo "renamed $LOCAL_BIN/claude -> $LOCAL_BIN/claude-official (wrapper owns claude)"
     fi
@@ -206,17 +205,10 @@ step "Deploying wrapper -> ~/.claude/wrapper"
 deploy_wrapper
 set_ide_wrappers
 install_cli_shims
-step "Installing /provider skill (local auth page)"
-if [ -f "$HERE/install-provider-command.js" ]; then
-  node "$HERE/install-provider-command.js" --wrapper-dir "$WRAPPER_DIR" \
-    || echo "WARNING: /provider skill install skipped." >&2
-fi
-
 echo ""
 echo "Done."
-echo "  Wrapper: $WRAPPER_DIR/claudio-wrapper.sh"
+echo "  Wrapper: $WRAPPER_DIR/claude-wrapper.js"
 echo "  Providers: ~/.claude/providers.json"
 echo "  Env: ~/.claude/.env"
-echo "  Auth page: /provider in Claude Code (or node ~/.claude/wrapper/provider-ui.js)"
 echo "  Next: reload your IDE window, open Claude Code"
 echo ""
