@@ -18,6 +18,7 @@ const {
 const { readOpenAIStream } = require('./stream')
 const { summarizeUpstreamError, criticalLog } = require('../wrapper/log')
 const { randomUUID } = require('crypto')
+const { estimateTokens, estimateInputTokens } = require('./count-tokens')
 
 function isUpstreamTimeout(err) {
   const name = err?.name || ''
@@ -25,7 +26,11 @@ function isUpstreamTimeout(err) {
   return name === 'TimeoutError' || /aborted|timeout|econnreset|fetch failed/i.test(msg)
 }
 
-function completionFromChatData(data) {
+function hasUsageValue(value) {
+  return value !== null && value !== undefined && Number.isFinite(Number(value))
+}
+
+function completionFromChatData(data, requestBody) {
   const msg = data.choices?.[0]?.message || {}
   const content = []
   const reasoning = extractReasoning(msg)
@@ -51,13 +56,25 @@ function completionFromChatData(data) {
     }
   }
   const hasTools = (msg.tool_calls || []).length > 0
+  const outputText = [
+    text,
+    reasoning,
+    ...(msg.tool_calls || []).map((tc) => tc.function?.arguments || ''),
+  ].join('')
+  const usage = data.usage || {}
+  const hasInputUsage = hasUsageValue(usage.prompt_tokens)
+  const hasOutputUsage = hasUsageValue(usage.completion_tokens)
   return {
     content,
     hasTools,
     finishReason: data.choices?.[0]?.finish_reason,
     usage: {
-      input_tokens: data.usage?.prompt_tokens || 0,
-      output_tokens: data.usage?.completion_tokens || 0,
+      input_tokens: hasInputUsage ? Number(usage.prompt_tokens) : estimateInputTokens(requestBody),
+      output_tokens: hasOutputUsage ? Number(usage.completion_tokens) : estimateTokens(outputText),
+    },
+    usageSource: {
+      input: hasInputUsage ? 'provider' : 'estimate',
+      output: hasOutputUsage ? 'provider' : 'estimate',
     },
     upstreamModelId: data?.model,
   }
@@ -83,6 +100,7 @@ async function handleChat(req, res, ctx, { body, provider, upstreamModel }) {
       messages,
       stream,
     }
+    if (stream && includeStreamUsage) chatBody.stream_options = { include_usage: true }
     const requestedMax = body.max_tokens != null ? Number(body.max_tokens) : 0
     const outputCap = maxOutputTokensCap()
     // Prefer Claude Code's budget; do not invent high floors that bloat reservations.
@@ -108,6 +126,7 @@ async function handleChat(req, res, ctx, { body, provider, upstreamModel }) {
 
   let lastSummary = ''
   let lastShape = { msgs: 0, tools: 0, images: 0 }
+  let includeStreamUsage = wantStream
 
   // pass 0, then one same-model retry on an empty body or an error inside HTTP 200.
   for (let pass = 0; pass < 2; pass++) {
@@ -147,6 +166,19 @@ async function handleChat(req, res, ctx, { body, provider, upstreamModel }) {
     if (!upstream.ok) {
       const errText = await upstream.text().catch(() => '')
       lastSummary = summarizeUpstreamError(errText)
+      if (
+        pass === 0 &&
+        wantStream &&
+        includeStreamUsage &&
+        upstream.status === 400 &&
+        /(?:unknown|unrecognized|unsupported|invalid|not allowed).{0,40}(?:stream_options|include_usage)|(?:stream_options|include_usage).{0,40}(?:unknown|unrecognized|unsupported|invalid|not allowed)/i.test(
+          errText,
+        )
+      ) {
+        includeStreamUsage = false
+        ctx.log('[compat] upstream rejected stream usage option; retrying without it')
+        continue
+      }
       criticalLog(
         `upstream ${upstream.status} model=${activeModel} msgs=${shape.msgs} tools=${shape.tools} images=${shape.images} max_tokens=${chatBody.max_tokens} bytes=${requestBytes} detail=${lastSummary}`,
       )
@@ -178,7 +210,7 @@ async function handleChat(req, res, ctx, { body, provider, upstreamModel }) {
           error: { type: errType, message: `upstream ${errCode}: ${errMsg}` },
         })
       }
-      const parsed = completionFromChatData(data)
+      const parsed = completionFromChatData(data, body)
       if (!parsed.content.length) {
         criticalLog(
           `empty upstream completion model=${activeModel} msgs=${shape.msgs} images=${shape.images} finish=${parsed.finishReason || ''}`,
@@ -195,6 +227,9 @@ async function handleChat(req, res, ctx, { body, provider, upstreamModel }) {
           },
         })
       }
+      ctx.log(
+        `completion usage input_tokens=${parsed.usage.input_tokens}(${parsed.usageSource.input}) output_tokens=${parsed.usage.output_tokens}(${parsed.usageSource.output})`,
+      )
       return json(res, 200, {
         id: messageId,
         type: 'message',
@@ -239,7 +274,10 @@ async function handleChat(req, res, ctx, { body, provider, upstreamModel }) {
           model: advertisedModel,
           stop_reason: null,
           stop_sequence: null,
-          usage: { input_tokens: 0, output_tokens: 0 },
+          usage: {
+            input_tokens: estimateInputTokens(body),
+            output_tokens: 0,
+          },
         },
       })
     }
@@ -389,15 +427,26 @@ async function handleChat(req, res, ctx, { body, provider, upstreamModel }) {
         writeSse(res, 'content_block_stop', { type: 'content_block_stop', index: idx })
       }
       if (openedTools.size > 0) finishReason = 'tool_use'
+      const outputUsage = Number(result.usage?.completion_tokens)
+      const hasOutputUsage = hasUsageValue(result.usage?.completion_tokens)
+      const inputUsage = Number(result.usage?.prompt_tokens)
+      const hasInputUsage = hasUsageValue(result.usage?.prompt_tokens)
+      const estimatedOutputTokens = estimateTokens(
+        [
+          result.text,
+          result.reasoning,
+          ...(result.toolCalls || []).map((tool) => tool.arguments || ''),
+        ].join(''),
+      )
       writeSse(res, 'message_delta', {
         type: 'message_delta',
         delta: { stop_reason: finishReason, stop_sequence: null },
-        usage: { output_tokens: 0 },
+        usage: { output_tokens: hasOutputUsage ? outputUsage : estimatedOutputTokens },
       })
       writeSse(res, 'message_stop', { type: 'message_stop' })
       res.end()
       ctx.log(
-        `stream done model=${activeModel} text=${result.text?.length || 0} reasoning=${result.reasoning?.length || 0} tools=${result.toolCalls?.length || 0}`,
+        `stream done model=${activeModel} text=${result.text?.length || 0} reasoning=${result.reasoning?.length || 0} tools=${result.toolCalls?.length || 0} input_tokens=${estimateInputTokens(body)}(estimated)${hasInputUsage ? ` provider_input_tokens=${inputUsage}` : ''} output_tokens=${hasOutputUsage ? outputUsage : estimatedOutputTokens}${hasOutputUsage ? '' : '(estimated)'}`,
       )
     } catch (err) {
       ctx.log(`stream error: ${err.message}`)

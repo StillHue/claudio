@@ -19,6 +19,7 @@ async function readOpenAIStream(body, handlers) {
   let fullReasoning = ''
   /** Inline SSE error object (some upstreams send HTTP 200 with an error payload). */
   let streamError = null
+  let usage = null
   /** @type {Map<number, { id: string, name: string, arguments: string }>} */
   const toolAcc = new Map()
 
@@ -44,6 +45,9 @@ async function readOpenAIStream(body, handlers) {
         streamError = jsonChunk.error
         stopped = true
         break
+      }
+      if (jsonChunk?.usage && typeof jsonChunk.usage === 'object') {
+        usage = jsonChunk.usage
       }
       const choice = jsonChunk.choices?.[0]
       if (!choice) continue
@@ -87,6 +91,7 @@ async function readOpenAIStream(body, handlers) {
     reasoning: fullReasoning,
     toolCalls: [...toolAcc.entries()].sort((a, b) => a[0] - b[0]).map(([, v]) => v),
     streamError,
+    usage,
   }
 }
 

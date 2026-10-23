@@ -15,7 +15,7 @@ compilado, não o `.js`.
 
 ## Config
 
-`~/.claude/providers.json` (provider ativo + modelo) e `~/.claude/.env` (chaves).
+`~/.claude/wrapper/providers.json` (provider ativo + modelo) e `~/.claude/.env` (chaves).
 Trocar de provider = editar `providers.json` (`active`); nada é hard-coded.
 
 ## Mapa

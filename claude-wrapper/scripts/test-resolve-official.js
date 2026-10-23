@@ -15,6 +15,9 @@ async function main() {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'claudio-resolve-'))
   // Fake HOME with stale desktop bundle + fresh server bundle.
   const home = path.join(tmp, 'home')
+  const officialShim = path.join(home, '.local', 'bin', 'claude-official')
+  mkfile(officialShim, '#!/bin/sh\necho "2.1.308 (Claude Code)"\n')
+  fs.chmodSync(officialShim, 0o755)
   mkfile(path.join(home, '.vscode', 'extensions', 'anthropic.claude-code-2.1.278-win32-x64', 'resources', 'native-binary', 'claude.exe'))
   const serverBin = path.join(home, '.vscode-server', 'extensions', 'anthropic.claude-code-2.1.281-win32-x64', 'resources', 'native-binaries', 'linux-x64', 'claude')
   mkfile(serverBin)
@@ -26,13 +29,18 @@ async function main() {
   const npmRoot = path.join(tmp, 'node_modules')
   const cliJs = path.join(npmRoot, '@anthropic-ai', 'claude-code', 'cli.js')
   mkfile(cliJs, "console.log('2.1.281 (Claude Code)')\n")
+  const originalHome = process.env.HOME
+  process.env.HOME = home
   process.env.CLAUDIO_NPM_ROOT_G = npmRoot
   try {
     const npmFound = resolve.listNpmClaudeBinaries()
     assert(npmFound.includes(cliJs), 'npm cli.js must be listed')
+    assert(npmFound.includes(officialShim), 'preserved official launcher must be listed')
     const v = resolve.probeCandidate(cliJs)
     assert(v && v.version.raw === '2.1.281', `cli.js probed via node, got ${v && v.version.raw}`)
   } finally {
+    if (originalHome === undefined) delete process.env.HOME
+    else process.env.HOME = originalHome
     delete process.env.CLAUDIO_NPM_ROOT_G
   }
 
