@@ -7,6 +7,11 @@
 
 const { spawn } = require('child_process')
 const path = require('path')
+const {
+  isNodeBinary,
+  parseOfficialLaunch,
+  selectLaunchTarget,
+} = require('./lib/wrapper/launch')
 const { startNativeBridge } = require('./native-bridge')
 const {
   loadProvidersConfig,
@@ -28,55 +33,6 @@ const {
   restoreClaudeLoginCredentials,
 } = require('./lib/wrapper/credentials')
 
-function isNodeBinary(filePath) {
-  if (!filePath || typeof filePath !== 'string') return false
-  const base = path.basename(filePath).toLowerCase()
-  return base === 'node' || base === 'node.exe'
-}
-
-function isExtensionClaudeLauncher(filePath) {
-  if (!filePath || typeof filePath !== 'string') return false
-  if (!path.isAbsolute(filePath)) return false
-  const normalized = filePath.replace(/\\/g, '/').toLowerCase()
-  if (normalized.endsWith('/cli.js') && normalized.includes('claude')) return true
-  if (/claude-code|native-binary/i.test(normalized)) return true
-  const base = path.basename(normalized)
-  if (base === 'claude' || base === 'claude.exe') return true
-  return false
-}
-
-
-function stripExtensionLauncher(argv) {
-  const args = argv.slice()
-  if (args.length === 0) return args
-
-  if (isNodeBinary(args[0]) && args.length >= 2 && isExtensionClaudeLauncher(args[1])) {
-    return args.slice(2)
-  }
-
-  if (isExtensionClaudeLauncher(args[0])) {
-    return args.slice(1)
-  }
-
-  return args
-}
-
-
-function parseOfficialLaunch(argv) {
-  const args = argv.slice()
-  if (args.length === 0) return null
-
-  if (isNodeBinary(args[0]) && args.length >= 2 && isExtensionClaudeLauncher(args[1])) {
-    return { command: args[0], args: args.slice(1) }
-  }
-
-  if (isExtensionClaudeLauncher(args[0])) {
-    return { command: args[0], args: args.slice(1) }
-  }
-
-  return null
-}
-
 function findBundledClaudeExe() {
   const latest = resolveLatestOfficialClaude()
   if (!latest) return null
@@ -97,23 +53,12 @@ async function runNative(rawArgs) {
   )
   const bundled = findBundledClaudeExe()
 
-  let command = preferred?.path || bundled?.command || null
-  let userArgs = []
-  if (fromExt) {
-    if (isNodeBinary(fromExt.command)) {
-      userArgs = fromExt.args.slice(1)
-      if (!command) {
-        command = fromExt.command
-        userArgs = fromExt.args
-      }
-    } else {
-      userArgs = fromExt.args
-      if (!command) command = fromExt.command
-    }
-  } else {
-    userArgs = stripExtensionLauncher(rawArgs)
-    if (!command && bundled) command = bundled.command
-  }
+  const { command, userArgs } = selectLaunchTarget({
+    fromExt,
+    rawArgs,
+    preferredPath: preferred?.path,
+    bundled,
+  })
 
   if (!command) {
     console.error(
@@ -217,8 +162,8 @@ async function runNative(rawArgs) {
     }
     const bridgeToken = getSharedBridgeToken()
     quarantineClaudeLoginCredentials()
-    env.ANTHROPIC_API_KEY = bridgeToken
-    delete env.ANTHROPIC_AUTH_TOKEN
+    env.ANTHROPIC_AUTH_TOKEN = bridgeToken
+    delete env.ANTHROPIC_API_KEY
     if (!env.CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT) {
       env.CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT = '1'
     }
@@ -235,6 +180,13 @@ async function runNative(rawArgs) {
     delete env.CLAUDE_CODE_USE_VERTEX
     delete env.CLAUDE_CODE_OAUTH_TOKEN
     delete env.ANTHROPIC_LOG
+  }
+
+  if (useBridge && bridge) {
+    debugLog(
+      `child auth env: apiKey=${env.ANTHROPIC_API_KEY ? 'set' : 'unset'} ` +
+        `authToken=${env.ANTHROPIC_AUTH_TOKEN ? 'set' : 'unset'} baseUrl=local`,
+    )
   }
 
   const child = spawn(command, userArgs, {

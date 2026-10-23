@@ -29,8 +29,9 @@ pre-existing value — the wrapper only fills defaults).
 | `CLAUDE_CODE_SKIP_API_KEY_CHECK` | `1` | The bridge token is not a real Anthropic key. |
 
 The wrapper also strips `OPENAI_*`, `CLAUDE_CODE_USE_{OPENAI,BEDROCK,VERTEX}`,
-`CLAUDE_CODE_OAUTH_TOKEN`, and `ANTHROPIC_AUTH_TOKEN` from the child env so a
-foreign provider config can never leak into the bridged session.
+and `CLAUDE_CODE_OAUTH_TOKEN` from the child env so a foreign provider config
+cannot leak into the bridged session. It supplies the local bridge token through
+`ANTHROPIC_AUTH_TOKEN` (Bearer auth) rather than `ANTHROPIC_API_KEY`.
 
 ## Provider config (`~/.claude/providers.json`)
 

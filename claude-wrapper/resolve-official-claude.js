@@ -159,6 +159,7 @@ function listNpmClaudeBinaries() {
     /* npm missing — fall through to static paths */
   }
   push('/usr/local/bin/claude')
+  push(path.join(os.homedir(), '.local', 'bin', 'claude-official'))
   push('/usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js')
   push(path.join(os.homedir(), '.npm-global', 'bin', 'claude'))
   return out

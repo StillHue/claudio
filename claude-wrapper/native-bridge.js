@@ -71,6 +71,12 @@ function startNativeBridge(opts) {
     const url = new URL(req.url || '/', `http://${host}`)
     const pathname = url.pathname.replace(/\/+$/, '') || '/'
 
+    if (req.method === 'HEAD' && pathname === '/api/hello') {
+      log('HEAD /api/hello → 200 (local bridge)')
+      res.writeHead(200)
+      return res.end()
+    }
+
     if (req.method === 'GET' && (pathname === '/' || pathname === '/health')) {
       return json(res, 200, { ok: true, service: 'claude-native-bridge' })
     }

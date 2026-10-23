@@ -1,0 +1,9 @@
+{
+  "name": "claudio-claude-wrapper",
+  "version": "1.0.0",
+  "private": false,
+  "description": "Claude Code with a local bridge to OpenAI-compatible APIs",
+  "scripts": {
+    "postinstall": "bash ./claude-wrapper/install.sh"
+  }
+}
