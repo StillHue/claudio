@@ -6,18 +6,40 @@ The UI, tools, and permissions stay the official Claude Code harness. The bridge
 
 ## Install
 
-Windows, from this checkout:
+### macOS
+
+Choose either installation method. Both require Node.js/npm and `curl`.
+
+**Using npm** (the package is installed from GitHub; the installer runs automatically):
+
+```sh
+npm install --global github:StillHue/claudio
+```
+
+**From a checkout:**
+
+```sh
+git clone https://github.com/StillHue/claudio.git
+cd claudio
+bash ./claude-wrapper/install.sh
+```
+
+The installer installs official Claude Code if needed, deploys the wrapper, and configures settings for installed IDEs using a shell launcher compatible with the Claude Code SDK. Reload the IDE window after install.
+
+### Windows
+
+From this checkout:
 
 ```powershell
 cd claude-wrapper
 powershell -ExecutionPolicy Bypass -File .\install.ps1
 ```
 
-Reload the IDE window after install. Cursor and VS Code must launch `claude-wrapper.exe` (`shell:false`). A `.cmd` or `.js` wrapper fails with `spawn EINVAL`.
+Cursor and VS Code must launch `claude-wrapper.exe` (`shell:false`). A `.cmd` or `.js` wrapper fails with `spawn EINVAL`.
 
-The first launch with no API key opens a local page. No model has to be registered before that page. The key goes to `~/.claude/.env`. The provider and model go to `~/.claude/wrapper/providers.json`.
+On first launch with no API key, a local setup page opens. No model has to be registered before then. The key goes to `~/.claude/.env`; the provider and model go to `~/.claude/wrapper/providers.json`.
 
-Build the exe before install, from `claude-wrapper/`: `bun build --compile ./claude-wrapper.js --outfile ./claude-wrapper.exe`.
+On Windows, build the exe before install, from `claude-wrapper/`: `bun build --compile ./claude-wrapper.js --outfile ./claude-wrapper.exe`.
 
 ## Config
 

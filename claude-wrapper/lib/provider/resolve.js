@@ -41,12 +41,12 @@ function buildSlugIndex(providersData) {
   return index
 }
 
-function loadProvidersConfig() {
-  const rootDir = path.resolve(__dirname, '..', '..')
+function loadProvidersConfig({ rootDir = path.resolve(__dirname, '..', '..'), home = os.homedir() } = {}) {
   const candidates = [
     path.join(rootDir, 'providers.json'),
+    path.join(home, '.claude', 'wrapper', 'providers.json'),
     path.join(rootDir, 'providers.example.json'),
-    path.join(os.homedir(), '.claude-native', 'providers.json'),
+    path.join(home, '.claude-native', 'providers.json'),
   ]
   for (const p of candidates) {
     try {

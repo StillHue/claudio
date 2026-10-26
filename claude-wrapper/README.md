@@ -15,7 +15,7 @@ compilado, não o `.js`.
 
 ## Config
 
-`~/.claude/providers.json` (provider ativo + modelo) e `~/.claude/.env` (chaves).
+`~/.claude/wrapper/providers.json` (provider ativo + modelo) e `~/.claude/.env` (chaves).
 Trocar de provider = editar `providers.json` (`active`); nada é hard-coded.
 
 ## Mapa
@@ -33,6 +33,7 @@ Trocar de provider = editar `providers.json` (`active`); nada é hard-coded.
 ## Garantias cobertas por teste
 
 - vazio do upstream ou erro dentro de HTTP 200 → 1 retry do mesmo modelo, depois o status real (502 se continuar vazio)
+- falhas transitórias do upstream (429/500/502/503/504) → 1 retry do mesmo modelo antes de repassar o status
 - tradução Anthropic → OpenAI, incluindo imagem como `image_url`
 - dedupe de stream sem comer token curto
 - segredos saem redigidos do log

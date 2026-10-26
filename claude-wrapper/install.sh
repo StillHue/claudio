@@ -27,13 +27,13 @@ need() {
 
 find_official_claude() {
   # Ask the repo resolver (covers extension bundles incl. *-server, npm, ~/.local/bin).
-  node -e "
+  node -e '
 try {
-  const r = require("$HERE/resolve-official-claude.js");
+  const r = require(process.argv[1]);
   const hit = r.resolveLatestOfficialClaude();
   if (hit) console.log(hit.path);
 } catch (e) { /* ignore */ }
-" 2>/dev/null | head -n 1
+' "$HERE/resolve-official-claude.js" 2>/dev/null | head -n 1
 }
 
 ensure_claude_code() {
@@ -66,7 +66,9 @@ ensure_claude_home() {
       && cp "$legacy/bridge.token" "$WRAPPER_DIR/bridge.token" \
       && echo "migrated bridge.token"
   fi
-  if [ -f "$CLAUDE_HOME/providers.json" ]; then
+  if [ -f "$WRAPPER_DIR/providers.json" ]; then
+    echo "providers.json already exists ($WRAPPER_DIR/providers.json)"
+  elif [ -f "$CLAUDE_HOME/providers.json" ]; then
     echo "providers.json already exists ($CLAUDE_HOME/providers.json)"
   else
     echo "no providers.json yet - first Claude launch will open the provider picker"
@@ -75,7 +77,8 @@ ensure_claude_home() {
 
 deploy_wrapper() {
   if command -v rsync >/dev/null 2>&1; then
-    rsync -a --delete --exclude node_modules --exclude .git --exclude skills --exclude .env \
+    rsync -a --delete --exclude node_modules --exclude .git --exclude skills \
+      --exclude .env --exclude providers.json --exclude bridge.token \
       "$HERE/" "$WRAPPER_DIR/"
   else
     # cp fallback: copy everything except the excluded names.
@@ -84,14 +87,17 @@ deploy_wrapper() {
       for entry in "$HERE"/* "$HERE"/.*; do
         base="$(basename "$entry")"
         case "$base" in
-          .|..|node_modules|.git|skills|.env) continue;;
+          .|..|node_modules|.git|skills|.env|providers.json|bridge.token) continue;;
         esac
         cp -r "$entry" "$WRAPPER_DIR/"
       done )
   fi
   chmod +x "$WRAPPER_DIR/claude-wrapper.js"
+  chmod +x "$WRAPPER_DIR/claude-wrapper-launcher"
   [ -f "$WRAPPER_DIR/claude-wrapper.js" ] \
     || { echo "claude-wrapper.js missing after deploy ($WRAPPER_DIR)" >&2; exit 1; }
+  [ -x "$WRAPPER_DIR/claude-wrapper-launcher" ] \
+    || { echo "claude-wrapper-launcher missing after deploy ($WRAPPER_DIR)" >&2; exit 1; }
   echo "deployed wrapper -> $WRAPPER_DIR"
 }
 
@@ -136,7 +142,7 @@ data['claudeCode.model'] = data['claudeCode.model'] || pickerId;
 fs.writeFileSync(settingsPath, JSON.stringify(data, null, 2) + '\n', 'utf8');
 console.log('set claudeCode.claudeProcessWrapper =', exe);
 PATCH_EOF
-  node "$tmp_js" "$2" "$WRAPPER_DIR/claude-wrapper.js"
+  node "$tmp_js" "$2" "$WRAPPER_DIR/claude-wrapper-launcher"
   local rc=$?
   rm -f "$tmp_js"
   return $rc
@@ -145,7 +151,12 @@ PATCH_EOF
 set_ide_wrappers() {
   step "Configuring Claude Code IDE hosts (Cursor / VS Code / ...)"
   local patched=0
-  local cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
+  local cfg
+  if [ "$(uname -s)" = "Darwin" ]; then
+    cfg="$HOME/Library/Application Support"
+  else
+    cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
+  fi
   for spec in "Cursor:$cfg/Cursor/User/settings.json" \
               "VS Code:$cfg/Code/User/settings.json" \
               "VS Code Insiders:$cfg/Code - Insiders/User/settings.json" \
@@ -173,7 +184,7 @@ install_cli_shims() {
   mkdir -p "$LOCAL_BIN"
   # Official native installer drops claude in ~/.local/bin, which would
   # shadow the wrapper. Keep it aside as claude-official.
-  if [ -f "$LOCAL_BIN/claude" ] && [ ! -L "$LOCAL_BIN/claude" ]; then
+  if [ -e "$LOCAL_BIN/claude" ] || [ -L "$LOCAL_BIN/claude" ]; then
     if ! grep -q "claude-cli.js" "$LOCAL_BIN/claude" 2>/dev/null; then
       mv -f "$LOCAL_BIN/claude" "$LOCAL_BIN/claude-official"
       echo "renamed $LOCAL_BIN/claude -> $LOCAL_BIN/claude-official (wrapper owns claude)"
@@ -207,8 +218,8 @@ set_ide_wrappers
 install_cli_shims
 echo ""
 echo "Done."
-echo "  Wrapper: $WRAPPER_DIR/claude-wrapper.js"
-echo "  Providers: ~/.claude/providers.json"
+echo "  Wrapper: $WRAPPER_DIR/claude-wrapper-launcher"
+echo "  Providers: $WRAPPER_DIR/providers.json"
 echo "  Env: ~/.claude/.env"
 echo "  Next: reload your IDE window, open Claude Code"
 echo ""
