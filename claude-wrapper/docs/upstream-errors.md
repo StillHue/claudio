@@ -7,7 +7,7 @@ Code: `lib/bridge/stream.js`, `lib/bridge/messages-chat.js`, `lib/wrapper/log.js
 
 | What you see | What it means | Action |
 |---|---|---|
-| `upstream HTTP 503` | The provider is throttled or unavailable. HTTP status responses are returned without a retry. | Wait and retry the turn. Recurring = pick a less loaded model or hour. |
+| `upstream HTTP 500/502/503/504` | The provider failed transiently. The bridge retries the same model once, then returns the status. | Retry the turn. Recurring 500s = pick a less loaded model or verify provider/model compatibility. |
 | `upstream stream-error 503 ...` | The provider encoded an overload error inside an HTTP 200 SSE stream. The bridge retries this case once. | Wait and retry the turn. Recurring = pick a less loaded model or hour. |
 | `upstream 429 ...` | Rate limit on the provider key. | Back off; check key quota. |
 | `upstream timed out after 180000ms` | No response in 3 min (huge payload or stuck upstream). | Retry; shrink context (`/compact`). Raise via `CLAUDE_NATIVE_UPSTREAM_TIMEOUT_MS` only if the model is just slow. |

@@ -1,6 +1,6 @@
 /**
  * Chat Completions handler (OpenAI /chat/completions).
- * Empty upstream → one same-model retry, then an error.
+ * Transient upstream failures and empty responses get one same-model retry.
  */
 const { json, writeSse, newMessageId } = require('./http')
 const {
@@ -24,6 +24,20 @@ function isUpstreamTimeout(err) {
   const name = err?.name || ''
   const msg = String(err?.message || err)
   return name === 'TimeoutError' || /aborted|timeout|econnreset|fetch failed/i.test(msg)
+}
+
+function isRetryableStatus(status) {
+  return status === 429 || status === 500 || status === 502 || status === 503 || status === 504
+}
+
+function retryDelayMs() {
+  const configured = Number(process.env.CLAUDE_NATIVE_RETRY_DELAY_MS || 250)
+  return Number.isFinite(configured) && configured >= 0 ? Math.min(configured, 5000) : 250
+}
+
+async function waitBeforeRetry() {
+  const delay = retryDelayMs()
+  if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay))
 }
 
 function hasUsageValue(value) {
@@ -128,7 +142,8 @@ async function handleChat(req, res, ctx, { body, provider, upstreamModel }) {
   let lastShape = { msgs: 0, tools: 0, images: 0 }
   let includeStreamUsage = wantStream
 
-  // pass 0, then one same-model retry on an empty body or an error inside HTTP 200.
+  // Pass 0, then one same-model retry on transient upstream failures, empty
+  // bodies, or an error inside HTTP 200.
   for (let pass = 0; pass < 2; pass++) {
     const activeModel = upstreamModel
     const emptyRetry = pass === 1
@@ -177,6 +192,11 @@ async function handleChat(req, res, ctx, { body, provider, upstreamModel }) {
       ) {
         includeStreamUsage = false
         ctx.log('[compat] upstream rejected stream usage option; retrying without it')
+        continue
+      }
+      if (pass === 0 && isRetryableStatus(upstream.status)) {
+        ctx.log(`[retry] ${activeModel} HTTP ${upstream.status}→retry same`)
+        await waitBeforeRetry()
         continue
       }
       criticalLog(

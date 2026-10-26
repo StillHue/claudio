@@ -4,7 +4,7 @@
   "private": true,
   "main": "claude-cli.js",
   "scripts": {
-    "test": "node scripts/test-count-tokens.js && node scripts/test-response-dedupe.js && node scripts/test-stream-short-token-dedupe.js && node scripts/test-text-block-single-stop.js && node scripts/test-translate-hardening.js && node scripts/test-upstream-error-sanitize.js && node scripts/test-stream-error.js && node scripts/test-mimo-direct-vision.js && node scripts/test-provider-setup.js && node scripts/test-wrapper-launch.js && node scripts/test-bridge-health.js && node scripts/test-bridge-tool-cycle.js",
+    "test": "node scripts/test-count-tokens.js && node scripts/test-response-dedupe.js && node scripts/test-stream-short-token-dedupe.js && node scripts/test-text-block-single-stop.js && node scripts/test-translate-hardening.js && node scripts/test-upstream-error-sanitize.js && node scripts/test-stream-error.js && node scripts/test-http-error-retry.js && node scripts/test-mimo-direct-vision.js && node scripts/test-provider-setup.js && node scripts/test-wrapper-launch.js && node scripts/test-bridge-health.js && node scripts/test-bridge-tool-cycle.js",
     "build": "bun build --compile ./claude-wrapper.js --outfile ./claude-wrapper.exe"
   },
   "license": "ISC",
